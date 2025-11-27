@@ -29,30 +29,30 @@ func NewMPCDiscovery(registry *ServiceRegistry, nodeManager *node.Manager, nodeD
 func (m *MPCDiscovery) RegisterMPCNode(ctx context.Context, nodeInfo *node.Node) error {
 	// 转换节点信息为服务信息
 	serviceInfo := &ServiceInfo{
-		ID:       fmt.Sprintf("mpc-%s-%s", nodeInfo.NodeType, nodeInfo.NodeID),
-		Name:     fmt.Sprintf("mpc-%s", nodeInfo.NodeType),
-		Address:  nodeInfo.Endpoint, // 需要解析地址和端口
-		Port:     50051,            // 默认gRPC端口，TODO: 从配置获取
+		ID:      fmt.Sprintf("mpc-%s-%s", nodeInfo.NodeType, nodeInfo.NodeID),
+		Name:    fmt.Sprintf("mpc-%s", nodeInfo.NodeType),
+		Address: nodeInfo.Endpoint, // 需要解析地址和端口
+		Port:    50051,             // 默认gRPC端口，TODO: 从配置获取
 		Tags: []string{
 			fmt.Sprintf("node-type:%s", nodeInfo.NodeType),
 			fmt.Sprintf("node-id:%s", nodeInfo.NodeID),
 			"protocol:v1",
 		},
 		Meta: map[string]string{
-			"node_id":       nodeInfo.NodeID,
-			"node_type":     string(nodeInfo.NodeType),
-			"endpoint":      nodeInfo.Endpoint,
-			"version":       "v1.0.0",
-			"capabilities":  fmt.Sprintf("%v", nodeInfo.Capabilities),
-			"weight":        "1", // 默认权重
+			"node_id":      nodeInfo.NodeID,
+			"node_type":    string(nodeInfo.NodeType),
+			"endpoint":     nodeInfo.Endpoint,
+			"version":      "v1.0.0",
+			"capabilities": fmt.Sprintf("%v", nodeInfo.Capabilities),
+			"weight":       "1", // 默认权重
 		},
 		NodeType: string(nodeInfo.NodeType),
 		Protocol: "v1",
 		Weight:   1,
 		Check: &HealthCheck{
-			Type:     "grpc",
-			Interval: 30 * time.Second,
-			Timeout:  5 * time.Second,
+			Type:                           "grpc",
+			Interval:                       30 * time.Second,
+			Timeout:                        5 * time.Second,
 			DeregisterCriticalServiceAfter: 5 * time.Minute,
 		},
 	}

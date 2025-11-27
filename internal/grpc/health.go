@@ -101,13 +101,13 @@ func (h *HealthChecker) readinessCheck(c echo.Context) error {
 // detailedHealthCheck 详细健康检查
 func (h *HealthChecker) detailedHealthCheck(c echo.Context) error {
 	health := map[string]interface{}{
-		"status":       "ok",
-		"timestamp":    time.Now().Format(time.RFC3339),
-		"uptime":       time.Since(h.started).String(),
-		"last_ping":    h.lastPing.Format(time.RFC3339),
-		"version":      "v1.0.0", // TODO: 从配置获取
-		"node_type":    h.config.MPC.NodeType,
-		"node_id":      h.config.MPC.NodeID,
+		"status":    "ok",
+		"timestamp": time.Now().Format(time.RFC3339),
+		"uptime":    time.Since(h.started).String(),
+		"last_ping": h.lastPing.Format(time.RFC3339),
+		"version":   "v1.0.0", // TODO: 从配置获取
+		"node_type": h.config.MPC.NodeType,
+		"node_id":   h.config.MPC.NodeID,
 	}
 
 	// 检查各个组件

@@ -62,9 +62,9 @@ func NewClient(config *Config) (*Client, error) {
 	client := &Client{
 		config:         config,
 		conn:           conn,
-	nodeClient:     pb.NewMPCNodeClient(conn),
-	coordClient:    pb.NewMPCCoordinatorClient(conn),
-	registryClient: pb.NewMPCRegistryClient(conn),
+		nodeClient:     pb.NewMPCNodeClient(conn),
+		coordClient:    pb.NewMPCCoordinatorClient(conn),
+		registryClient: pb.NewMPCRegistryClient(conn),
 	}
 
 	log.Info().
@@ -101,8 +101,8 @@ func (c *Client) RegistryClient() pb.MPCRegistryClient {
 // Heartbeat 发送心跳
 func (c *Client) Heartbeat(ctx context.Context, nodeID string) error {
 	req := &pb.HeartbeatRequest{
-		NodeId:    nodeID,
-		SentAt:    time.Now().Format(time.RFC3339),
+		NodeId: nodeID,
+		SentAt: time.Now().Format(time.RFC3339),
 		StatusInfo: map[string]string{
 			"status": "healthy",
 		},

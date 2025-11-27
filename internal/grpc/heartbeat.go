@@ -10,15 +10,15 @@ import (
 
 // HeartbeatService 心跳服务
 type HeartbeatService struct {
-	nodeID         string
-	coordinatorID  string
-	interval       time.Duration
-	timeout        time.Duration
-	client         *Client
-	stopChan       chan struct{}
-	running        bool
-	mu             sync.RWMutex
-	lastHeartbeat  time.Time
+	nodeID        string
+	coordinatorID string
+	interval      time.Duration
+	timeout       time.Duration
+	client        *Client
+	stopChan      chan struct{}
+	running       bool
+	mu            sync.RWMutex
+	lastHeartbeat time.Time
 }
 
 // HeartbeatConfig 心跳配置

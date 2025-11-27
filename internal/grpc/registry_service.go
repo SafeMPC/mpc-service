@@ -36,10 +36,10 @@ func (s *RegistryService) RegisterNode(ctx context.Context, req *pb.RegisterRequ
 	// TODO: 设置健康检查
 
 	return &pb.RegisterResponse{
-		Success:      true,
+		Success:        true,
 		RegistrationId: fmt.Sprintf("reg-%s", req.Node.NodeId),
-		Message:      "Node registered successfully",
-		RegisteredAt: "now", // TODO: 实际时间
+		Message:        "Node registered successfully",
+		RegisteredAt:   "now", // TODO: 实际时间
 	}, nil
 }
 
@@ -84,7 +84,7 @@ func (s *RegistryService) DiscoverNodes(ctx context.Context, req *pb.DiscoveryRe
 	}
 
 	return &pb.DiscoveryResponse{
-		Nodes:     nodes,
+		Nodes:      nodes,
 		TotalCount: int32(len(nodes)),
 	}, nil
 }
@@ -118,9 +118,9 @@ func (s *RegistryService) HealthCheck(ctx context.Context, req *pb.HealthCheckRe
 	// TODO: 执行实际健康检查
 
 	return &pb.HealthCheckResponse{
-		Healthy:  true,
-		Status:   "passing",
-		Message:  "Node is healthy",
+		Healthy:   true,
+		Status:    "passing",
+		Message:   "Node is healthy",
 		CheckedAt: "now", // TODO: 实际时间
 		Details: map[string]string{
 			"cpu":    "normal",

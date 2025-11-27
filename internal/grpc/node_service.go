@@ -59,8 +59,8 @@ func (s *NodeService) JoinSigningSession(stream pb.MPCNode_JoinSigningSessionSer
 			Confirmation: &pb.SessionConfirmation{
 				SessionId:    sessionID,
 				Status:       "joined",
-				Threshold:    2, // TODO: 从会话获取
-				TotalNodes:   3, // TODO: 从会话获取
+				Threshold:    2,                  // TODO: 从会话获取
+				TotalNodes:   3,                  // TODO: 从会话获取
 				Participants: []string{s.nodeID}, // TODO: 获取所有参与者
 				CurrentRound: 0,
 				ConfirmedAt:  "now", // TODO: 使用实际时间
@@ -125,9 +125,9 @@ func (s *NodeService) SubmitSignatureShare(ctx context.Context, req *pb.ShareReq
 	// TODO: 检查是否可以进行下一轮
 
 	return &pb.ShareResponse{
-		Accepted:   true,
-		Message:    "Share accepted",
-		NextRound:  req.Round + 1,
+		Accepted:  true,
+		Message:   "Share accepted",
+		NextRound: req.Round + 1,
 	}, nil
 }
 

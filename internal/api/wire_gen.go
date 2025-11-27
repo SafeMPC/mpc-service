@@ -146,4 +146,17 @@ var mpcServiceSet = wire.NewSet(
 	NewSigningServiceProvider,
 	NewCoordinatorServiceProvider,
 	NewParticipantServiceProvider,
+
+	NewGRPCServer,
+	NewGRPCClient,
+	NewNodeService,
+	NewCoordinatorService,
+	NewRegistryService,
+	NewHeartbeatService,
+	NewHeartbeatManager,
+
+	NewConsulDiscovery,
+	NewServiceRegistry,
+	NewMPCDiscovery,
+	NewLoadBalancer,
 )

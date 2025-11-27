@@ -40,11 +40,11 @@ func (s *CoordinatorService) CreateSigningSession(ctx context.Context, req *pb.C
 	return &pb.CreateSessionResponse{
 		SessionId:          sessionID,
 		Status:             "created",
-		Threshold:          2, // TODO: 从密钥配置获取
-		TotalNodes:         3, // TODO: 从密钥配置获取
+		Threshold:          2,                                   // TODO: 从密钥配置获取
+		TotalNodes:         3,                                   // TODO: 从密钥配置获取
 		ParticipatingNodes: []string{"node1", "node2", "node3"}, // TODO: 实际选择的节点
-		CreatedAt:          "now", // TODO: 实际时间
-		ExpiresAt:          "later", // TODO: 计算过期时间
+		CreatedAt:          "now",                               // TODO: 实际时间
+		ExpiresAt:          "later",                             // TODO: 计算过期时间
 	}, nil
 }
 
@@ -81,10 +81,10 @@ func (s *CoordinatorService) AggregateSignatures(ctx context.Context, req *pb.Ag
 	// TODO: 验证最终签名
 
 	return &pb.AggregateResponse{
-		Success:    true,
-		Signature:  "aggregated-signature-hex", // TODO: 实际签名
-		PublicKey:  "public-key-hex",           // TODO: 从密钥获取
-		MessageHash: "message-hash-hex",         // TODO: 计算消息哈希
-		AggregatedAt: "now",                     // TODO: 实际时间
+		Success:      true,
+		Signature:    "aggregated-signature-hex", // TODO: 实际签名
+		PublicKey:    "public-key-hex",           // TODO: 从密钥获取
+		MessageHash:  "message-hash-hex",         // TODO: 计算消息哈希
+		AggregatedAt: "now",                      // TODO: 实际时间
 	}, nil
 }

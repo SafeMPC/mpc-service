@@ -24,6 +24,7 @@ require (
 	github.com/go-openapi/validate v0.24.0
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
+	github.com/hashicorp/consul/api v1.28.2
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/kashguard/go-mpc-wallet/internal/pb v0.0.0-00010101000000-000000000000
 	github.com/kat-co/vala v0.0.0-20170210184112-42e1d8b61f12
@@ -59,7 +60,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/subcommands v1.2.0 // indirect
-	github.com/hashicorp/consul/api v1.28.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect

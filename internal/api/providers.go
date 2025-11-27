@@ -11,6 +11,7 @@ import (
 	"github.com/kashguard/go-mpc-wallet/internal/auth"
 	"github.com/kashguard/go-mpc-wallet/internal/config"
 	"github.com/kashguard/go-mpc-wallet/internal/discovery"
+	"github.com/kashguard/go-mpc-wallet/internal/grpc"
 	"github.com/kashguard/go-mpc-wallet/internal/i18n"
 	"github.com/kashguard/go-mpc-wallet/internal/mailer"
 	"github.com/kashguard/go-mpc-wallet/internal/mpc/coordinator"
@@ -20,7 +21,6 @@ import (
 	"github.com/kashguard/go-mpc-wallet/internal/mpc/protocol"
 	"github.com/kashguard/go-mpc-wallet/internal/mpc/session"
 	"github.com/kashguard/go-mpc-wallet/internal/mpc/signing"
-	"github.com/kashguard/go-mpc-wallet/internal/grpc"
 	"github.com/kashguard/go-mpc-wallet/internal/mpc/storage"
 	"github.com/kashguard/go-mpc-wallet/internal/persistence"
 	"github.com/kashguard/go-mpc-wallet/internal/push"
@@ -195,8 +195,8 @@ func NewGRPCServer(cfg config.Server) (*grpc.Server, error) {
 // NewGRPCClient 创建gRPC客户端
 func NewGRPCClient(cfg config.Server) (*grpc.Client, error) {
 	return grpc.NewClient(&grpc.Config{
-		Target: fmt.Sprintf("localhost:%d", cfg.MPC.GRPCPort),
-		TLS:    cfg.MPC.TLSEnabled,
+		Target:  fmt.Sprintf("localhost:%d", cfg.MPC.GRPCPort),
+		TLS:     cfg.MPC.TLSEnabled,
 		Timeout: 30 * time.Second,
 	})
 }
@@ -240,12 +240,12 @@ func NewConsulDiscovery(cfg config.Server) (discovery.ServiceDiscovery, error) {
 }
 
 // NewServiceRegistry 创建服务注册管理器
-func NewServiceRegistry(discovery discovery.ServiceDiscovery, cfg config.Server) *discovery.ServiceRegistry {
+func NewServiceRegistry(discoverySvc discovery.ServiceDiscovery, cfg config.Server) *discovery.ServiceRegistry {
 	serviceInfo := &discovery.ServiceInfo{
-		ID:       fmt.Sprintf("mpc-%s-%s", cfg.MPC.NodeType, cfg.MPC.NodeID),
-		Name:     fmt.Sprintf("mpc-%s", cfg.MPC.NodeType),
-		Address:  "localhost", // TODO: 从配置获取
-		Port:     cfg.MPC.GRPCPort,
+		ID:      fmt.Sprintf("mpc-%s-%s", cfg.MPC.NodeType, cfg.MPC.NodeID),
+		Name:    fmt.Sprintf("mpc-%s", cfg.MPC.NodeType),
+		Address: "localhost", // TODO: 从配置获取
+		Port:    cfg.MPC.GRPCPort,
 		Tags: []string{
 			fmt.Sprintf("node-type:%s", cfg.MPC.NodeType),
 			fmt.Sprintf("node-id:%s", cfg.MPC.NodeID),
@@ -261,15 +261,15 @@ func NewServiceRegistry(discovery discovery.ServiceDiscovery, cfg config.Server)
 		Protocol: "v1",
 		Weight:   1,
 		Check: &discovery.HealthCheck{
-			Type:     "grpc",
-			Interval: 30 * time.Second,
-			Timeout:  5 * time.Second,
+			Type:                           "grpc",
+			Interval:                       30 * time.Second,
+			Timeout:                        5 * time.Second,
 			DeregisterCriticalServiceAfter: 5 * time.Minute,
 		},
 	}
 
 	loadBalancer := discovery.NewRoundRobinLoadBalancer()
-	return discovery.NewServiceRegistry(discovery, serviceInfo, loadBalancer)
+	return discovery.NewServiceRegistry(discoverySvc, serviceInfo, loadBalancer)
 }
 
 // NewMPCDiscovery 创建MPC服务发现

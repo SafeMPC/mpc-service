@@ -32,11 +32,11 @@ type Server struct {
 // NewServer 创建新的gRPC服务器
 func NewServer(cfg *config.Server) (*Server, error) {
 	s := &Server{
-		config:        cfg,
-		healthServer:  health.NewServer(),
-		nodeService:   pb.UnimplementedMPCNodeServer{},
-		coordService:  pb.UnimplementedMPCCoordinatorServer{},
-		regService:    pb.UnimplementedMPCRegistryServer{},
+		config:       cfg,
+		healthServer: health.NewServer(),
+		nodeService:  pb.UnimplementedMPCNodeServer{},
+		coordService: pb.UnimplementedMPCCoordinatorServer{},
+		regService:   pb.UnimplementedMPCRegistryServer{},
 	}
 
 	// 初始化健康检查器

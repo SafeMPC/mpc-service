@@ -5,6 +5,58 @@ import (
 	"time"
 )
 
+// ServiceInfo 服务信息
+type ServiceInfo struct {
+	ID       string            // 服务实例ID
+	Name     string            // 服务名称
+	Address  string            // 服务地址
+	Port     int               // 服务端口
+	Tags     []string          // 服务标签
+	Meta     map[string]string // 元数据
+	Check    *HealthCheck      // 健康检查配置
+	NodeType string            // 节点类型 (coordinator, participant)
+	Protocol string            // 协议版本
+	Weight   int               // 负载均衡权重
+}
+
+// HealthCheck 健康检查配置
+type HealthCheck struct {
+	Type                           string        // "http", "tcp", "grpc"
+	Interval                       time.Duration // 检查间隔
+	Timeout                        time.Duration // 检查超时
+	DeregisterCriticalServiceAfter time.Duration // 关键服务注销时间
+	Path                           string        // HTTP健康检查路径
+}
+
+// HealthStatus 健康状态
+type HealthStatus struct {
+	ServiceID string
+	Status    string // "passing", "warning", "critical"
+	Output    string
+	Timestamp time.Time
+}
+
+// ServiceDiscovery 服务发现接口
+type ServiceDiscovery interface {
+	// 注册服务
+	Register(ctx context.Context, service *ServiceInfo) error
+
+	// 注销服务
+	Deregister(ctx context.Context, serviceID string) error
+
+	// 发现服务
+	Discover(ctx context.Context, serviceName string, tags []string) ([]*ServiceInfo, error)
+
+	// 监听服务变化
+	Watch(ctx context.Context, serviceName string, tags []string) (<-chan []*ServiceInfo, error)
+
+	// 健康检查
+	HealthCheck(ctx context.Context, serviceID string) (*HealthStatus, error)
+
+	// 关闭连接
+	Close() error
+}
+
 // DiscoveryConfig 服务发现配置
 type DiscoveryConfig struct {
 	Provider      string        // "consul", "etcd", "kubernetes"
@@ -64,7 +116,7 @@ func (lb *RoundRobinLoadBalancer) UpdateServices(services []*ServiceInfo) {
 
 // WeightedLoadBalancer 加权负载均衡器
 type WeightedLoadBalancer struct {
-	services   []*ServiceInfo
+	services  []*ServiceInfo
 	expanded  []*ServiceInfo // 按权重扩展的服务列表
 	nextIndex int
 }
@@ -72,7 +124,7 @@ type WeightedLoadBalancer struct {
 // NewWeightedLoadBalancer 创建加权负载均衡器
 func NewWeightedLoadBalancer() *WeightedLoadBalancer {
 	return &WeightedLoadBalancer{
-		services:  make([]*ServiceInfo, 0),
+		services: make([]*ServiceInfo, 0),
 		expanded: make([]*ServiceInfo, 0),
 	}
 }
@@ -114,10 +166,10 @@ func (lb *WeightedLoadBalancer) UpdateServices(services []*ServiceInfo) {
 
 // ServiceRegistry 服务注册管理器
 type ServiceRegistry struct {
-	discovery     ServiceDiscovery
-	config        *ServiceInfo
-	registered    bool
-	loadBalancer  LoadBalancer
+	discovery    ServiceDiscovery
+	config       *ServiceInfo
+	registered   bool
+	loadBalancer LoadBalancer
 }
 
 // NewServiceRegistry 创建服务注册管理器
@@ -200,7 +252,7 @@ func (r *ServiceRegistry) Close() error {
 // 错误定义
 var (
 	ErrNoServiceAvailable = NewDiscoveryError("no service available")
-	ErrServiceNotFound   = NewDiscoveryError("service not found")
+	ErrServiceNotFound    = NewDiscoveryError("service not found")
 )
 
 // DiscoveryError 服务发现错误

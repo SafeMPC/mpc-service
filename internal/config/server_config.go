@@ -113,7 +113,7 @@ type MPC struct {
 	KeyShareEncryptionKey string
 
 	// 服务发现配置
-	ConsulAddress         string
+	ConsulAddress string
 
 	// 协议配置
 	SupportedProtocols []string
