@@ -112,6 +112,9 @@ type MPC struct {
 	KeyShareStoragePath   string
 	KeyShareEncryptionKey string
 
+	// 服务发现配置
+	ConsulAddress         string
+
 	// 协议配置
 	SupportedProtocols []string
 	DefaultProtocol    string
@@ -294,6 +297,7 @@ func DefaultServiceConfigFromEnv() Server {
 			RedisEndpoint:         util.GetEnv("MPC_REDIS_ENDPOINT", "localhost:6379"),
 			KeyShareStoragePath:   util.GetEnv("MPC_KEY_SHARE_STORAGE_PATH", filepath.Join(util.GetProjectRootDir(), "/var/lib/mpc/key-shares")),
 			KeyShareEncryptionKey: util.GetEnv("MPC_KEY_SHARE_ENCRYPTION_KEY", ""),
+			ConsulAddress:         util.GetEnv("MPC_CONSUL_ADDRESS", "localhost:8500"),
 			SupportedProtocols:    util.GetEnvAsStringArr("MPC_SUPPORTED_PROTOCOLS", []string{"gg18", "gg20", "frost"}),
 			DefaultProtocol:       util.GetEnv("MPC_DEFAULT_PROTOCOL", "gg20"),
 			HTTPPort:              util.GetEnvAsInt("MPC_HTTP_PORT", 8080),

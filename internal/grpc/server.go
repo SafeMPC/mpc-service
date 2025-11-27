@@ -19,13 +19,14 @@ import (
 
 // Server MPC gRPC服务器
 type Server struct {
-	config       *config.Server
-	grpcServer   *grpc.Server
-	nodeService  pb.MPCNodeServer
-	coordService pb.MPCCoordinatorServer
-	regService   pb.MPCRegistryServer
-	healthServer *health.Server
-	listener     net.Listener
+	config        *config.Server
+	grpcServer    *grpc.Server
+	nodeService   pb.MPCNodeServer
+	coordService  pb.MPCCoordinatorServer
+	regService    pb.MPCRegistryServer
+	healthServer  *health.Server
+	healthChecker *HealthChecker
+	listener      net.Listener
 }
 
 // NewServer 创建新的gRPC服务器
@@ -37,6 +38,14 @@ func NewServer(cfg *config.Server) (*Server, error) {
 		coordService:  pb.UnimplementedMPCCoordinatorServer{},
 		regService:    pb.UnimplementedMPCRegistryServer{},
 	}
+
+	// 初始化健康检查器
+	s.healthChecker = NewHealthChecker(s, cfg)
+
+	// 设置服务特定的健康状态
+	s.healthServer.SetServingStatus("mpc.MPCNode", grpc_health_v1.HealthCheckResponse_SERVING)
+	s.healthServer.SetServingStatus("mpc.MPCCoordinator", grpc_health_v1.HealthCheckResponse_SERVING)
+	s.healthServer.SetServingStatus("mpc.MPCRegistry", grpc_health_v1.HealthCheckResponse_SERVING)
 
 	// 设置健康状态
 	s.healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
@@ -172,6 +181,11 @@ func (s *Server) unaryInterceptor(ctx context.Context, req interface{}, info *gr
 		Msg("gRPC unary call")
 
 	return resp, err
+}
+
+// GetHealthChecker 获取健康检查器
+func (s *Server) GetHealthChecker() *HealthChecker {
+	return s.healthChecker
 }
 
 // streamInterceptor 流式调用拦截器

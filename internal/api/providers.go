@@ -10,6 +10,7 @@ import (
 	"github.com/dropbox/godropbox/time2"
 	"github.com/kashguard/go-mpc-wallet/internal/auth"
 	"github.com/kashguard/go-mpc-wallet/internal/config"
+	"github.com/kashguard/go-mpc-wallet/internal/discovery"
 	"github.com/kashguard/go-mpc-wallet/internal/i18n"
 	"github.com/kashguard/go-mpc-wallet/internal/mailer"
 	"github.com/kashguard/go-mpc-wallet/internal/mpc/coordinator"
@@ -229,4 +230,54 @@ func NewHeartbeatService(cfg config.Server, client *grpc.Client) *grpc.Heartbeat
 // NewHeartbeatManager 创建心跳管理器
 func NewHeartbeatManager() *grpc.HeartbeatManager {
 	return grpc.NewHeartbeatManager()
+}
+
+// 服务发现相关Provider
+
+// NewConsulDiscovery 创建Consul服务发现
+func NewConsulDiscovery(cfg config.Server) (discovery.ServiceDiscovery, error) {
+	return discovery.NewConsulDiscovery(cfg.MPC.ConsulAddress)
+}
+
+// NewServiceRegistry 创建服务注册管理器
+func NewServiceRegistry(discovery discovery.ServiceDiscovery, cfg config.Server) *discovery.ServiceRegistry {
+	serviceInfo := &discovery.ServiceInfo{
+		ID:       fmt.Sprintf("mpc-%s-%s", cfg.MPC.NodeType, cfg.MPC.NodeID),
+		Name:     fmt.Sprintf("mpc-%s", cfg.MPC.NodeType),
+		Address:  "localhost", // TODO: 从配置获取
+		Port:     cfg.MPC.GRPCPort,
+		Tags: []string{
+			fmt.Sprintf("node-type:%s", cfg.MPC.NodeType),
+			fmt.Sprintf("node-id:%s", cfg.MPC.NodeID),
+			"protocol:v1",
+		},
+		Meta: map[string]string{
+			"node_id":   cfg.MPC.NodeID,
+			"node_type": cfg.MPC.NodeType,
+			"version":   "v1.0.0",
+			"weight":    "1",
+		},
+		NodeType: cfg.MPC.NodeType,
+		Protocol: "v1",
+		Weight:   1,
+		Check: &discovery.HealthCheck{
+			Type:     "grpc",
+			Interval: 30 * time.Second,
+			Timeout:  5 * time.Second,
+			DeregisterCriticalServiceAfter: 5 * time.Minute,
+		},
+	}
+
+	loadBalancer := discovery.NewRoundRobinLoadBalancer()
+	return discovery.NewServiceRegistry(discovery, serviceInfo, loadBalancer)
+}
+
+// NewMPCDiscovery 创建MPC服务发现
+func NewMPCDiscovery(registry *discovery.ServiceRegistry, nodeManager *node.Manager, nodeDiscovery *node.Discovery) *discovery.MPCDiscovery {
+	return discovery.NewMPCDiscovery(registry, nodeManager, nodeDiscovery)
+}
+
+// NewLoadBalancer 创建负载均衡器
+func NewLoadBalancer() discovery.LoadBalancer {
+	return discovery.NewRoundRobinLoadBalancer()
 }

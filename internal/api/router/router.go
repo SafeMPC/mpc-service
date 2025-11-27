@@ -240,6 +240,13 @@ func Init(s *api.Server) error {
 		APIV1MPC:  s.Echo.Group("/api/v1/mpc", middleware.Auth(s)),
 	}
 
+	// 注册健康检查路由
+	if s.GRPCServer != nil {
+		if healthChecker := s.GRPCServer.GetHealthChecker(); healthChecker != nil {
+			healthChecker.RegisterRoutes(s.Echo)
+		}
+	}
+
 	// ---
 	// Finally attach our handlers
 	handlers.AttachAllRoutes(s)

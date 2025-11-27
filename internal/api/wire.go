@@ -55,6 +55,11 @@ var mpcServiceSet = wire.NewSet(
 	NewRegistryService,
 	NewHeartbeatService,
 	NewHeartbeatManager,
+	// Service discovery
+	NewConsulDiscovery,
+	NewServiceRegistry,
+	NewMPCDiscovery,
+	NewLoadBalancer,
 )
 
 // InitNewServer returns a new Server instance.
