@@ -581,19 +581,46 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant Coordinator
-    participant Participant
-    participant KeyShareStorage
-    participant ProtocolEngine
+    participant P1 as Participant 1
+    participant P2 as Participant 2
+    participant P3 as Participant 3
+    participant Storage as KeyShareStorage
+    participant Protocol as ProtocolEngine
 
-    Coordinator->>Participant: 签名请求 (sessionID, message)
-    Participant->>KeyShareStorage: 获取密钥分片
-    KeyShareStorage-->>Participant: 返回分片 (encrypted)
-    Participant->>Participant: 解密分片
-    Participant->>ProtocolEngine: 执行签名计算
-    ProtocolEngine-->>Participant: 返回签名分片
-    Participant->>Coordinator: 发送签名分片
+    Coordinator->>P1: 签名会话加入 (sessionID)
+    Coordinator->>P2: 签名会话加入 (sessionID)
+    Coordinator->>P3: 签名会话加入 (sessionID)
 
-    Note over Coordinator,Participant: 重复此过程直到收集足够的分片
+    P1->>Storage: 获取密钥分片 (keyID)
+    Storage-->>P1: 返回加密分片
+    P1->>P1: 解密分片
+
+    P2->>Storage: 获取密钥分片 (keyID)
+    Storage-->>P2: 返回加密分片
+    P2->>P2: 解密分片
+
+    P3->>Storage: 获取密钥分片 (keyID)
+    Storage-->>P3: 返回加密分片
+    P3->>P3: 解密分片
+
+    Note over P1,P3: Round 1: 生成承诺和随机数
+
+    P1->>Coordinator: 发送承诺 (commitment_1)
+    P2->>Coordinator: 发送承诺 (commitment_2)
+    P3->>Coordinator: 发送承诺 (commitment_3)
+
+    Coordinator->>P1: 广播所有承诺
+    Coordinator->>P2: 广播所有承诺
+    Coordinator->>P3: 广播所有承诺
+
+    Note over P1,P3: Round 2: 验证承诺并计算签名分片
+
+    P1->>Coordinator: 发送签名分片 (signature_share_1)
+    P2->>Coordinator: 发送签名分片 (signature_share_2)
+    P3->>Coordinator: 发送签名分片 (signature_share_3)
+
+    Coordinator->>Coordinator: 聚合签名分片 (2-of-3)
+    Coordinator->>Coordinator: 构造最终签名
 ```
 
 ### 2.3 Protocol Engine (协议引擎)
