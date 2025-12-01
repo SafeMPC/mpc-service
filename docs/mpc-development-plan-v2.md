@@ -12,18 +12,22 @@
 
 ## 当前状态
 
-**已完成（约80%）**：
+**已完成（约90%）**：
 - ✅ 协议引擎（GG18/GG20/FROST + TSS适配器）
 - ✅ 基础服务层（Key/Signing/Coordinator/Participant/Node/Session）
 - ✅ 所有API handlers（16个）
 - ✅ 存储层（PostgreSQL/Redis/密钥分片存储）
 - ✅ 分布式通信基础设施（gRPC/服务发现/健康检查）
+- ✅ gRPC通信层（客户端和服务端实现）
+- ✅ 消息接收和处理（ProcessIncomingKeygenMessage和ProcessIncomingSigningMessage）
+- ✅ Participant协议参与逻辑（ParticipateKeyGen和ParticipateSign）
+- ✅ 协议引擎接口更新（支持消息接收处理）
+- ✅ Wire依赖注入集成
 
-**未完成（约20%）**：
-- ❌ DKG消息接收和处理（最关键）
-- ❌ Participant协议参与逻辑
-- ❌ Coordinator消息路由
-- ❌ 测试覆盖
+**未完成（约10%）**：
+- ❌ 完整的消息处理逻辑（当前使用消息队列，需要根据tss-lib API完善）
+- ❌ Coordinator消息路由优化（当前通过gRPC客户端实现，可进一步优化）
+- ❌ 测试覆盖（单元测试和集成测试）
 - ❌ 生产化功能（监控/安全/审计）
 
 ---
@@ -567,14 +571,14 @@
 ### Phase 1 MVP剩余功能
 
 #### 阶段1.1: 完成DKG功能
-- [ ] 实现DKG消息接收和处理（tss_adapter.go中添加ProcessIncomingKeygenMessage方法）
-- [ ] 实现签名消息接收和处理（tss_adapter.go中添加ProcessIncomingSigningMessage方法）
-- [ ] 实现Coordinator消息路由（创建protocol_engine.go，实现RouteDKGMessage和RouteSigningMessage）
-- [ ] 创建gRPC Protocol Buffer定义（proto/mpc/v1/mpc.proto）
-- [ ] 实现gRPC客户端（internal/mpc/communication/grpc_client.go）
-- [ ] 实现gRPC服务端（internal/mpc/communication/grpc_server.go）
-- [ ] 实现Participant协议参与（创建protocol_participant.go，实现ParticipateKeyGen和ParticipateSign）
-- [ ] 完善DKG服务集成（更新key/service.go和key/dkg.go）
+- [x] 实现DKG消息接收和处理（tss_adapter.go中添加ProcessIncomingKeygenMessage方法）
+- [x] 实现签名消息接收和处理（tss_adapter.go中添加ProcessIncomingSigningMessage方法）
+- [x] 实现Coordinator消息路由（通过gRPC客户端实现消息路由，集成到protocol engine）
+- [x] 创建gRPC Protocol Buffer定义（proto/mpc/v1/mpc.proto，已存在）
+- [x] 实现gRPC客户端（internal/mpc/communication/grpc_client.go）
+- [x] 实现gRPC服务端（internal/mpc/communication/grpc_server.go）
+- [x] 实现Participant协议参与（创建protocol_participant.go，实现ParticipateKeyGen和ParticipateSign）
+- [ ] 完善DKG服务集成（更新key/service.go和key/dkg.go，需要完善消息处理逻辑）
 
 #### 阶段1.2: 完善分片管理
 - [ ] 实现分片管理器（创建key/share_manager.go，实现Shamir秘密共享）
@@ -635,4 +639,29 @@
 
 **文档维护**: 开发团队  
 **最后更新**: 2025-01-02
+
+---
+
+## 更新日志
+
+### 2025-01-02 - tss-lib分布式签名架构实现
+
+**已完成**：
+- ✅ 实现gRPC通信层（客户端和服务端）
+- ✅ 实现消息接收处理（ProcessIncomingKeygenMessage和ProcessIncomingSigningMessage）
+- ✅ 实现Participant协议参与逻辑（ParticipateKeyGen和ParticipateSign）
+- ✅ 更新协议引擎接口，支持消息接收处理
+- ✅ 更新Wire依赖注入，集成gRPC客户端和服务端
+- ✅ 移除Coordinator签名聚合逻辑（tss-lib自动聚合）
+
+**架构改进**：
+- 采用tss-lib分布式签名方案，每个节点独立参与协议
+- 每个节点使用自己的LocalPartySaveData，密钥分片不离开节点
+- tss-lib自动完成签名聚合，无需Coordinator收集分片
+- Coordinator简化为轻量级协调者，不接触私钥分片
+
+**待完善**：
+- 消息处理逻辑需要根据tss-lib实际API完善（当前使用消息队列暂存）
+- 需要完善会话ID传递机制（gRPC消息发送时需要会话ID）
+- 需要完善消息类型识别（DKG vs 签名消息）
 
