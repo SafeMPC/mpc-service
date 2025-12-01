@@ -43,7 +43,8 @@ type GG18Protocol struct {
 	thisNodeID string
 
 	// 消息路由函数（用于节点间通信）
-	messageRouter func(nodeID string, msg tss.Message) error
+	// 参数：sessionID（用于DKG或签名会话），nodeID（目标节点），msg（tss-lib消息）
+	messageRouter func(sessionID string, nodeID string, msg tss.Message) error
 }
 
 // signingRoundState 签名轮次状态（用于跟踪协议进度）
@@ -58,7 +59,7 @@ type signingRoundState struct {
 }
 
 // NewGG18Protocol 创建GG18协议实例（生产级实现，基于 tss-lib）
-func NewGG18Protocol(curve string, thisNodeID string, messageRouter func(nodeID string, msg tss.Message) error) *GG18Protocol {
+func NewGG18Protocol(curve string, thisNodeID string, messageRouter func(sessionID string, nodeID string, msg tss.Message) error) *GG18Protocol {
 	partyManager := newTSSPartyManager(messageRouter)
 	return &GG18Protocol{
 		curve:         curve,
@@ -107,7 +108,8 @@ func (p *GG18Protocol) GenerateKeyShare(ctx context.Context, req *KeyGenRequest)
 	}
 
 	// 转换 tss-lib 数据为我们的格式
-	keyShares, publicKey, err := convertTSSKeyData(keyID, keyData, nodeIDs)
+	// 注意：只返回当前节点的KeyShare
+	keyShare, publicKey, err := convertTSSKeyData(keyID, keyData, p.thisNodeID)
 	if err != nil {
 		return nil, errors.Wrap(err, "convert tss key data")
 	}
@@ -121,6 +123,10 @@ func (p *GG18Protocol) GenerateKeyShare(ctx context.Context, req *KeyGenRequest)
 		NodeIDs:    nodeIDs,
 	}
 	p.saveKeyRecord(keyID, record)
+
+	// 返回当前节点的KeyShare（在map中）
+	keyShares := make(map[string]*KeyShare)
+	keyShares[p.thisNodeID] = keyShare
 
 	return &KeyGenResponse{
 		KeyShares: keyShares,

@@ -48,6 +48,8 @@ var mpcServiceSet = wire.NewSet(
 	NewMPCGRPCClient,
 	NewMPCGRPCServer,
 	NewProtocolEngine,
+	// DKG service (must be before NewKeyServiceProvider)
+	NewDKGServiceProvider,
 	NewKeyServiceProvider,
 	NewSigningServiceProvider,
 	NewCoordinatorServiceProvider,

@@ -492,7 +492,7 @@ func TestGG20Protocol_GetCurve_Delegation(t *testing.T) {
 
 func TestGG20Protocol_MessageRouter(t *testing.T) {
 	messageCount := 0
-	messageRouter := func(nodeID string, msg tss.Message) error {
+	messageRouter := func(sessionID string, nodeID string, msg tss.Message) error {
 		messageCount++
 		return nil
 	}

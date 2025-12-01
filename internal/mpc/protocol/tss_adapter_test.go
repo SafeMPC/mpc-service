@@ -572,7 +572,7 @@ func TestSigningOptions_StringRepresentation(t *testing.T) {
 // TestExecuteEdDSAKeygen_MessageRouter 测试消息路由
 func TestExecuteEdDSAKeygen_MessageRouter(t *testing.T) {
 	messageCount := 0
-	messageRouter := func(nodeID string, msg tss.Message) error {
+	messageRouter := func(sessionID string, nodeID string, msg tss.Message) error {
 		messageCount++
 		return nil
 	}
@@ -589,7 +589,7 @@ func TestExecuteEdDSAKeygen_MessageRouter(t *testing.T) {
 // TestExecuteEdDSASigning_MessageRouter 测试消息路由
 func TestExecuteEdDSASigning_MessageRouter(t *testing.T) {
 	messageCount := 0
-	messageRouter := func(nodeID string, msg tss.Message) error {
+	messageRouter := func(sessionID string, nodeID string, msg tss.Message) error {
 		messageCount++
 		return nil
 	}

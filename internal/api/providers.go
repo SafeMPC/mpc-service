@@ -155,12 +155,19 @@ func NewProtocolEngine(cfg config.Server, grpcClient *communication.GRPCClient) 
 	}
 
 	// 使用真正的gRPC客户端作为消息路由器
-	messageRouter := func(nodeID string, msg tss.Message) error {
+	// 参数：sessionID（用于DKG或签名会话），nodeID（目标节点），msg（tss-lib消息）
+	messageRouter := func(sessionID string, nodeID string, msg tss.Message) error {
 		ctx := context.Background()
-		// 判断消息类型（DKG或签名）
-		// 这里简化处理，根据消息的会话ID来判断
-		// 实际应该根据消息类型来判断
-		return grpcClient.SendSigningMessage(ctx, nodeID, msg)
+		// 根据会话ID判断消息类型（DKG或签名）
+		// 如果sessionID是keyID格式（以"key-"开头），则作为DKG消息处理
+		// 否则作为签名消息处理
+		if len(sessionID) > 0 && sessionID[:4] == "key-" {
+			// DKG消息
+			return grpcClient.SendKeygenMessage(ctx, nodeID, msg, sessionID)
+		} else {
+			// 签名消息
+			return grpcClient.SendSigningMessage(ctx, nodeID, msg, sessionID)
+		}
 	}
 
 	if len(cfg.MPC.SupportedProtocols) > 0 {
@@ -194,8 +201,23 @@ func NewSessionManager(metadataStore storage.MetadataStore, sessionStore storage
 	return session.NewManager(metadataStore, sessionStore, timeout*time.Second)
 }
 
-func NewKeyServiceProvider(metadataStore storage.MetadataStore, keyShareStorage storage.KeyShareStorage, protocolEngine protocol.Engine) *key.Service {
-	return key.NewService(metadataStore, keyShareStorage, protocolEngine)
+func NewDKGServiceProvider(
+	metadataStore storage.MetadataStore,
+	keyShareStorage storage.KeyShareStorage,
+	protocolEngine protocol.Engine,
+	nodeManager *node.Manager,
+	nodeDiscovery *node.Discovery,
+) *key.DKGService {
+	return key.NewDKGService(metadataStore, keyShareStorage, protocolEngine, nodeManager, nodeDiscovery)
+}
+
+func NewKeyServiceProvider(
+	metadataStore storage.MetadataStore,
+	keyShareStorage storage.KeyShareStorage,
+	protocolEngine protocol.Engine,
+	dkgService *key.DKGService,
+) *key.Service {
+	return key.NewService(metadataStore, keyShareStorage, protocolEngine, dkgService)
 }
 
 func NewSigningServiceProvider(keyService *key.Service, protocolEngine protocol.Engine, sessionManager *session.Manager, nodeDiscovery *node.Discovery) *signing.Service {

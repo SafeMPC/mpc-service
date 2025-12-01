@@ -59,14 +59,15 @@ func InitNewServer(server config.Server) (*Server, error) {
 		return nil, err
 	}
 	engine := NewProtocolEngine(server, grpcClient)
-	keyService := NewKeyServiceProvider(metadataStore, keyShareStorage, engine)
+	discovery := NewNodeDiscovery(manager)
+	dkgService := NewDKGServiceProvider(metadataStore, keyShareStorage, engine, manager, discovery)
+	keyService := NewKeyServiceProvider(metadataStore, keyShareStorage, engine, dkgService)
 	client, err := NewRedisClient(server)
 	if err != nil {
 		return nil, err
 	}
 	sessionStore := NewSessionStore(client)
 	sessionManager := NewSessionManager(metadataStore, sessionStore, server)
-	discovery := NewNodeDiscovery(manager)
 	signingService := NewSigningServiceProvider(keyService, engine, sessionManager, discovery)
 	coordinatorService := NewCoordinatorServiceProvider(metadataStore, keyService, signingService, sessionManager, manager, discovery, engine)
 	participantService := NewParticipantServiceProvider(server, keyShareStorage, engine)
@@ -108,14 +109,15 @@ func InitNewServerWithDB(server config.Server, db *sql.DB, t ...*testing.T) (*Se
 		return nil, err
 	}
 	engine := NewProtocolEngine(server, grpcClient)
-	keyService := NewKeyServiceProvider(metadataStore, keyShareStorage, engine)
+	discovery := NewNodeDiscovery(manager)
+	dkgService := NewDKGServiceProvider(metadataStore, keyShareStorage, engine, manager, discovery)
+	keyService := NewKeyServiceProvider(metadataStore, keyShareStorage, engine, dkgService)
 	client, err := NewRedisClient(server)
 	if err != nil {
 		return nil, err
 	}
 	sessionStore := NewSessionStore(client)
 	sessionManager := NewSessionManager(metadataStore, sessionStore, server)
-	discovery := NewNodeDiscovery(manager)
 	signingService := NewSigningServiceProvider(keyService, engine, sessionManager, discovery)
 	coordinatorService := NewCoordinatorServiceProvider(metadataStore, keyService, signingService, sessionManager, manager, discovery, engine)
 	participantService := NewParticipantServiceProvider(server, keyShareStorage, engine)
@@ -153,6 +155,8 @@ var mpcServiceSet = wire.NewSet(
 	NewMPCGRPCClient,
 	NewMPCGRPCServer,
 	NewProtocolEngine,
+
+	NewDKGServiceProvider,
 	NewKeyServiceProvider,
 	NewSigningServiceProvider,
 	NewCoordinatorServiceProvider,

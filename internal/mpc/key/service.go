@@ -19,6 +19,7 @@ type Service struct {
 	metadataStore   storage.MetadataStore
 	keyShareStorage storage.KeyShareStorage
 	protocolEngine  protocol.Engine
+	dkgService      *DKGService
 }
 
 // NewService 创建密钥服务
@@ -26,11 +27,13 @@ func NewService(
 	metadataStore storage.MetadataStore,
 	keyShareStorage storage.KeyShareStorage,
 	protocolEngine protocol.Engine,
+	dkgService *DKGService,
 ) *Service {
 	return &Service{
 		metadataStore:   metadataStore,
 		keyShareStorage: keyShareStorage,
 		protocolEngine:  protocolEngine,
+		dkgService:      dkgService,
 	}
 }
 
@@ -39,26 +42,36 @@ func (s *Service) CreateKey(ctx context.Context, req *CreateKeyRequest) (*KeyMet
 	// 生成密钥ID
 	keyID := "key-" + uuid.New().String()
 
-	// 准备DKG请求
-	// TODO: 获取参与节点列表
-	nodeIDs := []string{} // 需要从节点管理器获取
+	// 使用DKGService执行DKG（如果可用）
+	var dkgResp *protocol.KeyGenResponse
+	var err error
 
-	dkgReq := &protocol.KeyGenRequest{
-		KeyID:      keyID,
-		Algorithm:  req.Algorithm,
-		Curve:      req.Curve,
-		Threshold:  req.Threshold,
-		TotalNodes: req.TotalNodes,
-		NodeIDs:    nodeIDs,
+	if s.dkgService != nil {
+		// 使用DKGService执行DKG（包含节点发现和选择）
+		dkgResp, err = s.dkgService.ExecuteDKG(ctx, keyID, req)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to execute DKG")
+		}
+	} else {
+		// 如果没有DKGService，直接调用协议引擎（需要外部提供节点列表）
+		// 注意：这种情况下nodeIDs应该由调用方提供
+		dkgReq := &protocol.KeyGenRequest{
+			KeyID:      keyID,
+			Algorithm:  req.Algorithm,
+			Curve:      req.Curve,
+			Threshold:  req.Threshold,
+			TotalNodes: req.TotalNodes,
+			NodeIDs:    []string{}, // 如果为空，协议引擎会自动生成
+		}
+
+		dkgResp, err = s.protocolEngine.GenerateKeyShare(ctx, dkgReq)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to generate key shares")
+		}
 	}
 
-	// 执行DKG
-	dkgResp, err := s.protocolEngine.GenerateKeyShare(ctx, dkgReq)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to generate key shares")
-	}
-
-	// 存储密钥分片
+	// 存储密钥分片（只存储当前节点的分片）
+	// 注意：在tss-lib架构中，每个节点只保存自己的分片
 	for nodeID, share := range dkgResp.KeyShares {
 		if err := s.keyShareStorage.StoreKeyShare(ctx, keyID, nodeID, share.Share); err != nil {
 			return nil, errors.Wrapf(err, "failed to store key share for node %s", nodeID)

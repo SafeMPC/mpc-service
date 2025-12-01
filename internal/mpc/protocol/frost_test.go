@@ -723,7 +723,7 @@ func TestFROSTProtocol_MessageHandling(t *testing.T) {
 
 	// 测试消息路由函数
 	messageCount := 0
-	protocol.messageRouter = func(nodeID string, msg tss.Message) error {
+	protocol.messageRouter = func(sessionID string, nodeID string, msg tss.Message) error {
 		messageCount++
 		return nil
 	}

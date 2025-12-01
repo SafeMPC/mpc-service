@@ -71,8 +71,10 @@ func (s *DKGService) ExecuteDKG(ctx context.Context, keyID string, req *CreateKe
 	}
 
 	// 5. 验证生成的密钥分片
-	if len(dkgResp.KeyShares) != req.TotalNodes {
-		return nil, errors.Errorf("key shares count mismatch: expected %d, got %d", req.TotalNodes, len(dkgResp.KeyShares))
+	// 注意：在tss-lib架构中，每个节点只返回自己的KeyShare
+	// 所以KeyShares的数量应该是1（当前节点），而不是TotalNodes
+	if len(dkgResp.KeyShares) == 0 {
+		return nil, errors.New("no key shares generated")
 	}
 
 	// 6. 验证公钥

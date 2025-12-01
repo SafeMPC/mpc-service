@@ -14,7 +14,7 @@ import (
 )
 
 // mockMessageRouter 模拟消息路由函数（用于测试）
-func mockMessageRouter(nodeID string, msg tss.Message) error {
+func mockMessageRouter(sessionID string, nodeID string, msg tss.Message) error {
 	// 在单元测试中，消息路由只是记录，不实际发送
 	return nil
 }

@@ -114,7 +114,7 @@ func (c *GRPCClient) getOrCreateConnection(ctx context.Context, nodeID string) (
 }
 
 // SendSigningMessage 发送签名协议消息到目标节点
-func (c *GRPCClient) SendSigningMessage(ctx context.Context, nodeID string, msg tss.Message) error {
+func (c *GRPCClient) SendSigningMessage(ctx context.Context, nodeID string, msg tss.Message, sessionID string) error {
 	client, err := c.getOrCreateConnection(ctx, nodeID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get connection to node %s", nodeID)
@@ -127,14 +127,16 @@ func (c *GRPCClient) SendSigningMessage(ctx context.Context, nodeID string, msg 
 		return errors.Wrap(err, "failed to serialize tss message")
 	}
 
+	// 确定轮次（tss-lib的MessageRouting可能不包含Round字段，使用0作为默认值）
+	// 实际轮次信息可以从消息内容中提取，这里简化处理
+	round := int32(0)
+
 	// 使用SubmitSignatureShare发送消息
-	// 注意：这里需要从上下文中获取会话ID
-	// 为了简化，我们使用一个占位符
 	shareReq := &pb.ShareRequest{
-		SessionId: "", // TODO: 需要从上下文中获取会话ID
+		SessionId: sessionID, // 使用传入的会话ID
 		NodeId:    nodeID,
 		ShareData: msgBytes,
-		Round:     0,
+		Round:     round,
 		Timestamp: time.Now().Format(time.RFC3339),
 	}
 
@@ -147,9 +149,37 @@ func (c *GRPCClient) SendSigningMessage(ctx context.Context, nodeID string, msg 
 }
 
 // SendKeygenMessage 发送DKG协议消息到目标节点
-func (c *GRPCClient) SendKeygenMessage(ctx context.Context, nodeID string, msg tss.Message) error {
-	// DKG消息也通过相同的机制发送
-	return c.SendSigningMessage(ctx, nodeID, msg)
+func (c *GRPCClient) SendKeygenMessage(ctx context.Context, nodeID string, msg tss.Message, sessionID string) error {
+	client, err := c.getOrCreateConnection(ctx, nodeID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get connection to node %s", nodeID)
+	}
+
+	// 序列化tss-lib消息
+	msgBytes, _, err := msg.WireBytes()
+	if err != nil {
+		return errors.Wrap(err, "failed to serialize tss message")
+	}
+
+	// 确定轮次（tss-lib的MessageRouting可能不包含Round字段，使用0作为默认值）
+	round := int32(0)
+
+	// DKG消息也通过SubmitSignatureShare发送（使用相同的协议）
+	// 服务端会根据会话类型判断是DKG还是签名消息
+	shareReq := &pb.ShareRequest{
+		SessionId: sessionID, // 使用keyID作为会话ID
+		NodeId:    nodeID,
+		ShareData: msgBytes,
+		Round:     round,
+		Timestamp: time.Now().Format(time.RFC3339),
+	}
+
+	_, err = client.SubmitSignatureShare(ctx, shareReq)
+	if err != nil {
+		return errors.Wrapf(err, "failed to send keygen message to node %s", nodeID)
+	}
+
+	return nil
 }
 
 // CloseConnection 关闭到指定节点的连接
