@@ -216,51 +216,102 @@ func (s *GRPCServer) StartDKG(ctx context.Context, req *pb.StartDKGRequest) (*pb
 		Str("this_node_id", s.nodeID).
 		Msg("StartDKG RPC received")
 
-	dkgReq := &protocol.KeyGenRequest{
-		KeyID:      req.KeyId,
-		Algorithm:  req.Algorithm,
-		Curve:      req.Curve,
-		Threshold:  int(req.Threshold),
-		TotalNodes: int(req.TotalNodes),
-		NodeIDs:    req.NodeIds,
+	// 使用sync.Once确保每个sessionID只启动一次DKG协议
+	// 防止StartDKG RPC和自动启动机制同时启动DKG
+	sessionID := req.SessionId
+	if sessionID == "" {
+		sessionID = req.KeyId // 如果sessionID为空，使用keyID
 	}
 
-	log.Info().
-		Str("key_id", req.KeyId).
-		Str("this_node_id", s.nodeID).
-		Msg("Calling protocolEngine.GenerateKeyShare (this may take several minutes)")
+	onceInterface, _ := s.dkgStartOnce.LoadOrStore(sessionID, &sync.Once{})
+	once := onceInterface.(*sync.Once)
 
-	resp, err := s.protocolEngine.GenerateKeyShare(ctx, dkgReq)
-	if err != nil {
-		log.Error().
-			Err(err).
+	var started bool
+
+	once.Do(func() {
+		started = true
+		log.Info().
 			Str("key_id", req.KeyId).
+			Str("session_id", sessionID).
 			Str("this_node_id", s.nodeID).
-			Msg("GenerateKeyShare failed")
-		return &pb.StartDKGResponse{Started: false, Message: err.Error()}, nil
-	}
+			Msg("sync.Once.Do executed in StartDKG RPC - starting DKG in goroutine")
 
-	log.Info().
-		Str("key_id", req.KeyId).
-		Str("this_node_id", s.nodeID).
-		Str("public_key", resp.PublicKey.Hex).
-		Msg("GenerateKeyShare completed successfully")
+		// 在goroutine中执行GenerateKeyShare，避免阻塞sync.Once.Do
+		// 这样如果自动启动机制也尝试启动，sync.Once会立即返回，不会重复启动
+		go func() {
+			// 使用独立的context，避免RPC请求返回后context被取消
+			keygenTimeout := 10 * time.Minute
+			keygenCtx, cancel := context.WithTimeout(context.Background(), keygenTimeout)
+			defer cancel()
 
-	if resp != nil && resp.PublicKey != nil && resp.PublicKey.Hex != "" {
-		if err := s.sessionManager.CompleteKeygenSession(ctx, req.KeyId, resp.PublicKey.Hex); err != nil {
-			log.Error().
-				Err(err).
-				Str("key_id", req.KeyId).
-				Msg("Failed to complete keygen session")
-		} else {
+			dkgReq := &protocol.KeyGenRequest{
+				KeyID:      req.KeyId,
+				Algorithm:  req.Algorithm,
+				Curve:      req.Curve,
+				Threshold:  int(req.Threshold),
+				TotalNodes: int(req.TotalNodes),
+				NodeIDs:    req.NodeIds,
+			}
+
 			log.Info().
 				Str("key_id", req.KeyId).
-				Str("public_key", resp.PublicKey.Hex).
-				Msg("Keygen session completed successfully")
-		}
+				Str("session_id", sessionID).
+				Str("this_node_id", s.nodeID).
+				Msg("Calling protocolEngine.GenerateKeyShare (this may take several minutes)")
+
+			resp, err := s.protocolEngine.GenerateKeyShare(keygenCtx, dkgReq)
+			if err != nil {
+				log.Error().
+					Err(err).
+					Str("key_id", req.KeyId).
+					Str("session_id", sessionID).
+					Str("this_node_id", s.nodeID).
+					Msg("GenerateKeyShare failed in StartDKG RPC goroutine")
+			} else if resp != nil && resp.PublicKey != nil && resp.PublicKey.Hex != "" {
+				log.Info().
+					Str("key_id", req.KeyId).
+					Str("session_id", sessionID).
+					Str("this_node_id", s.nodeID).
+					Str("public_key", resp.PublicKey.Hex).
+					Msg("GenerateKeyShare completed successfully in StartDKG RPC goroutine")
+				// DKG完成，更新会话
+				if err := s.sessionManager.CompleteKeygenSession(keygenCtx, req.KeyId, resp.PublicKey.Hex); err != nil {
+					log.Error().
+						Err(err).
+						Str("key_id", req.KeyId).
+						Str("session_id", sessionID).
+						Str("this_node_id", s.nodeID).
+						Msg("Failed to complete keygen session in StartDKG RPC goroutine")
+				} else {
+					log.Info().
+						Str("key_id", req.KeyId).
+						Str("session_id", sessionID).
+						Str("this_node_id", s.nodeID).
+						Str("public_key", resp.PublicKey.Hex).
+						Msg("Keygen session completed successfully in StartDKG RPC goroutine")
+				}
+			}
+		}()
+	})
+
+	if !started {
+		// DKG已经在运行（可能是通过自动启动机制启动的）
+		log.Info().
+			Str("key_id", req.KeyId).
+			Str("session_id", sessionID).
+			Str("this_node_id", s.nodeID).
+			Msg("DKG already started (possibly via auto-start), returning success")
+		return &pb.StartDKGResponse{Started: true, Message: "DKG already started"}, nil
 	}
 
-	return &pb.StartDKGResponse{Started: true, Message: "DKG started"}, nil
+	// GenerateKeyShare在goroutine中执行，立即返回
+	// DKG的完成会通过其他机制（如CompleteKeygenSession）来通知
+	log.Info().
+		Str("key_id", req.KeyId).
+		Str("session_id", sessionID).
+		Str("this_node_id", s.nodeID).
+		Msg("DKG started in background, returning immediately")
+	return &pb.StartDKGResponse{Started: true, Message: "DKG started in background"}, nil
 }
 
 // handleProtocolMessage 处理协议消息（DKG或签名）
@@ -322,8 +373,22 @@ func (s *GRPCServer) handleProtocolMessage(ctx context.Context, sessionID string
 			onceInterface, _ := s.dkgStartOnce.LoadOrStore(sessionID, &sync.Once{})
 			once := onceInterface.(*sync.Once)
 
+			// 检查是否已经有活跃的DKG实例（双重检查，防止sync.Once失效）
+			// 注意：这个检查在sync.Once.Do之前，所以可能会有竞态条件
+			// 但sync.Once应该能防止重复启动
+			log.Debug().
+				Str("session_id", sessionID).
+				Str("this_node_id", s.nodeID).
+				Msg("Checking if DKG should auto-start (before sync.Once.Do)")
+
 			// 确保只启动一次
+			var shouldStart bool
 			once.Do(func() {
+				shouldStart = true
+				log.Info().
+					Str("session_id", sessionID).
+					Str("this_node_id", s.nodeID).
+					Msg("sync.Once.Do executed - starting DKG")
 				// 在后台启动DKG协议，不阻塞消息处理
 				go func() {
 					// 使用独立的上下文，避免 gRPC 请求结束导致 context 被取消
@@ -388,6 +453,13 @@ func (s *GRPCServer) handleProtocolMessage(ctx context.Context, sessionID string
 					}
 				}()
 			})
+
+			if !shouldStart {
+				log.Info().
+					Str("session_id", sessionID).
+					Str("this_node_id", s.nodeID).
+					Msg("DKG already started via sync.Once, skipping auto-start")
+			}
 		}
 
 		// 作为DKG消息处理，传递发送方节点ID

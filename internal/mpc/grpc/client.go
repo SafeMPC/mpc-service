@@ -25,6 +25,7 @@ type GRPCClient struct {
 	cfg           *ClientConfig
 	nodeManager   *node.Manager
 	nodeDiscovery *node.Discovery // 用于从 Consul 发现节点信息
+	thisNodeID    string          // 当前节点ID（用于标识消息发送方）
 }
 
 // ClientConfig gRPC客户端配置
@@ -47,12 +48,18 @@ func NewGRPCClient(cfg config.Server, nodeManager *node.Manager) (*GRPCClient, e
 		KeepAlive:  10 * time.Minute, // 增加到 10 分钟
 	}
 
+	thisNodeID := cfg.MPC.NodeID
+	if thisNodeID == "" {
+		thisNodeID = "default-node"
+	}
+
 	return &GRPCClient{
 		conns:         make(map[string]*grpc.ClientConn),
 		clients:       make(map[string]pb.MPCNodeClient),
 		cfg:           clientCfg,
 		nodeManager:   nodeManager,
 		nodeDiscovery: nil, // 稍后通过 SetNodeDiscovery 设置
+		thisNodeID:    thisNodeID,
 	}, nil
 }
 
@@ -203,6 +210,16 @@ func (c *GRPCClient) SendStartDKG(ctx context.Context, nodeID string, req *pb.St
 
 // SendSigningMessage 发送签名协议消息到目标节点
 func (c *GRPCClient) SendSigningMessage(ctx context.Context, nodeID string, msg tss.Message, sessionID string) error {
+	// 防止节点向自己发送消息
+	if nodeID == c.thisNodeID {
+		log.Warn().
+			Str("session_id", sessionID).
+			Str("node_id", nodeID).
+			Str("this_node_id", c.thisNodeID).
+			Msg("Attempted to send signing message to self, skipping")
+		return nil // 不返回错误，只是跳过
+	}
+
 	client, err := c.getOrCreateConnection(ctx, nodeID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get connection to node %s", nodeID)
@@ -220,9 +237,10 @@ func (c *GRPCClient) SendSigningMessage(ctx context.Context, nodeID string, msg 
 	round := int32(0)
 
 	// 使用SubmitSignatureShare发送消息
+	// 注意：NodeId应该表示发送方节点ID，而不是目标节点ID
 	shareReq := &pb.ShareRequest{
 		SessionId: sessionID, // 使用传入的会话ID
-		NodeId:    nodeID,
+		NodeId:    c.thisNodeID, // 发送方节点ID（当前节点）
 		ShareData: msgBytes,
 		Round:     round,
 		Timestamp: time.Now().Format(time.RFC3339),
@@ -238,9 +256,15 @@ func (c *GRPCClient) SendSigningMessage(ctx context.Context, nodeID string, msg 
 
 // SendKeygenMessage 发送DKG协议消息到目标节点
 func (c *GRPCClient) SendKeygenMessage(ctx context.Context, nodeID string, msg tss.Message, sessionID string, isBroadcast bool) error {
-	// 添加调试日志
-	// 注意：这里不能使用 log 包，因为 communication 包不应该依赖 log
-	// 但我们可以通过错误消息来调试
+	// 防止节点向自己发送消息
+	if nodeID == c.thisNodeID {
+		log.Warn().
+			Str("session_id", sessionID).
+			Str("node_id", nodeID).
+			Str("this_node_id", c.thisNodeID).
+			Msg("Attempted to send DKG message to self, skipping")
+		return nil // 不返回错误，只是跳过
+	}
 
 	client, err := c.getOrCreateConnection(ctx, nodeID)
 	if err != nil {
@@ -270,9 +294,11 @@ func (c *GRPCClient) SendKeygenMessage(ctx context.Context, nodeID string, msg t
 
 	// DKG消息也通过SubmitSignatureShare发送（使用相同的协议）
 	// 服务端会根据会话类型判断是DKG还是签名消息
+	// 注意：NodeId应该表示发送方节点ID，而不是目标节点ID
+	// 目标节点ID已经通过gRPC调用的目标地址确定了
 	shareReq := &pb.ShareRequest{
 		SessionId: sessionID, // 使用keyID作为会话ID
-		NodeId:    nodeID,
+		NodeId:    c.thisNodeID, // 发送方节点ID（当前节点）
 		ShareData: msgBytes,
 		Round:     round,
 		Timestamp: time.Now().Format(time.RFC3339),

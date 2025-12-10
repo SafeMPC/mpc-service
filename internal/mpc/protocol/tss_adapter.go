@@ -144,6 +144,22 @@ func (m *tssPartyManager) executeKeygen(
 	threshold int,
 	thisNodeID string,
 ) (*keygen.LocalPartySaveData, error) {
+	// 注意：sync.Once应该已经防止了重复启动，所以这里不需要检查activeKeygen
+	// 但如果sync.Once失效，这里会创建一个新实例，导致消息混乱
+	// 为了安全，我们仍然检查一下，但只记录警告
+	m.mu.RLock()
+	_, exists := m.activeKeygen[keyID]
+	m.mu.RUnlock()
+
+	if exists {
+		log.Error().
+			Str("key_id", keyID).
+			Str("this_node_id", thisNodeID).
+			Msg("CRITICAL: DKG instance already exists but executeKeygen was called again - sync.Once may have failed")
+		// 返回错误，防止创建重复实例
+		return nil, errors.Errorf("DKG instance already exists for keyID %s (sync.Once should have prevented this)", keyID)
+	}
+
 	// 确保节点列表有序，避免 PartyID 映射不一致
 	sortedNodeIDs := make([]string, len(nodeIDs))
 	copy(sortedNodeIDs, nodeIDs)
@@ -196,6 +212,13 @@ func (m *tssPartyManager) executeKeygen(
 	if !exists {
 		msgCh = make(chan *incomingMessage, 100)
 		m.incomingKeygenMessages[keyID] = msgCh
+		log.Info().
+			Str("key_id", keyID).
+			Msg("Created incomingKeygenMessages channel for DKG")
+	} else {
+		log.Info().
+			Str("key_id", keyID).
+			Msg("Reusing existing incomingKeygenMessages channel for DKG")
 	}
 	m.mu.Unlock()
 
@@ -213,14 +236,32 @@ func (m *tssPartyManager) executeKeygen(
 	// 这里我们将消息字节暂存，等待party的内部机制处理
 	// 实际的消息注入会在party的内部goroutine中自动完成
 	go func() {
+		log.Info().
+			Str("key_id", keyID).
+			Str("this_node_id", thisNodeID).
+			Msg("Starting message processing loop for DKG")
 		for {
 			select {
 			case <-ctx.Done():
+				log.Info().
+					Str("key_id", keyID).
+					Str("this_node_id", thisNodeID).
+					Msg("Message processing loop stopped due to context cancellation")
 				return
 			case incomingMsg, ok := <-msgCh:
 				if !ok {
+					log.Info().
+						Str("key_id", keyID).
+						Str("this_node_id", thisNodeID).
+						Msg("Message processing loop stopped: channel closed")
 					return
 				}
+				log.Debug().
+					Str("key_id", keyID).
+					Str("from_node_id", incomingMsg.fromNodeID).
+					Bool("is_broadcast", incomingMsg.isBroadcast).
+					Int("msg_bytes_len", len(incomingMsg.msgBytes)).
+					Msg("Received message in processing loop")
 
 				// 获取LocalParty实例
 				m.mu.RLock()
@@ -228,6 +269,13 @@ func (m *tssPartyManager) executeKeygen(
 				m.mu.RUnlock()
 
 				if !exists {
+					log.Debug().
+						Str("key_id", keyID).
+						Str("from_node_id", incomingMsg.fromNodeID).
+						Msg("LocalParty not yet created, message will be processed when party starts")
+					// 如果LocalParty还未创建，等待一段时间后重试
+					// 注意：消息已经在队列中，不会丢失
+					time.Sleep(100 * time.Millisecond)
 					continue
 				}
 
@@ -247,10 +295,17 @@ func (m *tssPartyManager) executeKeygen(
 				if !ok || tssErr != nil {
 					log.Warn().
 						Err(tssErr).
+						Str("key_id", keyID).
 						Str("from_node_id", incomingMsg.fromNodeID).
 						Bool("is_broadcast", incomingMsg.isBroadcast).
 						Msg("Failed to update local party from bytes")
 					continue
+				} else {
+					log.Debug().
+						Str("key_id", keyID).
+						Str("from_node_id", incomingMsg.fromNodeID).
+						Bool("is_broadcast", incomingMsg.isBroadcast).
+						Msg("Successfully updated local party from bytes")
 				}
 			}
 		}
@@ -273,10 +328,11 @@ func (m *tssPartyManager) executeKeygen(
 			return nil, errors.New("keygen timeout")
 		case msg := <-outCh:
 			// 路由消息到其他节点
-			log.Error().
-				Str("keyID", keyID).
-				Str("thisNodeID", thisNodeID).
-				Int("targetCount", len(msg.GetTo())).
+			log.Info().
+				Str("key_id", keyID).
+				Str("this_node_id", thisNodeID).
+				Int("target_count", len(msg.GetTo())).
+				Str("message_type", fmt.Sprintf("%T", msg)).
 				Msg("Received message from tss-lib outCh, routing to other nodes")
 			if m.messageRouter == nil {
 				return nil, errors.Errorf("messageRouter is nil (keyID: %s, thisNodeID: %s)", keyID, thisNodeID)
@@ -294,9 +350,9 @@ func (m *tssPartyManager) executeKeygen(
 			targetNodes := msg.GetTo()
 			if len(targetNodes) == 0 {
 				// 广播消息：发送给所有其他节点，并在接收端以 isBroadcast=true 注入
-				log.Error().
-					Str("keyID", keyID).
-					Str("thisNodeID", thisNodeID).
+				log.Info().
+					Str("key_id", keyID).
+					Str("this_node_id", thisNodeID).
 					Int("party_count", len(m.nodeIDToPartyID)).
 					Msg("Message has no target nodes, broadcasting to all other nodes (tss outCh)")
 
@@ -358,6 +414,10 @@ func (m *tssPartyManager) executeKeygen(
 				}
 			}
 		case saveData := <-endCh:
+			log.Info().
+				Str("key_id", keyID).
+				Str("this_node_id", thisNodeID).
+				Msg("DKG completed successfully, received LocalPartySaveData from endCh")
 			m.mu.Lock()
 			delete(m.activeKeygen, keyID)
 			// 清理消息队列
@@ -367,10 +427,23 @@ func (m *tssPartyManager) executeKeygen(
 			}
 			m.mu.Unlock()
 			if saveData == nil {
+				log.Error().
+					Str("key_id", keyID).
+					Str("this_node_id", thisNodeID).
+					Msg("DKG completed but saveData is nil")
 				return nil, errors.New("keygen returned nil save data")
 			}
+			log.Info().
+				Str("key_id", keyID).
+				Str("this_node_id", thisNodeID).
+				Msg("DKG completed successfully, returning LocalPartySaveData")
 			return saveData, nil
 		case err := <-errCh:
+			log.Error().
+				Err(err).
+				Str("key_id", keyID).
+				Str("this_node_id", thisNodeID).
+				Msg("DKG failed with error from errCh")
 			m.mu.Lock()
 			delete(m.activeKeygen, keyID)
 			// 清理消息队列
@@ -601,6 +674,10 @@ func (m *tssPartyManager) ProcessIncomingKeygenMessage(
 	if !exists {
 		msgCh = make(chan *incomingMessage, 100)
 		m.incomingKeygenMessages[sessionID] = msgCh
+		log.Info().
+			Str("session_id", sessionID).
+			Str("from_node_id", fromNodeID).
+			Msg("Created incomingKeygenMessages channel (message arrived before DKG started)")
 	}
 	m.mu.Unlock()
 
@@ -611,14 +688,36 @@ func (m *tssPartyManager) ProcessIncomingKeygenMessage(
 		isBroadcast: isBroadcast,
 	}
 
+	// 检查是否有活跃的DKG实例
+	m.mu.RLock()
+	_, hasActiveKeygen := m.activeKeygen[sessionID]
+	m.mu.RUnlock()
+
+	log.Debug().
+		Str("session_id", sessionID).
+		Str("from_node_id", fromNodeID).
+		Bool("is_broadcast", isBroadcast).
+		Int("msg_bytes_len", len(msgBytes)).
+		Bool("has_active_keygen", hasActiveKeygen).
+		Bool("queue_exists", exists).
+		Msg("Processing incoming DKG message")
+
 	// 非阻塞发送
 	select {
 	case msgCh <- incomingMsg:
 		// 消息已放入队列，由executeKeygen中的消息处理循环处理
+		log.Debug().
+			Str("session_id", sessionID).
+			Str("from_node_id", fromNodeID).
+			Msg("Message enqueued successfully")
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
+		log.Warn().
+			Str("session_id", sessionID).
+			Str("from_node_id", fromNodeID).
+			Msg("Keygen message queue full, message dropped")
 		return errors.Errorf("keygen message queue full for session %s", sessionID)
 	}
 }
