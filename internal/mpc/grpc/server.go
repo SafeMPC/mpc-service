@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"encoding/hex"
+
 	"github.com/kashguard/go-mpc-wallet/internal/config"
 	"github.com/kashguard/go-mpc-wallet/internal/mpc/protocol"
 	"github.com/kashguard/go-mpc-wallet/internal/mpc/session"
@@ -23,15 +25,41 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// inferProtocolForDKG 根据算法和曲线推断DKG应该使用的协议
+// ECDSA + secp256k1 -> GG20 (默认) 或 GG18
+// EdDSA/Schnorr + ed25519/secp256k1 -> FROST
+func inferProtocolForDKG(algorithm, curve string) string {
+	algorithmLower := strings.ToLower(algorithm)
+	curveLower := strings.ToLower(curve)
+
+	// FROST 协议：EdDSA 或 Schnorr + Ed25519 或 secp256k1
+	if algorithmLower == "eddsa" || algorithmLower == "schnorr" {
+		if curveLower == "ed25519" || curveLower == "secp256k1" {
+			return "frost"
+		}
+	}
+
+	// ECDSA + secp256k1：使用 GG20（默认）或 GG18
+	if algorithmLower == "ecdsa" {
+		if curveLower == "secp256k1" || curveLower == "secp256r1" {
+			return "gg20" // 默认使用 GG20
+		}
+	}
+
+	// 默认使用 GG20
+	return "gg20"
+}
+
 // GRPCServer gRPC服务端，用于接收节点间消息
 type GRPCServer struct {
 	pb.UnimplementedMPCNodeServer
 
-	protocolEngine  protocol.Engine
-	sessionManager  *session.Manager
-	keyShareStorage storage.KeyShareStorage // 用于存储密钥分片
-	nodeID          string
-	cfg             *ServerConfig
+	protocolEngine   protocol.Engine            // 默认协议引擎
+	protocolRegistry *protocol.ProtocolRegistry // 协议注册表（用于动态选择协议）
+	sessionManager   *session.Manager
+	keyShareStorage  storage.KeyShareStorage // 用于存储密钥分片
+	nodeID           string
+	cfg              *ServerConfig
 
 	// gRPC 服务器实例
 	grpcServer *grpc.Server
@@ -63,6 +91,18 @@ func NewGRPCServer(
 	keyShareStorage storage.KeyShareStorage,
 	nodeID string,
 ) *GRPCServer {
+	return NewGRPCServerWithRegistry(cfg, protocolEngine, nil, sessionManager, keyShareStorage, nodeID)
+}
+
+// NewGRPCServerWithRegistry 创建gRPC服务端（带协议注册表）
+func NewGRPCServerWithRegistry(
+	cfg config.Server,
+	protocolEngine protocol.Engine,
+	protocolRegistry *protocol.ProtocolRegistry, // 协议注册表（可选，用于动态选择协议）
+	sessionManager *session.Manager,
+	keyShareStorage storage.KeyShareStorage,
+	nodeID string,
+) *GRPCServer {
 	serverCfg := &ServerConfig{
 		Port:       cfg.MPC.GRPCPort,
 		TLSEnabled: cfg.MPC.TLSEnabled,
@@ -71,11 +111,12 @@ func NewGRPCServer(
 	}
 
 	srv := &GRPCServer{
-		protocolEngine:  protocolEngine,
-		sessionManager:  sessionManager,
-		keyShareStorage: keyShareStorage,
-		nodeID:          nodeID,
-		cfg:             serverCfg,
+		protocolEngine:   protocolEngine,
+		protocolRegistry: protocolRegistry,
+		sessionManager:   sessionManager,
+		keyShareStorage:  keyShareStorage,
+		nodeID:           nodeID,
+		cfg:              serverCfg,
 	}
 
 	return srv
@@ -172,7 +213,7 @@ func (s *GRPCServer) JoinSigningSession(stream grpc.BidiStreamingServer[pb.Sessi
 			// 这是协议消息（DKG或签名）
 			// 从joinReq中获取发送方节点ID（如果可用），否则使用空字符串
 			fromNodeID := ""
-			if joinReq != nil && joinReq.NodeId != "" {
+			if joinReq.NodeId != "" {
 				fromNodeID = joinReq.NodeId
 			}
 			if err := s.handleProtocolMessage(ctx, sessionID, fromNodeID, shareMsg); err != nil {
@@ -260,13 +301,49 @@ func (s *GRPCServer) StartDKG(ctx context.Context, req *pb.StartDKGRequest) (*pb
 				NodeIDs:    req.NodeIds,
 			}
 
+			// 根据算法和曲线选择正确的协议引擎
+			// ECDSA + secp256k1 -> GG18 或 GG20
+			// EdDSA/Schnorr + ed25519/secp256k1 -> FROST
+			var selectedEngine protocol.Engine
+			if s.protocolRegistry != nil {
+				// 根据算法和曲线推断协议
+				protocolName := inferProtocolForDKG(req.Algorithm, req.Curve)
+				engine, err := s.protocolRegistry.Get(protocolName)
+				if err != nil {
+					log.Warn().
+						Err(err).
+						Str("key_id", req.KeyId).
+						Str("algorithm", req.Algorithm).
+						Str("curve", req.Curve).
+						Str("inferred_protocol", protocolName).
+						Msg("StartDKG: Failed to get protocol from registry, using default engine")
+					selectedEngine = s.protocolEngine
+				} else {
+					log.Info().
+						Str("key_id", req.KeyId).
+						Str("algorithm", req.Algorithm).
+						Str("curve", req.Curve).
+						Str("selected_protocol", protocolName).
+						Str("this_node_id", s.nodeID).
+						Msg("StartDKG: Selected protocol from registry")
+					selectedEngine = engine
+				}
+			} else {
+				// 如果没有协议注册表，使用默认引擎
+				log.Warn().
+					Str("key_id", req.KeyId).
+					Str("this_node_id", s.nodeID).
+					Msg("StartDKG: Protocol registry not available, using default engine")
+				selectedEngine = s.protocolEngine
+			}
+
 			log.Info().
 				Str("key_id", req.KeyId).
 				Str("session_id", sessionID).
 				Str("this_node_id", s.nodeID).
 				Msg("Calling protocolEngine.GenerateKeyShare (this may take several minutes)")
 
-			resp, err := s.protocolEngine.GenerateKeyShare(keygenCtx, dkgReq)
+			resp, err := selectedEngine.GenerateKeyShare(keygenCtx, dkgReq)
 			if err != nil {
 				log.Error().
 					Err(err).
@@ -350,6 +427,207 @@ func (s *GRPCServer) StartDKG(ctx context.Context, req *pb.StartDKGRequest) (*pb
 	return &pb.StartDKGResponse{Started: true, Message: "DKG started in background"}, nil
 }
 
+// StartSign 由协调者调用以启动参与者的签名
+func (s *GRPCServer) StartSign(ctx context.Context, req *pb.StartSignRequest) (*pb.StartSignResponse, error) {
+	log.Info().
+		Str("key_id", req.KeyId).
+		Str("session_id", req.SessionId).
+		Str("this_node_id", s.nodeID).
+		Msg("StartSign RPC received")
+
+	sessionID := req.SessionId
+	if sessionID == "" {
+		sessionID = req.KeyId
+	}
+
+	// 基本校验：节点数量应满足 threshold/totalNodes
+	if req.Threshold > 0 && len(req.NodeIds) < int(req.Threshold) {
+		msg := fmt.Sprintf("insufficient node_ids: need >= %d, got %d", req.Threshold, len(req.NodeIds))
+		log.Error().
+			Str("key_id", req.KeyId).
+			Str("session_id", sessionID).
+			Int("node_ids", len(req.NodeIds)).
+			Int32("threshold", req.Threshold).
+			Int32("total_nodes", req.TotalNodes).
+			Msg(msg)
+		return &pb.StartSignResponse{Started: false, Message: msg}, nil
+	}
+	if req.TotalNodes > 0 && len(req.NodeIds) > int(req.TotalNodes) {
+		msg := fmt.Sprintf("too many node_ids: total_nodes=%d, got=%d", req.TotalNodes, len(req.NodeIds))
+		log.Error().
+			Str("key_id", req.KeyId).
+			Str("session_id", sessionID).
+			Int("node_ids", len(req.NodeIds)).
+			Int32("threshold", req.Threshold).
+			Int32("total_nodes", req.TotalNodes).
+			Msg(msg)
+		return &pb.StartSignResponse{Started: false, Message: msg}, nil
+	}
+
+	onceInterface, _ := s.signStartOnce.LoadOrStore(sessionID, &sync.Once{})
+	once := onceInterface.(*sync.Once)
+
+	var started bool
+
+	once.Do(func() {
+		started = true
+		log.Info().
+			Str("key_id", req.KeyId).
+			Str("session_id", sessionID).
+			Str("this_node_id", s.nodeID).
+			Msg("sync.Once.Do executed in StartSign RPC - starting signing in goroutine")
+
+		go func() {
+			signTimeout := 10 * time.Minute
+			signCtx, cancel := context.WithTimeout(context.Background(), signTimeout)
+			defer cancel()
+
+			// 准备消息
+			msg := req.Message
+			if len(msg) == 0 && req.MessageHex != "" {
+				decoded, err := hex.DecodeString(req.MessageHex)
+				if err != nil {
+					log.Error().
+						Err(err).
+						Str("session_id", sessionID).
+						Str("key_id", req.KeyId).
+						Str("this_node_id", s.nodeID).
+						Msg("Failed to decode message_hex in StartSign")
+					return
+				}
+				msg = decoded
+			}
+
+			signReq := &protocol.SignRequest{
+				KeyID:      req.KeyId,
+				Message:    msg,
+				MessageHex: req.MessageHex,
+				NodeIDs:    req.NodeIds,
+			}
+
+			// 根据请求中的 Protocol 字段选择协议引擎
+			// 如果请求中没有指定 Protocol，使用默认协议引擎
+			var engine protocol.Engine
+			if req.Protocol != "" {
+				// 尝试从注册表获取协议引擎
+				if s.protocolRegistry != nil {
+					if regEngine, err := s.protocolRegistry.Get(req.Protocol); err == nil {
+						engine = regEngine
+						log.Info().
+							Str("key_id", req.KeyId).
+							Str("session_id", sessionID).
+							Str("protocol", req.Protocol).
+							Str("this_node_id", s.nodeID).
+							Msg("Using protocol from registry based on request")
+					} else {
+						log.Warn().
+							Err(err).
+							Str("key_id", req.KeyId).
+							Str("session_id", sessionID).
+							Str("requested_protocol", req.Protocol).
+							Str("this_node_id", s.nodeID).
+							Msg("Failed to get protocol from registry, using default engine")
+						engine = s.protocolEngine
+					}
+				} else {
+					log.Warn().
+						Str("key_id", req.KeyId).
+						Str("session_id", sessionID).
+						Str("requested_protocol", req.Protocol).
+						Str("this_node_id", s.nodeID).
+						Msg("Protocol registry not available, using default engine")
+					engine = s.protocolEngine
+				}
+			} else {
+				// 使用默认协议引擎
+				engine = s.protocolEngine
+			}
+
+			log.Info().
+				Str("key_id", req.KeyId).
+				Str("session_id", sessionID).
+				Str("protocol", req.Protocol).
+				Str("this_node_id", s.nodeID).
+				Msg("Calling protocolEngine.ThresholdSign (participant)")
+
+			resp, err := engine.ThresholdSign(signCtx, sessionID, signReq)
+			if err != nil {
+				log.Error().
+					Err(err).
+					Str("key_id", req.KeyId).
+					Str("session_id", sessionID).
+					Str("this_node_id", s.nodeID).
+					Msg("ThresholdSign failed in StartSign RPC goroutine")
+
+				// ✅ 更新会话状态为失败
+				if sess, getErr := s.sessionManager.GetSession(signCtx, sessionID); getErr == nil {
+					sess.Status = "failed"
+					if updateErr := s.sessionManager.UpdateSession(signCtx, sess); updateErr != nil {
+						log.Error().
+							Err(updateErr).
+							Str("session_id", sessionID).
+							Msg("Failed to update session status to failed")
+					}
+				}
+				return
+			}
+
+			if resp != nil && resp.Signature != nil && resp.Signature.Hex != "" {
+				log.Info().
+					Str("key_id", req.KeyId).
+					Str("session_id", sessionID).
+					Str("this_node_id", s.nodeID).
+					Str("signature", resp.Signature.Hex).
+					Msg("ThresholdSign completed successfully in StartSign RPC goroutine")
+
+				// ✅ 更新会话状态为完成，并保存签名
+				// 使用 CompleteSession 方法，它会自动处理状态更新和时间戳
+				log.Info().
+					Str("session_id", sessionID).
+					Str("this_node_id", s.nodeID).
+					Str("signature", resp.Signature.Hex).
+					Msg("🔍 [DIAGNOSTIC] Calling CompleteSession to update session status")
+
+				if completeErr := s.sessionManager.CompleteSession(signCtx, sessionID, resp.Signature.Hex); completeErr != nil {
+					log.Error().
+						Err(completeErr).
+						Str("session_id", sessionID).
+						Str("this_node_id", s.nodeID).
+						Msg("Failed to complete session (may be completed by another participant)")
+				} else {
+					log.Info().
+						Str("session_id", sessionID).
+						Str("this_node_id", s.nodeID).
+						Str("signature", resp.Signature.Hex).
+						Msg("🔍 [DIAGNOSTIC] Session completed successfully")
+				}
+			} else {
+				log.Warn().
+					Str("key_id", req.KeyId).
+					Str("session_id", sessionID).
+					Str("this_node_id", s.nodeID).
+					Msg("ThresholdSign returned nil or empty signature")
+			}
+		}()
+	})
+
+	if !started {
+		log.Info().
+			Str("key_id", req.KeyId).
+			Str("session_id", sessionID).
+			Str("this_node_id", s.nodeID).
+			Msg("Signing already started, returning success")
+		return &pb.StartSignResponse{Started: true, Message: "Signing already started"}, nil
+	}
+
+	log.Info().
+		Str("key_id", req.KeyId).
+		Str("session_id", sessionID).
+		Str("this_node_id", s.nodeID).
+		Msg("Signing started in background, returning immediately")
+	return &pb.StartSignResponse{Started: true, Message: "Signing started in background"}, nil
+}
+
 // handleProtocolMessage 处理协议消息（DKG或签名）
 func (s *GRPCServer) handleProtocolMessage(ctx context.Context, sessionID string, fromNodeID string, shareMsg *pb.ShareMessage) error {
 	// 从会话中判断消息类型
@@ -365,13 +643,11 @@ func (s *GRPCServer) handleProtocolMessage(ctx context.Context, sessionID string
 		return errors.Wrapf(err, "failed to get session %s for protocol message from node %s (this node: %s). Possible causes: 1) session was not created by coordinator, 2) session was created but not yet visible due to database replication lag, 3) session expired or was deleted", sessionID, fromNodeID, s.nodeID)
 	}
 
-	// 根据协议类型判断是DKG还是签名
-	// gg18/gg20/frost 属于 DKG/Keygen 协议，需要走 DKG 分支
-	protocolLower := strings.ToLower(sess.Protocol)
-	isDKG := protocolLower == "keygen" ||
-		protocolLower == "dkg" ||
-		strings.HasPrefix(protocolLower, "gg") || // gg18 / gg20
-		protocolLower == "frost"
+	// 根据会话判断 DKG 还是签名：
+	// - DKG: sessionID 等于 keyID 或以 key- 开头
+	// - 签名: 其他情况一律视为签名（避免签名消息误入 DKG 逻辑）
+	isKeygenSession := sessionID == sess.KeyID || strings.HasPrefix(strings.ToLower(sessionID), "key-")
+	isDKG := isKeygenSession
 	isBroadcast := shareMsg != nil && shareMsg.Round == -1
 
 	if isDKG {
@@ -428,7 +704,8 @@ func (s *GRPCServer) handleProtocolMessage(ctx context.Context, sessionID string
 				// 在后台启动DKG协议，不阻塞消息处理
 				go func() {
 					// 使用独立的上下文，避免 gRPC 请求结束导致 context 被取消
-					keygenTimeout := 10 * time.Minute
+					// 缩短超时时间，加快失败检测（原 10 分钟）
+					keygenTimeout := 2 * time.Minute
 					keygenCtx, cancel := context.WithTimeout(context.Background(), keygenTimeout)
 					defer cancel()
 
@@ -472,9 +749,25 @@ func (s *GRPCServer) handleProtocolMessage(ctx context.Context, sessionID string
 						Str("curve", curve).
 						Msg("Auto-start DKG request parameters determined from session protocol")
 
+					// 选择与会话协议匹配的引擎，避免默认引擎（可能是 FROST）与 ECDSA 请求冲突
+					engine := s.protocolEngine
+					if s.protocolRegistry != nil && sess.Protocol != "" {
+						if regEngine, err := s.protocolRegistry.Get(strings.ToLower(sess.Protocol)); err == nil {
+							engine = regEngine
+						} else {
+							log.Warn().
+								Err(err).
+								Str("session_id", sessionID).
+								Str("key_id", sess.KeyID).
+								Str("requested_protocol", sess.Protocol).
+								Str("this_node_id", s.nodeID).
+								Msg("Auto-start DKG: failed to get protocol from registry, fallback to default engine")
+						}
+					}
+
 					// 启动DKG协议（在后台，不阻塞）
 					// 消息会被放入队列，等待DKG协议启动后处理
-					resp, err := s.protocolEngine.GenerateKeyShare(keygenCtx, dkgReq)
+					resp, err := engine.GenerateKeyShare(keygenCtx, dkgReq)
 					if err != nil {
 						log.Error().
 							Err(err).
@@ -546,13 +839,45 @@ func (s *GRPCServer) handleProtocolMessage(ctx context.Context, sessionID string
 		}
 
 		// 作为DKG消息处理，传递发送方节点ID
+		// 使用与 StartDKG 相同的协议引擎（基于 session 协议或 registry），避免不同引擎的队列不一致
+		engine := s.protocolEngine
+		if s.protocolRegistry != nil && sess.Protocol != "" {
+			if regEngine, err := s.protocolRegistry.Get(strings.ToLower(sess.Protocol)); err == nil {
+				engine = regEngine
+			} else {
+				log.Warn().
+					Err(err).
+					Str("session_id", sessionID).
+					Str("from_node_id", fromNodeID).
+					Str("requested_protocol", sess.Protocol).
+					Str("this_node_id", s.nodeID).
+					Msg("Failed to get protocol from registry for keygen message, fallback to default protocolEngine")
+			}
+		}
+
 		// 消息会被放入队列，等待DKG协议启动后处理
-		if err := s.protocolEngine.ProcessIncomingKeygenMessage(ctx, sessionID, fromNodeID, shareMsg.ShareData, isBroadcast); err != nil {
+		if err := engine.ProcessIncomingKeygenMessage(ctx, sessionID, fromNodeID, shareMsg.ShareData, isBroadcast); err != nil {
 			return errors.Wrap(err, "failed to process keygen message")
 		}
 	} else {
-		// 作为签名消息处理，传递发送方节点ID
-		if err := s.protocolEngine.ProcessIncomingSigningMessage(ctx, sessionID, fromNodeID, shareMsg.ShareData); err != nil {
+		// 作为签名消息处理，传递发送方节点ID；签名阶段不再尝试自动启动 DKG
+		// 确保使用与 StartSign 相同的协议引擎（基于 session 的协议或 registry）
+		engine := s.protocolEngine
+		if s.protocolRegistry != nil && sess.Protocol != "" {
+			if regEngine, err := s.protocolRegistry.Get(sess.Protocol); err == nil {
+				engine = regEngine
+			} else {
+				log.Warn().
+					Err(err).
+					Str("session_id", sessionID).
+					Str("from_node_id", fromNodeID).
+					Str("requested_protocol", sess.Protocol).
+					Str("this_node_id", s.nodeID).
+					Msg("Failed to get protocol from registry for signing message, fallback to default protocolEngine")
+			}
+		}
+
+		if err := engine.ProcessIncomingSigningMessage(ctx, sessionID, fromNodeID, shareMsg.ShareData, isBroadcast); err != nil {
 			return errors.Wrap(err, "failed to process signing message")
 		}
 	}

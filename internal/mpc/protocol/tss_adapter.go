@@ -1033,21 +1033,65 @@ func (m *tssPartyManager) ProcessIncomingKeygenMessage(
 	msgBytes []byte,
 	isBroadcast bool,
 ) error {
-	// 将消息放入队列，由executeKeygen中的消息处理循环读取
-	// 消息包含字节数据和发送方节点ID
-	m.mu.Lock()
-	msgCh, exists := m.incomingKeygenMessages[sessionID]
+	// 将消息放入队列，由 executeKeygen 中的消息处理循环读取
+	// 不再在此处创建新队列，确保发送和接收使用同一个 channel
+	var msgCh chan *incomingMessage
+	var exists bool
+
+	// 先快速检查
+	m.mu.RLock()
+	msgCh, exists = m.incomingKeygenMessages[sessionID]
+	m.mu.RUnlock()
+
 	if !exists {
-		msgCh = make(chan *incomingMessage, 100)
-		m.incomingKeygenMessages[sessionID] = msgCh
-		log.Info().
-			Str("session_id", sessionID).
-			Str("from_node_id", fromNodeID).
-			Str("msg_ch_ptr", fmt.Sprintf("%p", msgCh)).
-			Int("msg_ch_len", len(msgCh)).
-			Msg("Created incomingKeygenMessages channel (message arrived before DKG started)")
+		// 等待队列创建（最多等待 5 秒，10ms 间隔）
+		waitTimeout := time.NewTimer(5 * time.Second)
+		defer waitTimeout.Stop()
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+
+		waitCount := 0
+		for !exists {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-waitTimeout.C:
+				m.mu.RLock()
+				_, activeKeygenExists := m.activeKeygen[sessionID]
+				m.mu.RUnlock()
+				log.Error().
+					Str("session_id", sessionID).
+					Str("from_node_id", fromNodeID).
+					Int("wait_iterations", waitCount).
+					Dur("wait_duration", time.Duration(waitCount)*10*time.Millisecond).
+					Bool("active_keygen_exists", activeKeygenExists).
+					Msg("ProcessIncomingKeygenMessage: timeout waiting for existing queue, returning error")
+				return errors.Errorf("timeout waiting for keygen message queue (session %s, waited %d iterations)", sessionID, waitCount)
+			case <-ticker.C:
+				waitCount++
+				m.mu.RLock()
+				msgCh, exists = m.incomingKeygenMessages[sessionID]
+				m.mu.RUnlock()
+				if exists {
+					log.Debug().
+						Str("session_id", sessionID).
+						Str("from_node_id", fromNodeID).
+						Int("wait_iterations", waitCount).
+						Dur("wait_duration", time.Duration(waitCount)*10*time.Millisecond).
+						Msg("ProcessIncomingKeygenMessage: found existing message queue")
+					break
+				}
+				if waitCount%100 == 0 {
+					log.Debug().
+						Str("session_id", sessionID).
+						Str("from_node_id", fromNodeID).
+						Int("wait_iterations", waitCount).
+						Dur("wait_duration", time.Duration(waitCount)*10*time.Millisecond).
+						Msg("ProcessIncomingKeygenMessage: still waiting for message queue...")
+				}
+			}
+		}
 	}
-	m.mu.Unlock()
 
 	// 创建消息对象
 	incomingMsg := &incomingMessage{
