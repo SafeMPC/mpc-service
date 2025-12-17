@@ -94,10 +94,10 @@ flowchart TD
     Check -->|运营方数据丢失| OperatorLost
     
     subgraph UserRecovery [用户端恢复流程]
-        UserLost[用户发起重置请求] --> KYC[严格身份认证 (视频/证件/生物识别)]
+        UserLost[用户发起重置请求] --> KYC["严格身份认证 (视频/证件/生物识别)"]
         KYC -->|认证通过| Admin[管理员介入]
-        Admin --> Retrieve3[取出 Share 3 (冷备份)]
-        Retrieve3 --> MPC_Reshare[执行 MPC Reshare (刷新所有分片)]
+        Admin --> Retrieve3["取出 Share 3 (冷备份)"]
+        Retrieve3 --> MPC_Reshare["执行 MPC Reshare (刷新所有分片)"]
         MPC_Reshare --> NewShares[生成新 Share 1, 2, 3]
         NewShares --> BindNew[用户绑定新手机 Key]
         BindNew --> Finish1((恢复完成))
@@ -105,8 +105,8 @@ flowchart TD
     
     subgraph SysRecovery [系统级恢复流程]
         OperatorLost[启用灾备预案]
-        OperatorLost --> Retrieve3_Sys[取出 Share 3]
-        Retrieve3_Sys --> Combine[Node B (Share 2) + Share 3]
+        OperatorLost --> Retrieve3_Sys["取出 Share 3"]
+        Retrieve3_Sys --> Combine["Node B (Share 2) + Share 3"]
         Combine --> MPC_Reshare_Sys[执行 MPC Reshare]
         MPC_Reshare_Sys --> Restore[恢复服务]
         Restore --> Finish2((恢复完成))
