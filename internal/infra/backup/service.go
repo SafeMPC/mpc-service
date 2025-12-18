@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -25,9 +25,9 @@ type SSSBackupService interface {
 
 // Service SSS 备份服务实现
 type Service struct {
-	sss            *SSS
-	backupStorage  storage.BackupShareStorage
-	metadataStore  storage.MetadataStore
+	sss           *SSS
+	backupStorage storage.BackupShareStorage
+	metadataStore storage.MetadataStore
 }
 
 // NewService 创建 SSS 备份服务
@@ -145,4 +145,3 @@ func (s *Service) DeliverBackupShareToClient(
 
 	return nil
 }
-

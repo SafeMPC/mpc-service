@@ -427,7 +427,7 @@ func testNodesSelect(t *testing.T) {
 }
 
 var (
-	nodeDBTypes = map[string]string{`NodeID`: `character varying`, `NodeType`: `character varying`, `Endpoint`: `character varying`, `PublicKey`: `text`, `Status`: `character varying`, `Capabilities`: `jsonb`, `Metadata`: `jsonb`, `RegisteredAt`: `timestamp with time zone`, `LastHeartbeat`: `timestamp with time zone`}
+	nodeDBTypes = map[string]string{`NodeID`: `character varying`, `NodeType`: `character varying`, `Endpoint`: `character varying`, `PublicKey`: `text`, `Status`: `character varying`, `Capabilities`: `jsonb`, `Metadata`: `jsonb`, `RegisteredAt`: `timestamp with time zone`, `LastHeartbeat`: `timestamp with time zone`, `Purpose`: `character varying`}
 	_           = bytes.MinRead
 )
 

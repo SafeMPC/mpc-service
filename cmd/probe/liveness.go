@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/kashguard/go-mpc-wallet/internal/api"
-	"github.com/kashguard/go-mpc-wallet/internal/api/handlers/common"
-	"github.com/kashguard/go-mpc-wallet/internal/config"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
-	"github.com/kashguard/go-mpc-wallet/internal/util/command"
+	"github.com/kashguard/go-mpc-infra/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/common"
+	"github.com/kashguard/go-mpc-infra/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/util/command"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

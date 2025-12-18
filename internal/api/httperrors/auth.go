@@ -3,7 +3,7 @@ package httperrors
 import (
 	"net/http"
 
-	"github.com/kashguard/go-mpc-wallet/internal/types"
+	"github.com/kashguard/go-mpc-infra/internal/types"
 )
 
 var (

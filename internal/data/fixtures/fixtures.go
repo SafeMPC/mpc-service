@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
-	"github.com/kashguard/go-mpc-wallet/internal/models"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/models"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 )
 
 // Live Service fixtures to be applied by manually running the CLI "app db seed"

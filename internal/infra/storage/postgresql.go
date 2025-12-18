@@ -909,3 +909,66 @@ func (s *PostgreSQLStore) ListBackupShareDeliveries(ctx context.Context, keyID, 
 
 	return deliveries, nil
 }
+
+// GetSigningPolicy 获取签名策略
+func (s *PostgreSQLStore) GetSigningPolicy(ctx context.Context, keyID string) (*SigningPolicy, error) {
+	query := `
+		SELECT wallet_id, policy_type, min_signatures, created_at, updated_at
+		FROM signing_policies
+		WHERE wallet_id = $1
+	`
+
+	var policy SigningPolicy
+	err := s.db.QueryRowContext(ctx, query, keyID).Scan(
+		&policy.WalletID, &policy.PolicyType, &policy.MinSignatures,
+		&policy.CreatedAt, &policy.UpdatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errors.New("policy not found")
+		}
+		return nil, errors.Wrap(err, "failed to get signing policy")
+	}
+
+	return &policy, nil
+}
+
+// ListUserAuthKeys 列出用户鉴权公钥
+func (s *PostgreSQLStore) ListUserAuthKeys(ctx context.Context, keyID string) ([]*UserAuthKey, error) {
+	query := `
+		SELECT id, wallet_id, public_key_hex, key_type, member_name, role, created_at
+		FROM user_auth_keys
+		WHERE wallet_id = $1
+	`
+
+	rows, err := s.db.QueryContext(ctx, query, keyID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list user auth keys")
+	}
+	defer rows.Close()
+
+	var keys []*UserAuthKey
+	for rows.Next() {
+		var key UserAuthKey
+		var memberName, role sql.NullString
+
+		err := rows.Scan(
+			&key.ID, &key.WalletID, &key.PublicKeyHex, &key.KeyType,
+			&memberName, &role, &key.CreatedAt,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to scan user auth key")
+		}
+
+		if memberName.Valid {
+			key.MemberName = memberName.String
+		}
+		if role.Valid {
+			key.Role = role.String
+		}
+
+		keys = append(keys, &key)
+	}
+
+	return keys, nil
+}

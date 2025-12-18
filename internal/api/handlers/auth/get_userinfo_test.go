@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/go-openapi/strfmt"
-	"github.com/kashguard/go-mpc-wallet/internal/api"
-	"github.com/kashguard/go-mpc-wallet/internal/models"
-	"github.com/kashguard/go-mpc-wallet/internal/test"
-	"github.com/kashguard/go-mpc-wallet/internal/test/fixtures"
-	"github.com/kashguard/go-mpc-wallet/internal/types"
+	"github.com/kashguard/go-mpc-infra/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/models"
+	"github.com/kashguard/go-mpc-infra/internal/test"
+	"github.com/kashguard/go-mpc-infra/internal/test/fixtures"
+	"github.com/kashguard/go-mpc-infra/internal/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

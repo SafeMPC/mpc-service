@@ -7,7 +7,7 @@ produces:
   - application/json
 swagger: "2.0"
 info:
-  title: github.com/kashguard/go-mpc-wallet
+  title: github.com/kashguard/go-mpc-infra
   version: 0.1.0
   description: API documentation
 paths: {}
@@ -35,43 +35,68 @@ definitions:
     enum:
       - asc
       - desc
-  # MPC definitions
+  # MPC definitions (Migrated to Infra)
   postCreateKeyPayload:
-    $ref: "../definitions/mpc.yml#/definitions/PostCreateKeyPayload"
+    $ref: "../definitions/infra.yml#/definitions/PostCreateKeyPayload"
   createKeyResponse:
-    $ref: "../definitions/mpc.yml#/definitions/CreateKeyResponse"
+    $ref: "../definitions/infra.yml#/definitions/CreateKeyResponse"
   getKeyResponse:
-    $ref: "../definitions/mpc.yml#/definitions/GetKeyResponse"
+    $ref: "../definitions/infra.yml#/definitions/GetKeyResponse"
   listKeysResponse:
-    $ref: "../definitions/mpc.yml#/definitions/ListKeysResponse"
+    $ref: "../definitions/infra.yml#/definitions/ListKeysResponse"
   postSignPayload:
-    $ref: "../definitions/mpc.yml#/definitions/PostSignPayload"
+    $ref: "../definitions/infra.yml#/definitions/PostSignPayload"
   signResponse:
-    $ref: "../definitions/mpc.yml#/definitions/SignResponse"
+    $ref: "../definitions/infra.yml#/definitions/SignResponse"
   postRegisterNodePayload:
-    $ref: "../definitions/mpc.yml#/definitions/PostRegisterNodePayload"
+    $ref: "../definitions/infra.yml#/definitions/PostRegisterNodePayload"
   registerNodeResponse:
-    $ref: "../definitions/mpc.yml#/definitions/RegisterNodeResponse"
+    $ref: "../definitions/infra.yml#/definitions/RegisterNodeResponse"
   getNodeResponse:
-    $ref: "../definitions/mpc.yml#/definitions/GetNodeResponse"
+    $ref: "../definitions/infra.yml#/definitions/GetNodeResponse"
   listNodesResponse:
-    $ref: "../definitions/mpc.yml#/definitions/ListNodesResponse"
+    $ref: "../definitions/infra.yml#/definitions/ListNodesResponse"
   postCreateSessionPayload:
-    $ref: "../definitions/mpc.yml#/definitions/PostCreateSessionPayload"
+    $ref: "../definitions/infra.yml#/definitions/PostCreateSessionPayload"
   createSessionResponse:
-    $ref: "../definitions/mpc.yml#/definitions/CreateSessionResponse"
+    $ref: "../definitions/infra.yml#/definitions/CreateSessionResponse"
   getSessionResponse:
-    $ref: "../definitions/mpc.yml#/definitions/GetSessionResponse"
+    $ref: "../definitions/infra.yml#/definitions/GetSessionResponse"
   generateAddressResponse:
-    $ref: "../definitions/mpc.yml#/definitions/GenerateAddressResponse"
+    $ref: "../definitions/infra.yml#/definitions/GenerateAddressResponse"
   postBatchSignPayload:
-    $ref: "../definitions/mpc.yml#/definitions/PostBatchSignPayload"
+    $ref: "../definitions/infra.yml#/definitions/PostBatchSignPayload"
   batchSignResponse:
-    $ref: "../definitions/mpc.yml#/definitions/BatchSignResponse"
+    $ref: "../definitions/infra.yml#/definitions/BatchSignResponse"
   postVerifyPayload:
-    $ref: "../definitions/mpc.yml#/definitions/PostVerifyPayload"
+    $ref: "../definitions/infra.yml#/definitions/PostVerifyPayload"
   verifyResponse:
-    $ref: "../definitions/mpc.yml#/definitions/VerifyResponse"
+    $ref: "../definitions/infra.yml#/definitions/VerifyResponse"
+  # Infra definitions
+  nodeRegistration:
+    $ref: "../definitions/infra.yml#/definitions/NodeRegistration"
+  nodeRegistrationResponse:
+    $ref: "../definitions/infra.yml#/definitions/NodeRegistrationResponse"
+  heartbeatRequest:
+    $ref: "../definitions/infra.yml#/definitions/HeartbeatRequest"
+  heartbeatResponse:
+    $ref: "../definitions/infra.yml#/definitions/HeartbeatResponse"
+  # Backup definitions
+  recoverMPCShareRequest:
+    $ref: "../definitions/infra.yml#/definitions/RecoverMPCShareRequest"
+  recoverMPCShareResponse:
+    $ref: "../definitions/infra.yml#/definitions/RecoverMPCShareResponse"
+  getBackupStatusResponse:
+    $ref: "../definitions/infra.yml#/definitions/GetBackupStatusResponse"
+  listBackupSharesResponse:
+    $ref: "../definitions/infra.yml#/definitions/ListBackupSharesResponse"
+  backupStatus:
+    $ref: "../definitions/infra.yml#/definitions/BackupStatus"
+  backupShares:
+    $ref: "../definitions/infra.yml#/definitions/BackupShares"
+  backupShare:
+    $ref: "../definitions/infra.yml#/definitions/BackupShare"
+
 responses:
   errorResponse:
     description: Standard error response

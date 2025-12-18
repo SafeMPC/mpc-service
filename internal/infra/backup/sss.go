@@ -164,4 +164,3 @@ func evalPoly(coeffs []byte, x byte) byte {
 	}
 	return result
 }
-

@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/key"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/node"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/protocol"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/session"
-	pb "github.com/kashguard/go-mpc-wallet/internal/pb/mpc/v1"
+	"github.com/kashguard/go-mpc-infra/internal/infra/key"
+	"github.com/kashguard/go-mpc-infra/internal/infra/session"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
+	pb "github.com/kashguard/go-mpc-infra/internal/pb/mpc/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )

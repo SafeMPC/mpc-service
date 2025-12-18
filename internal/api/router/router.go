@@ -10,11 +10,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/kashguard/go-mpc-wallet/internal/api"
-	"github.com/kashguard/go-mpc-wallet/internal/api/handlers"
-	"github.com/kashguard/go-mpc-wallet/internal/api/handlers/constants"
-	"github.com/kashguard/go-mpc-wallet/internal/api/middleware"
-	"github.com/kashguard/go-mpc-wallet/internal/api/router/templates"
+	"github.com/kashguard/go-mpc-infra/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/constants"
+	"github.com/kashguard/go-mpc-infra/internal/api/middleware"
+	"github.com/kashguard/go-mpc-infra/internal/api/router/templates"
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
@@ -236,8 +236,8 @@ func Init(s *api.Server) error {
 		WellKnown: s.Echo.Group("/.well-known"),
 
 		// Your other endpoints, typically secured by bearer auth, available at /api/v1/**
-		APIV1Push: s.Echo.Group("/api/v1/push", middleware.Auth(s)),
-		APIV1MPC:  s.Echo.Group("/api/v1/mpc", middleware.Auth(s)),
+		APIV1Push:  s.Echo.Group("/api/v1/push", middleware.Auth(s)),
+		APIV1Infra: s.Echo.Group("/api/v1/infra", middleware.Auth(s)),
 	}
 
 	// 注册健康检查路由（已移除旧的 internal/grpc 实现）

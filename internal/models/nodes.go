@@ -33,6 +33,7 @@ type Node struct {
 	Metadata      null.JSON   `boil:"metadata" json:"metadata,omitempty" toml:"metadata" yaml:"metadata,omitempty"`
 	RegisteredAt  time.Time   `boil:"registered_at" json:"registered_at" toml:"registered_at" yaml:"registered_at"`
 	LastHeartbeat null.Time   `boil:"last_heartbeat" json:"last_heartbeat,omitempty" toml:"last_heartbeat" yaml:"last_heartbeat,omitempty"`
+	Purpose       null.String `boil:"purpose" json:"purpose,omitempty" toml:"purpose" yaml:"purpose,omitempty"`
 
 	R *nodeR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L nodeL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -48,6 +49,7 @@ var NodeColumns = struct {
 	Metadata      string
 	RegisteredAt  string
 	LastHeartbeat string
+	Purpose       string
 }{
 	NodeID:        "node_id",
 	NodeType:      "node_type",
@@ -58,6 +60,7 @@ var NodeColumns = struct {
 	Metadata:      "metadata",
 	RegisteredAt:  "registered_at",
 	LastHeartbeat: "last_heartbeat",
+	Purpose:       "purpose",
 }
 
 var NodeTableColumns = struct {
@@ -70,6 +73,7 @@ var NodeTableColumns = struct {
 	Metadata      string
 	RegisteredAt  string
 	LastHeartbeat string
+	Purpose       string
 }{
 	NodeID:        "nodes.node_id",
 	NodeType:      "nodes.node_type",
@@ -80,6 +84,7 @@ var NodeTableColumns = struct {
 	Metadata:      "nodes.metadata",
 	RegisteredAt:  "nodes.registered_at",
 	LastHeartbeat: "nodes.last_heartbeat",
+	Purpose:       "nodes.purpose",
 }
 
 // Generated where
@@ -94,6 +99,7 @@ var NodeWhere = struct {
 	Metadata      whereHelpernull_JSON
 	RegisteredAt  whereHelpertime_Time
 	LastHeartbeat whereHelpernull_Time
+	Purpose       whereHelpernull_String
 }{
 	NodeID:        whereHelperstring{field: "\"nodes\".\"node_id\""},
 	NodeType:      whereHelperstring{field: "\"nodes\".\"node_type\""},
@@ -104,6 +110,7 @@ var NodeWhere = struct {
 	Metadata:      whereHelpernull_JSON{field: "\"nodes\".\"metadata\""},
 	RegisteredAt:  whereHelpertime_Time{field: "\"nodes\".\"registered_at\""},
 	LastHeartbeat: whereHelpernull_Time{field: "\"nodes\".\"last_heartbeat\""},
+	Purpose:       whereHelpernull_String{field: "\"nodes\".\"purpose\""},
 }
 
 // NodeRels is where relationship names are stored.
@@ -123,9 +130,9 @@ func (*nodeR) NewStruct() *nodeR {
 type nodeL struct{}
 
 var (
-	nodeAllColumns            = []string{"node_id", "node_type", "endpoint", "public_key", "status", "capabilities", "metadata", "registered_at", "last_heartbeat"}
+	nodeAllColumns            = []string{"node_id", "node_type", "endpoint", "public_key", "status", "capabilities", "metadata", "registered_at", "last_heartbeat", "purpose"}
 	nodeColumnsWithoutDefault = []string{"node_id", "node_type", "endpoint", "status"}
-	nodeColumnsWithDefault    = []string{"public_key", "capabilities", "metadata", "registered_at", "last_heartbeat"}
+	nodeColumnsWithDefault    = []string{"public_key", "capabilities", "metadata", "registered_at", "last_heartbeat", "purpose"}
 	nodePrimaryKeyColumns     = []string{"node_id"}
 	nodeGeneratedColumns      = []string{}
 )

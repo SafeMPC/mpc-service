@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
 )
 
 // Delivery Status Constants
@@ -17,10 +17,10 @@ const (
 
 // BackupShare 备份分片结构
 type BackupShare struct {
-	KeyID      string    // 根密钥ID
-	NodeID     string    // 对应的MPC节点ID（server-proxy-1, server-proxy-2, client-{userID}）
-	ShareIndex int       // 备份分片索引（1-5）
-	ShareData  []byte    // 备份分片数据（加密存储）
+	KeyID      string // 根密钥ID
+	NodeID     string // 对应的MPC节点ID（server-proxy-1, server-proxy-2, client-{userID}）
+	ShareIndex int    // 备份分片索引（1-5）
+	ShareData  []byte // 备份分片数据（加密存储）
 	CreatedAt  time.Time
 }
 

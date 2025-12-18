@@ -78,4 +78,3 @@ func TestSSS_RecoverWithDifferentShareCombinations(t *testing.T) {
 		}
 	}
 }
-

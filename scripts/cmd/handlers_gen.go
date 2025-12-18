@@ -5,7 +5,7 @@ package cmd
 import (
 	"log"
 
-	"github.com/kashguard/go-mpc-wallet/scripts/internal/handlers"
+	"github.com/kashguard/go-mpc-infra/scripts/internal/handlers"
 	"github.com/spf13/cobra"
 )
 

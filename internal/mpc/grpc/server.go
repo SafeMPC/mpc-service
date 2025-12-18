@@ -10,12 +10,12 @@ import (
 
 	"encoding/hex"
 
-	"github.com/kashguard/go-mpc-wallet/internal/config"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/session"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/protocol"
-	pb "github.com/kashguard/go-mpc-wallet/internal/pb/mpc/v1"
-	"github.com/kashguard/go-mpc-wallet/internal/util/cert"
+	"github.com/kashguard/go-mpc-infra/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/infra/session"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
+	pb "github.com/kashguard/go-mpc-infra/internal/pb/mpc/v1"
+	"github.com/kashguard/go-mpc-infra/internal/util/cert"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -57,6 +57,7 @@ type GRPCServer struct {
 	protocolRegistry *protocol.ProtocolRegistry // 协议注册表（用于动态选择协议）
 	sessionManager   *session.Manager
 	keyShareStorage  storage.KeyShareStorage // 用于存储密钥分片
+	metadataStore    storage.MetadataStore   // 用于读取元数据（策略、公钥）
 	nodeID           string
 	cfg              *ServerConfig
 
@@ -76,13 +77,14 @@ type GRPCServer struct {
 
 // ServerConfig gRPC服务端配置
 type ServerConfig struct {
-	Port          int
-	TLSEnabled    bool
-	TLSCertFile   string
-	TLSKeyFile    string
-	TLSCACertFile string
-	MaxConnAge    time.Duration
-	KeepAlive     time.Duration
+	Port           int
+	TLSEnabled     bool
+	TLSCertFile    string
+	TLSKeyFile     string
+	TLSCACertFile  string
+	MaxConnAge     time.Duration
+	KeepAlive      time.Duration
+	IsGuardianNode bool // 是否作为 Guardian 节点运行
 }
 
 // NewGRPCServer 创建gRPC服务端
@@ -91,9 +93,10 @@ func NewGRPCServer(
 	protocolEngine protocol.Engine,
 	sessionManager *session.Manager,
 	keyShareStorage storage.KeyShareStorage,
+	metadataStore storage.MetadataStore,
 	nodeID string,
 ) *GRPCServer {
-	return NewGRPCServerWithRegistry(cfg, protocolEngine, nil, sessionManager, keyShareStorage, nodeID)
+	return NewGRPCServerWithRegistry(cfg, protocolEngine, nil, sessionManager, keyShareStorage, metadataStore, nodeID)
 }
 
 // NewGRPCServerWithRegistry 创建gRPC服务端（带协议注册表）
@@ -103,16 +106,18 @@ func NewGRPCServerWithRegistry(
 	protocolRegistry *protocol.ProtocolRegistry, // 协议注册表（可选，用于动态选择协议）
 	sessionManager *session.Manager,
 	keyShareStorage storage.KeyShareStorage,
+	metadataStore storage.MetadataStore,
 	nodeID string,
 ) *GRPCServer {
 	serverCfg := &ServerConfig{
-		Port:          cfg.MPC.GRPCPort,
-		TLSEnabled:    cfg.MPC.TLSEnabled,
-		TLSCertFile:   cfg.MPC.TLSCertFile,
-		TLSKeyFile:    cfg.MPC.TLSKeyFile,
-		TLSCACertFile: cfg.MPC.TLSCACertFile,
-		MaxConnAge:    2 * time.Hour,
-		KeepAlive:     30 * time.Second,
+		Port:           cfg.MPC.GRPCPort,
+		TLSEnabled:     cfg.MPC.TLSEnabled,
+		TLSCertFile:    cfg.MPC.TLSCertFile,
+		TLSKeyFile:     cfg.MPC.TLSKeyFile,
+		TLSCACertFile:  cfg.MPC.TLSCACertFile,
+		MaxConnAge:     2 * time.Hour,
+		KeepAlive:      30 * time.Second,
+		IsGuardianNode: cfg.MPC.IsGuardianNode,
 	}
 
 	srv := &GRPCServer{
@@ -120,6 +125,7 @@ func NewGRPCServerWithRegistry(
 		protocolRegistry: protocolRegistry,
 		sessionManager:   sessionManager,
 		keyShareStorage:  keyShareStorage,
+		metadataStore:    metadataStore,
 		nodeID:           nodeID,
 		cfg:              serverCfg,
 	}
@@ -372,6 +378,26 @@ func (s *GRPCServer) StartSign(ctx context.Context, req *pb.StartSignRequest) (*
 			Int32("total_nodes", req.TotalNodes).
 			Msg(msg)
 		return &pb.StartSignResponse{Started: false, Message: msg}, nil
+	}
+
+	// 鉴权代理逻辑：如果配置了 Guardian 模式，或者收到鉴权令牌，执行鉴权
+	// 这里假设所有节点都具备 Guardian 能力，通过配置或动态策略激活
+	// 为了简化，我们只检查是否存在 metadataStore 和 AuthTokens
+	if s.metadataStore != nil && (len(req.AuthTokens) > 0 || s.cfg.IsGuardianNode) {
+		if err := s.checkGuardianPolicy(ctx, req); err != nil {
+			log.Warn().
+				Err(err).
+				Str("key_id", req.KeyId).
+				Str("session_id", sessionID).
+				Str("this_node_id", s.nodeID).
+				Msg("Guardian check failed, rejecting StartSign request")
+			return &pb.StartSignResponse{Started: false, Message: fmt.Sprintf("Guardian Access Denied: %v", err)}, nil
+		}
+		log.Info().
+			Str("key_id", req.KeyId).
+			Str("session_id", sessionID).
+			Str("this_node_id", s.nodeID).
+			Msg("Guardian check passed")
 	}
 
 	onceInterface, _ := s.signStartOnce.LoadOrStore(sessionID, &sync.Once{})

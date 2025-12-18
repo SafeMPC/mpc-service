@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/key"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/node"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/protocol"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/session"
+	"github.com/kashguard/go-mpc-infra/internal/infra/key"
+	"github.com/kashguard/go-mpc-infra/internal/infra/session"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -92,14 +92,14 @@ func TestService_ThresholdSign_2of3_ServerNodesOnly(t *testing.T) {
 
 	// 设置密钥元数据（2-of-3）
 	keyMetadata := &key.KeyMetadata{
-		KeyID:       "test-key-123",
-		PublicKey:   "test-public-key",
-		Algorithm:   "ECDSA",
-		Curve:       "secp256k1",
-		Threshold:   2,
-		TotalNodes:  3,
-		ChainType:   "ethereum",
-		Status:      "Active",
+		KeyID:      "test-key-123",
+		PublicKey:  "test-public-key",
+		Algorithm:  "ECDSA",
+		Curve:      "secp256k1",
+		Threshold:  2,
+		TotalNodes: 3,
+		ChainType:  "ethereum",
+		Status:     "Active",
 	}
 
 	mockKeyService.On("GetKey", ctx, "test-key-123").Return(keyMetadata, nil)
@@ -147,7 +147,7 @@ func TestService_ThresholdSign_2of3_ServerNodesOnly(t *testing.T) {
 
 	// 验证节点发现被调用（应该只选择服务器节点）
 	mockNodeDiscovery.AssertCalled(t, "DiscoverNodes", ctx, node.NodeTypeParticipant, node.NodeStatusActive, 3)
-	
+
 	// 验证会话中的参与节点只包含服务器节点（2-of-3模式）
 	assert.Contains(t, signingSession.ParticipatingNodes, "server-proxy-1")
 	assert.Contains(t, signingSession.ParticipatingNodes, "server-proxy-2")
@@ -208,4 +208,3 @@ func (m *MockProtocolEngine) SupportedProtocols() []string {
 	}
 	return args.Get(0).([]string)
 }
-

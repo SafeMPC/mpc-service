@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/node"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/protocol"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/swag"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

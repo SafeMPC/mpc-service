@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kashguard/go-mpc-wallet/internal/push"
+	"github.com/kashguard/go-mpc-infra/internal/push"
 	"google.golang.org/api/fcm/v1"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"

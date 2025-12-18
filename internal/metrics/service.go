@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/dlmiddlecote/sqlstats"
-	"github.com/kashguard/go-mpc-wallet/internal/config"
-	"github.com/kashguard/go-mpc-wallet/internal/metrics/users"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/metrics/users"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

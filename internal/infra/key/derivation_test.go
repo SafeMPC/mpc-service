@@ -68,21 +68,21 @@ func TestDeriveEd25519(t *testing.T) {
 	// Generate a dummy Ed25519 public key (32 bytes)
 	// For Ed25519, the base point is y=4/5...
 	// We'll use a known valid public key or generate one using edwards library
-	
+
 	// Valid Ed25519 public key (32 bytes)
 	// This is just a random 32 byte string, but for point addition to work, it MUST be a valid point on the curve.
 	// We can't just use random bytes.
-	
+
 	// Let's use the generator point (Base Point)
 	// Base Point encoded is:
 	// 58 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66 66
 	// (Actually it's y=4/5, x is determined)
-	
+
 	// Use a hex string for a valid Ed25519 pubkey (from a test vector)
 	// PubKey: 3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29 (from RFC 8032 A.1)
 	pubKeyHex := "3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29"
 	pubKeyBytes, _ := hex.DecodeString(pubKeyHex)
-	
+
 	chainCode := make([]byte, 32)
 	for i := range chainCode {
 		chainCode[i] = 0x01 // Use non-zero chaincode

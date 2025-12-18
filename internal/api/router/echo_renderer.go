@@ -5,7 +5,7 @@ import (
 	"html/template"
 	"io"
 
-	"github.com/kashguard/go-mpc-wallet/internal/api/router/templates"
+	"github.com/kashguard/go-mpc-infra/internal/api/router/templates"
 	"github.com/labstack/echo/v4"
 )
 

@@ -1,6 +1,6 @@
 package hashing
 
-import "github.com/kashguard/go-mpc-wallet/internal/util"
+import "github.com/kashguard/go-mpc-infra/internal/util"
 
 var (
 	// DefaultArgon2Params represents Argon2ID parameter recommendations in accordance with:

@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/backup"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/protocol"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/infra/backup"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -124,8 +124,8 @@ func TestService_CreateRootKey_2of3(t *testing.T) {
 		metadataStore:   mockMetadataStore,
 		keyShareStorage: mockKeyShareStorage,
 		protocolEngine:  mockProtocolEngine,
-		nodeManager:     nil, // 测试中不需要
-		nodeDiscovery:   nil, // 测试中不需要
+		nodeManager:     nil,           // 测试中不需要
+		nodeDiscovery:   nil,           // 测试中不需要
 		MaxWaitTime:     1_000_000_000, // 1s
 		PollInterval:    10_000_000,    // 10ms
 	}
@@ -214,7 +214,7 @@ func TestService_DeriveWalletKey(t *testing.T) {
 	assert.NotNil(t, derivedKey)
 	assert.NotEqual(t, pubKeyHex, derivedKey.PublicKey)
 	assert.NotEmpty(t, derivedKey.ChainCode)
-	
+
 	// Test migration (missing chain code)
 	mockMetadataStore.On("GetKeyMetadata", mock.Anything, "root-key-migration").Return(&storage.KeyMetadata{
 		KeyID:     "root-key-migration",
@@ -231,9 +231,9 @@ func TestService_DeriveWalletKey(t *testing.T) {
 	})).Return(nil)
 
 	reqMigration := &DeriveWalletKeyRequest{
-		RootKeyID:   "root-key-migration",
-		ChainType:   "ethereum",
-		Index:       1,
+		RootKeyID: "root-key-migration",
+		ChainType: "ethereum",
+		Index:     1,
 	}
 
 	derivedKey2, err := service.DeriveWalletKey(ctx, reqMigration)
@@ -470,4 +470,3 @@ func (m *MockProtocolEngine) SupportedProtocols() []string {
 	}
 	return args.Get(0).([]string)
 }
-

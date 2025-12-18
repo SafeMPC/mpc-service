@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
 )
 
 var (

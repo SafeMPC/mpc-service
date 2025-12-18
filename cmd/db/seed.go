@@ -6,12 +6,12 @@ import (
 	"fmt"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
-	"github.com/kashguard/go-mpc-wallet/internal/api"
-	"github.com/kashguard/go-mpc-wallet/internal/config"
-	data "github.com/kashguard/go-mpc-wallet/internal/data/fixtures"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
-	"github.com/kashguard/go-mpc-wallet/internal/util/command"
-	dbutil "github.com/kashguard/go-mpc-wallet/internal/util/db"
+	"github.com/kashguard/go-mpc-infra/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/config"
+	data "github.com/kashguard/go-mpc-infra/internal/data/fixtures"
+	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/util/command"
+	dbutil "github.com/kashguard/go-mpc-infra/internal/util/db"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

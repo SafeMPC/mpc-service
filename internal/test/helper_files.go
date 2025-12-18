@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 	"github.com/stretchr/testify/require"
 )
 

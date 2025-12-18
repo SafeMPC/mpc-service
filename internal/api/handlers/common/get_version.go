@@ -4,8 +4,8 @@ package common
 import (
 	"net/http"
 
-	"github.com/kashguard/go-mpc-wallet/internal/api"
-	"github.com/kashguard/go-mpc-wallet/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/config"
 	"github.com/labstack/echo/v4"
 )
 

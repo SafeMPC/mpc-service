@@ -1,5 +1,12 @@
 package signing
 
+// AuthToken 鉴权令牌
+type AuthToken struct {
+	PublicKey string
+	Signature []byte
+	MemberID  string
+}
+
 // SignRequest 签名请求
 type SignRequest struct {
 	KeyID          string
@@ -8,6 +15,7 @@ type SignRequest struct {
 	MessageType    string // transaction, message, raw
 	ChainType      string
 	DerivationPath string
+	AuthTokens     []AuthToken
 }
 
 // SignResponse 签名响应

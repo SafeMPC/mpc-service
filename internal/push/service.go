@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kashguard/go-mpc-wallet/internal/data/dto"
-	"github.com/kashguard/go-mpc-wallet/internal/models"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/data/dto"
+	"github.com/kashguard/go-mpc-infra/internal/models"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 )
 
 type ProviderType string

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/signing"
-	pb "github.com/kashguard/go-mpc-wallet/internal/pb/infra/v1"
+	"github.com/kashguard/go-mpc-infra/internal/infra/signing"
+	pb "github.com/kashguard/go-mpc-infra/internal/pb/infra/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
@@ -30,16 +30,16 @@ func (s *InfrastructureServer) CreateSigningSession(ctx context.Context, req *pb
 	pbSession := &pb.SigningSession{
 		SessionId:          session.SessionID,
 		KeyId:              session.KeyID,
-		Protocol:            session.Protocol,
-		Status:              session.Status,
-		Threshold:           int32(session.Threshold),
-		TotalNodes:          int32(session.TotalNodes),
-		ParticipatingNodes:  session.ParticipatingNodes,
-		CurrentRound:        int32(session.CurrentRound),
-		TotalRounds:         int32(session.TotalRounds),
-		Signature:           session.Signature,
-		CreatedAt:           session.CreatedAt.Format(time.RFC3339),
-		DurationMs:          int32(session.DurationMs),
+		Protocol:           session.Protocol,
+		Status:             session.Status,
+		Threshold:          int32(session.Threshold),
+		TotalNodes:         int32(session.TotalNodes),
+		ParticipatingNodes: session.ParticipatingNodes,
+		CurrentRound:       int32(session.CurrentRound),
+		TotalRounds:        int32(session.TotalRounds),
+		Signature:          session.Signature,
+		CreatedAt:          session.CreatedAt.Format(time.RFC3339),
+		DurationMs:         int32(session.DurationMs),
 	}
 
 	if session.CompletedAt != nil {
@@ -106,16 +106,16 @@ func (s *InfrastructureServer) GetSigningSession(ctx context.Context, req *pb.Ge
 	pbSession := &pb.SigningSession{
 		SessionId:          session.SessionID,
 		KeyId:              session.KeyID,
-		Protocol:            session.Protocol,
-		Status:              session.Status,
-		Threshold:           int32(session.Threshold),
-		TotalNodes:          int32(session.TotalNodes),
-		ParticipatingNodes:  session.ParticipatingNodes,
-		CurrentRound:        int32(session.CurrentRound),
-		TotalRounds:         int32(session.TotalRounds),
-		Signature:           session.Signature,
-		CreatedAt:           session.CreatedAt.Format(time.RFC3339),
-		DurationMs:          int32(session.DurationMs),
+		Protocol:           session.Protocol,
+		Status:             session.Status,
+		Threshold:          int32(session.Threshold),
+		TotalNodes:         int32(session.TotalNodes),
+		ParticipatingNodes: session.ParticipatingNodes,
+		CurrentRound:       int32(session.CurrentRound),
+		TotalRounds:        int32(session.TotalRounds),
+		Signature:          session.Signature,
+		CreatedAt:          session.CreatedAt.Format(time.RFC3339),
+		DurationMs:         int32(session.DurationMs),
 	}
 
 	if session.CompletedAt != nil {
@@ -178,7 +178,7 @@ func (s *InfrastructureServer) VerifySignature(ctx context.Context, req *pb.Veri
 	// 构建验证请求
 	verifyReq := &signing.VerifyRequest{
 		Signature:  req.Signature,
-		PublicKey:   req.PublicKey,
+		PublicKey:  req.PublicKey,
 		Message:    req.Message,
 		MessageHex: req.MessageHex,
 		ChainType:  req.ChainType,
@@ -200,4 +200,3 @@ func (s *InfrastructureServer) VerifySignature(ctx context.Context, req *pb.Veri
 
 	return response, nil
 }
-

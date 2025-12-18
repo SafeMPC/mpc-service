@@ -14,7 +14,7 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/strfmt"
 
-	"github.com/kashguard/go-mpc-wallet/internal/types"
+	"github.com/kashguard/go-mpc-infra/internal/types"
 )
 
 // NewPostMpcSignParams creates a new PostMpcSignParams object

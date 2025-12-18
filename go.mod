@@ -1,8 +1,8 @@
-module github.com/kashguard/go-mpc-wallet
+module github.com/kashguard/go-mpc-infra
 
 go 1.24.6
 
-replace github.com/kashguard/go-mpc-wallet/internal/pb => ./internal/pb
+replace github.com/kashguard/go-mpc-infra/internal/pb => ./internal/pb
 
 require (
 	github.com/BurntSushi/toml v1.5.0
@@ -28,7 +28,7 @@ require (
 	github.com/google/wire v0.6.0
 	github.com/hashicorp/consul/api v1.28.2
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
-	github.com/kashguard/go-mpc-wallet/internal/pb v0.0.0
+	github.com/kashguard/go-mpc-infra/internal/pb v0.0.0
 	github.com/kashguard/tss-lib v0.0.2 // 支持标准 Ed25519 (big-endian), commit: efe9049
 	github.com/kat-co/vala v0.0.0-20170210184112-42e1d8b61f12
 	github.com/labstack/echo/v4 v4.13.4
@@ -54,6 +54,7 @@ require (
 require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.6
 	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.3
+	github.com/golang-jwt/jwt/v5 v5.3.0
 )
 
 require (
@@ -67,7 +68,6 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/subcommands v1.2.0 // indirect
@@ -174,7 +174,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
 	google.golang.org/grpc v1.77.0
-	google.golang.org/protobuf v1.36.10 // indirect
+	google.golang.org/protobuf v1.36.10
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

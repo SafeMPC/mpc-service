@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 
 	"github.com/jordan-wright/email"
-	"github.com/kashguard/go-mpc-wallet/internal/config"
-	"github.com/kashguard/go-mpc-wallet/internal/data/dto"
-	"github.com/kashguard/go-mpc-wallet/internal/mailer/transport"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/data/dto"
+	"github.com/kashguard/go-mpc-infra/internal/mailer/transport"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 	"github.com/rs/zerolog/log"
 )
 

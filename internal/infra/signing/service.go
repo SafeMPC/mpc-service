@@ -7,11 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/key"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/node"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/protocol"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/session"
-	pb "github.com/kashguard/go-mpc-wallet/internal/pb/mpc/v1"
+	"github.com/kashguard/go-mpc-infra/internal/infra/key"
+	"github.com/kashguard/go-mpc-infra/internal/infra/session"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
+	pb "github.com/kashguard/go-mpc-infra/internal/pb/mpc/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -121,11 +121,49 @@ func (s *Service) ThresholdSign(ctx context.Context, req *SignRequest) (*SignRes
 		return nil, errors.Wrap(err, "failed to get key")
 	}
 
+	// 解析派生信息（如果存在）
+	signingKeyID := req.KeyID
+	derivationPath := req.DerivationPath
+	var parentChainCode []byte
+
+	// 检查是否是派生密钥
+	if parentID, ok := keyMetadata.Tags["parent_key_id"]; ok && parentID != "" {
+		log.Info().Str("key_id", req.KeyID).Str("parent_key_id", parentID).Msg("Signing with derived key, resolving root key")
+
+		// 获取根密钥信息
+		rootKey, err := s.keyService.GetKey(ctx, parentID)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get parent root key %s", parentID)
+		}
+
+		// 使用根密钥ID进行签名（节点持有根密钥分片）
+		signingKeyID = parentID
+
+		// 获取根密钥的ChainCode
+		if rootKey.ChainCode != "" {
+			parentChainCode, _ = hex.DecodeString(rootKey.ChainCode)
+		}
+
+		// 确定派生路径
+		if path, ok := keyMetadata.Tags["derivation_path"]; ok && path != "" {
+			derivationPath = path
+		} else if idxStr, ok := keyMetadata.Tags["derivation_index"]; ok && idxStr != "" {
+			// 假设单层派生: m/index
+			derivationPath = "m/" + idxStr
+		}
+	} else {
+		// 根密钥
+		if keyMetadata.ChainCode != "" {
+			parentChainCode, _ = hex.DecodeString(keyMetadata.ChainCode)
+		}
+	}
+
 	// 2. 推断协议类型
 	protocolName := inferProtocol(keyMetadata.Algorithm, keyMetadata.Curve, s.defaultProtocol)
 
 	// 3. 创建签名会话
-	signingSession, err := s.sessionManager.CreateSession(ctx, req.KeyID, protocolName, keyMetadata.Threshold, keyMetadata.TotalNodes)
+	// 注意：使用 signingKeyID (可能是 Root Key ID)，以便节点能够加载正确的密钥分片
+	signingSession, err := s.sessionManager.CreateSession(ctx, signingKeyID, protocolName, keyMetadata.Threshold, keyMetadata.TotalNodes)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create signing session")
 	}
@@ -134,11 +172,11 @@ func (s *Service) ThresholdSign(ctx context.Context, req *SignRequest) (*SignRes
 	// 对于 2-of-3 MPC，签名只需要服务器节点（server-proxy-1, server-proxy-2）
 	// 客户端节点不参与签名流程
 	var participatingNodes []string
-	
+
 	if keyMetadata.Threshold == 2 && keyMetadata.TotalNodes == 3 {
 		// 固定 2-of-3 模式：使用固定的服务器节点列表
 		participatingNodes = []string{"server-proxy-1", "server-proxy-2"}
-		
+
 		log.Info().
 			Str("key_id", req.KeyID).
 			Strs("participating_nodes", participatingNodes).
@@ -152,7 +190,7 @@ func (s *Service) ThresholdSign(ctx context.Context, req *SignRequest) (*SignRes
 		if limit < keyMetadata.Threshold {
 			limit = keyMetadata.Threshold
 		}
-		
+
 		// 发现节点时，只选择 participant 类型且 purpose=signing 的节点
 		participants, err := s.nodeDiscovery.DiscoverNodes(ctx, node.NodeTypeParticipant, node.NodeStatusActive, limit)
 		if err != nil {
@@ -179,7 +217,7 @@ func (s *Service) ThresholdSign(ctx context.Context, req *SignRequest) (*SignRes
 		if needNodes > len(signingNodes) {
 			needNodes = len(signingNodes)
 		}
-		
+
 		participatingNodes = make([]string, 0, needNodes)
 		for i := 0; i < needNodes; i++ {
 			participatingNodes = append(participatingNodes, signingNodes[i].NodeID)
@@ -209,27 +247,32 @@ func (s *Service) ThresholdSign(ctx context.Context, req *SignRequest) (*SignRes
 		return nil, errors.New("no participating nodes available")
 	}
 
-	var chainCode []byte
-	if keyMetadata.ChainCode != "" {
-		var err error
-		chainCode, err = hex.DecodeString(keyMetadata.ChainCode)
-		if err != nil {
-			log.Warn().Err(err).Str("key_id", req.KeyID).Msg("Failed to decode chain code, derivation may fail")
+	// 转换 AuthTokens
+	var pbAuthTokens []*pb.StartSignRequest_AuthToken
+	if len(req.AuthTokens) > 0 {
+		pbAuthTokens = make([]*pb.StartSignRequest_AuthToken, len(req.AuthTokens))
+		for i, token := range req.AuthTokens {
+			pbAuthTokens[i] = &pb.StartSignRequest_AuthToken{
+				PublicKey: token.PublicKey,
+				Signature: token.Signature,
+				MemberId:  token.MemberID,
+			}
 		}
 	}
 
 	startSignReq := &pb.StartSignRequest{
-		SessionId:       signingSession.SessionID,
-		KeyId:           req.KeyID,
-		Message:         message,
-		MessageHex:      hex.EncodeToString(message),
-		Protocol:        protocolName,
-		Threshold:       int32(keyMetadata.Threshold),
+		SessionId:  signingSession.SessionID,
+		KeyId:      signingKeyID,
+		Message:    message,
+		MessageHex: hex.EncodeToString(message),
+		Protocol:   protocolName,
+		Threshold:  int32(keyMetadata.Threshold),
 		// total_nodes 使用密钥的 totalNodes，保持与 DKG 配置一致
 		TotalNodes:      int32(keyMetadata.TotalNodes),
 		NodeIds:         participatingNodes,
-		DerivationPath:  req.DerivationPath,
-		ParentChainCode: chainCode,
+		DerivationPath:  derivationPath,
+		ParentChainCode: parentChainCode,
+		AuthTokens:      pbAuthTokens,
 	}
 
 	log.Info().

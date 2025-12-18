@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/kashguard/go-mpc-wallet/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/config"
 )
 
 func TestPrintServiceEnv(t *testing.T) {

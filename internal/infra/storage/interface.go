@@ -55,6 +55,26 @@ type SigningSession struct {
 	DurationMs         int
 }
 
+// SigningPolicy 签名策略
+type SigningPolicy struct {
+	WalletID      string
+	PolicyType    string // single, team
+	MinSignatures int
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+}
+
+// UserAuthKey 用户鉴权公钥
+type UserAuthKey struct {
+	ID           string
+	WalletID     string
+	PublicKeyHex string
+	KeyType      string
+	MemberName   string
+	Role         string
+	CreatedAt    time.Time
+}
+
 // MetadataStore 密钥元数据存储接口
 type MetadataStore interface {
 	// 密钥操作
@@ -75,6 +95,10 @@ type MetadataStore interface {
 	SaveSigningSession(ctx context.Context, session *SigningSession) error
 	GetSigningSession(ctx context.Context, sessionID string) (*SigningSession, error)
 	UpdateSigningSession(ctx context.Context, session *SigningSession) error
+
+	// 鉴权代理操作 (Delegated Guardian)
+	GetSigningPolicy(ctx context.Context, keyID string) (*SigningPolicy, error)
+	ListUserAuthKeys(ctx context.Context, keyID string) ([]*UserAuthKey, error)
 
 	// 备份分片下发记录操作
 	SaveBackupShareDelivery(ctx context.Context, delivery *BackupShareDelivery) error

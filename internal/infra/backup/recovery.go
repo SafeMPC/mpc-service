@@ -3,15 +3,15 @@ package backup
 import (
 	"context"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
 
 // RecoveryService 密钥恢复服务
 type RecoveryService struct {
-	backupService  SSSBackupService
-	backupStorage  storage.BackupShareStorage
+	backupService   SSSBackupService
+	backupStorage   storage.BackupShareStorage
 	keyShareStorage storage.KeyShareStorage
 }
 
@@ -120,7 +120,7 @@ func (s *RecoveryService) RecoverClientShare(
 	userID string,
 ) ([]byte, error) {
 	nodeID := "client-" + userID
-	
+
 	// 恢复客户端分片
 	share, err := s.RecoverMPCShare(ctx, keyID, nodeID)
 	if err != nil {
@@ -150,10 +150,10 @@ func (s *RecoveryService) CheckBackupStatus(
 	status := make(map[string]*BackupStatus)
 	for nodeID, shares := range allBackupShares {
 		status[nodeID] = &BackupStatus{
-			NodeID:        nodeID,
-			TotalShares:   len(shares),
+			NodeID:         nodeID,
+			TotalShares:    len(shares),
 			RequiredShares: 3, // 3-of-5 配置
-			Recoverable:   len(shares) >= 3,
+			Recoverable:    len(shares) >= 3,
 		}
 	}
 
@@ -162,10 +162,10 @@ func (s *RecoveryService) CheckBackupStatus(
 
 // BackupStatus 备份状态
 type BackupStatus struct {
-	NodeID        string
-	TotalShares   int
+	NodeID         string
+	TotalShares    int
 	RequiredShares int
-	Recoverable   bool
+	Recoverable    bool
 }
 
 // ListBackupShares 列出备份分片（单个节点）
@@ -177,4 +177,3 @@ func (s *RecoveryService) ListBackupShares(ctx context.Context, keyID, nodeID st
 func (s *RecoveryService) ListAllBackupShares(ctx context.Context, keyID string) (map[string][]*storage.BackupShareInfo, error) {
 	return s.backupStorage.ListAllBackupShares(ctx, keyID)
 }
-

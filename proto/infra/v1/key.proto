@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package infra.v1;
 
-import "common.proto";
+import "infra/v1/common.proto";
 
-option go_package = "github.com/kashguard/go-mpc-wallet/internal/pb/infra/v1";
+option go_package = "github.com/kashguard/go-mpc-infra/internal/pb/infra/v1";
 
 // KeyService 密钥服务
 service KeyService {

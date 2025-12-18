@@ -3,7 +3,7 @@ package config_test
 import (
 	"testing"
 
-	"github.com/kashguard/go-mpc-wallet/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/config"
 )
 
 // via https://github.com/allaboutapps/integresql/blob/master/pkg/manager/database_config_test.go

@@ -8,14 +8,15 @@ package api
 
 import (
 	"database/sql"
-	"testing"
-
 	"github.com/google/wire"
-	"github.com/kashguard/go-mpc-wallet/internal/auth"
-	"github.com/kashguard/go-mpc-wallet/internal/config"
-	"github.com/kashguard/go-mpc-wallet/internal/data/local"
-	"github.com/kashguard/go-mpc-wallet/internal/metrics"
+	"github.com/kashguard/go-mpc-infra/internal/auth"
+	"github.com/kashguard/go-mpc-infra/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/data/local"
+	"github.com/kashguard/go-mpc-infra/internal/metrics"
+	"testing"
+)
 
+import (
 	_ "github.com/lib/pq"
 )
 
@@ -75,7 +76,7 @@ func InitNewServer(server config.Server) (*Server, error) {
 	signingService := NewSigningServiceProvider(keyService, engine, sessionManager, discovery, server, grpcClient)
 	coordinatorService := NewCoordinatorServiceProvider(server, keyService, sessionManager, discovery, engine, grpcClient)
 	registry := NewNodeRegistry(manager)
-	grpcServer, err := NewMPCGRPCServer(server, engine, sessionManager, keyShareStorage, grpcClient)
+	grpcServer, err := NewMPCGRPCServer(server, engine, sessionManager, keyShareStorage, grpcClient, metadataStore)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func InitNewServerWithDB(server config.Server, db *sql.DB, t ...*testing.T) (*Se
 	signingService := NewSigningServiceProvider(keyService, engine, sessionManager, discovery, server, grpcClient)
 	coordinatorService := NewCoordinatorServiceProvider(server, keyService, sessionManager, discovery, engine, grpcClient)
 	registry := NewNodeRegistry(manager)
-	grpcServer, err := NewMPCGRPCServer(server, engine, sessionManager, keyShareStorage, grpcClient)
+	grpcServer, err := NewMPCGRPCServer(server, engine, sessionManager, keyShareStorage, grpcClient, metadataStore)
 	if err != nil {
 		return nil, err
 	}
@@ -183,4 +184,9 @@ var mpcServiceSet = wire.NewSet(
 	NewCoordinatorServiceProvider,
 
 	NewMPCDiscoveryService,
+
+	NewBackupService,
+	NewRecoveryService,
+	NewBackupStore,
+	NewInfrastructureServer,
 )

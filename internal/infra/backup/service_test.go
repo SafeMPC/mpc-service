@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -37,7 +37,7 @@ func (m *MockBackupShareStorage) ListAllBackupShares(ctx context.Context, keyID 
 func TestSSSBackupService_GenerateBackupShares(t *testing.T) {
 	ctx := context.Background()
 	mockStorage := new(MockBackupShareStorage)
-	
+
 	service := NewService(mockStorage, nil).(*Service)
 
 	// 测试数据：单个MPC分片
@@ -60,7 +60,7 @@ func TestSSSBackupService_GenerateBackupShares(t *testing.T) {
 func TestSSSBackupService_RecoverMPCShareFromBackup(t *testing.T) {
 	ctx := context.Background()
 	mockStorage := new(MockBackupShareStorage)
-	
+
 	service := NewService(mockStorage, nil).(*Service)
 
 	// 原始MPC分片
@@ -80,4 +80,3 @@ func TestSSSBackupService_RecoverMPCShareFromBackup(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "insufficient")
 }
-

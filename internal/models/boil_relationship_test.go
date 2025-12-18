@@ -10,6 +10,8 @@ import "testing"
 func TestToOne(t *testing.T) {
 	t.Run("AccessTokenToUserUsingUser", testAccessTokenToOneUserUsingUser)
 	t.Run("AppUserProfileToUserUsingUser", testAppUserProfileToOneUserUsingUser)
+	t.Run("BackupShareDeliveryToKeyUsingKey", testBackupShareDeliveryToOneKeyUsingKey)
+	t.Run("BackupShareToKeyUsingKey", testBackupShareToOneKeyUsingKey)
 	t.Run("ConfirmationTokenToUserUsingUser", testConfirmationTokenToOneUserUsingUser)
 	t.Run("PasswordResetTokenToUserUsingUser", testPasswordResetTokenToOneUserUsingUser)
 	t.Run("PushTokenToUserUsingUser", testPushTokenToOneUserUsingUser)
@@ -26,6 +28,8 @@ func TestOneToOne(t *testing.T) {
 // TestToMany tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToMany(t *testing.T) {
+	t.Run("KeyToBackupShareDeliveries", testKeyToManyBackupShareDeliveries)
+	t.Run("KeyToBackupShares", testKeyToManyBackupShares)
 	t.Run("KeyToSigningSessions", testKeyToManySigningSessions)
 	t.Run("UserToAccessTokens", testUserToManyAccessTokens)
 	t.Run("UserToConfirmationTokens", testUserToManyConfirmationTokens)
@@ -39,6 +43,8 @@ func TestToMany(t *testing.T) {
 func TestToOneSet(t *testing.T) {
 	t.Run("AccessTokenToUserUsingAccessTokens", testAccessTokenToOneSetOpUserUsingUser)
 	t.Run("AppUserProfileToUserUsingAppUserProfile", testAppUserProfileToOneSetOpUserUsingUser)
+	t.Run("BackupShareDeliveryToKeyUsingBackupShareDeliveries", testBackupShareDeliveryToOneSetOpKeyUsingKey)
+	t.Run("BackupShareToKeyUsingBackupShares", testBackupShareToOneSetOpKeyUsingKey)
 	t.Run("ConfirmationTokenToUserUsingConfirmationTokens", testConfirmationTokenToOneSetOpUserUsingUser)
 	t.Run("PasswordResetTokenToUserUsingPasswordResetTokens", testPasswordResetTokenToOneSetOpUserUsingUser)
 	t.Run("PushTokenToUserUsingPushTokens", testPushTokenToOneSetOpUserUsingUser)
@@ -63,6 +69,8 @@ func TestOneToOneRemove(t *testing.T) {}
 // TestToManyAdd tests cannot be run in parallel
 // or deadlocks can occur.
 func TestToManyAdd(t *testing.T) {
+	t.Run("KeyToBackupShareDeliveries", testKeyToManyAddOpBackupShareDeliveries)
+	t.Run("KeyToBackupShares", testKeyToManyAddOpBackupShares)
 	t.Run("KeyToSigningSessions", testKeyToManyAddOpSigningSessions)
 	t.Run("UserToAccessTokens", testUserToManyAddOpAccessTokens)
 	t.Run("UserToConfirmationTokens", testUserToManyAddOpConfirmationTokens)

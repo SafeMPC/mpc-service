@@ -10,13 +10,14 @@ import (
 type contextKey string
 
 const (
-	CTXKeyUser          contextKey = "user"
-	CTXKeyAccessToken   contextKey = "access_token"
-	CTXKeyCacheControl  contextKey = "cache_control"
-	CTXKeyRequestID     contextKey = "request_id"
-	CTXKeyDisableLogger contextKey = "disable_logger"
+	CTXKeyUser           contextKey = "user"
+	CTXKeyAccessToken    contextKey = "access_token"
+	CTXKeyCacheControl   contextKey = "cache_control"
+	CTXKeyRequestID      contextKey = "request_id"
+	CTXKeyDisableLogger  contextKey = "disable_logger"
 	CTXKeyAppPermissions contextKey = "app_permissions"
 	CTXKeyAppTenantID    contextKey = "app_tenant_id"
+	CTXKeyAppID          contextKey = "app_id"
 )
 
 //nolint:containedctx

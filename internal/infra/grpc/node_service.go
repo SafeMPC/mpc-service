@@ -3,9 +3,8 @@ package grpc
 import (
 	"context"
 
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/node"
-	pb "github.com/kashguard/go-mpc-wallet/internal/pb/infra/v1"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	pb "github.com/kashguard/go-mpc-infra/internal/pb/infra/v1"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -25,7 +24,7 @@ func (s *InfrastructureServer) RegisterNode(ctx context.Context, req *pb.Registe
 		// 对于 Client，使用 device_id 作为 user_id (或从 metadata 获取)
 		// 理想情况下，userID 应该从鉴权信息中提取
 		userID := req.DeviceId
-		
+
 		// 提取 metadata
 		meta := convertMetadata(req.Metadata)
 		if req.Version != "" {
@@ -38,7 +37,7 @@ func (s *InfrastructureServer) RegisterNode(ctx context.Context, req *pb.Registe
 			return nil, status.Error(codes.Internal, "failed to register node")
 		}
 		nodeID = n.NodeID
-		
+
 		log.Info().
 			Str("device_id", req.DeviceId).
 			Str("node_id", nodeID).
@@ -78,13 +77,13 @@ func (s *InfrastructureServer) ListNodes(ctx context.Context, req *pb.ListNodesR
 	// node.Manager.ListNodes 接受 storage.NodeFilter
 	// 但 storage 包在 internal/infra/storage，可能不能直接引用？
 	// node 包引用了 storage。
-	
+
 	// 由于引用循环限制，我们可能需要 node.Manager 暴露自己的 Filter 类型
 	// 但目前 ListNodes 签名是 ListNodes(ctx, *storage.NodeFilter)
-	
+
 	// 这里我们暂时返回未实现，或者需要引入 storage 包
 	// s.nodeManager.ListNodes 需要 storage.NodeFilter
-	
+
 	return nil, status.Error(codes.Unimplemented, "list nodes not implemented yet")
 }
 
@@ -102,10 +101,10 @@ func (s *InfrastructureServer) GetNodeConnectionInfo(ctx context.Context, req *p
 	// 构造连接信息
 	// 如果是 Server 节点，返回其 gRPC 地址
 	// 如果是 Client 节点，通常不可直连，除非有 P2P 穿透
-	
+
 	protocol := "grpc"
 	address := n.Endpoint
-	
+
 	return &pb.GetNodeConnectionInfoResponse{
 		Address:   address,
 		Protocol:  protocol,

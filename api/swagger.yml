@@ -6,7 +6,7 @@ produces:
 swagger: "2.0"
 info:
   description: API documentation
-  title: github.com/kashguard/go-mpc-wallet
+  title: github.com/kashguard/go-mpc-infra
   version: 0.1.0
 paths:
   /-/healthy:
@@ -375,7 +375,70 @@ paths:
           description: GetUserInfoResponse
           schema:
             $ref: '#/definitions/getUserInfoResponse'
-  /api/v1/mpc/keys:
+  /api/v1/infra/backup/shares:
+    get:
+      tags:
+      - Backup
+      summary: List Backup Shares
+      operationId: listBackupShares
+      parameters:
+      - type: string
+        name: key_id
+        in: query
+        required: true
+      - type: string
+        name: node_id
+        in: query
+      responses:
+        "200":
+          description: (empty)
+          schema:
+            $ref: '#/definitions/listBackupSharesResponse'
+        default:
+          description: Standard error response
+          schema:
+            $ref: '#/definitions/publicHttpError'
+  /api/v1/infra/backup/shares/recover:
+    post:
+      tags:
+      - Backup
+      summary: Recover MPC Share
+      operationId: postRecoverMPCShare
+      parameters:
+      - name: body
+        in: body
+        schema:
+          $ref: '#/definitions/recoverMPCShareRequest'
+      responses:
+        "200":
+          description: (empty)
+          schema:
+            $ref: '#/definitions/recoverMPCShareResponse'
+        default:
+          description: Standard error response
+          schema:
+            $ref: '#/definitions/publicHttpError'
+  /api/v1/infra/backup/status:
+    get:
+      tags:
+      - Backup
+      summary: Get Backup Status
+      operationId: getBackupStatus
+      parameters:
+      - type: string
+        name: key_id
+        in: query
+        required: true
+      responses:
+        "200":
+          description: (empty)
+          schema:
+            $ref: '#/definitions/getBackupStatusResponse'
+        default:
+          description: Standard error response
+          schema:
+            $ref: '#/definitions/publicHttpError'
+  /api/v1/infra/keys:
     get:
       security:
       - Bearer: []
@@ -450,7 +513,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/keys/{keyId}:
+  /api/v1/infra/keys/{keyId}:
     get:
       security:
       - Bearer: []
@@ -513,7 +576,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/keys/{keyId}/address:
+  /api/v1/infra/keys/{keyId}/address:
     post:
       security:
       - Bearer: []
@@ -548,7 +611,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/nodes:
+  /api/v1/infra/nodes:
     get:
       security:
       - Bearer: []
@@ -618,7 +681,49 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/nodes/{nodeId}:
+  /api/v1/infra/nodes/heartbeat:
+    post:
+      tags:
+      - Infrastructure
+      summary: Send heartbeat
+      operationId: postHeartbeat
+      parameters:
+      - name: payload
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/heartbeatRequest'
+      responses:
+        "200":
+          description: Heartbeat received
+          schema:
+            $ref: '#/definitions/heartbeatResponse'
+        default:
+          description: Standard error response
+          schema:
+            $ref: '#/definitions/publicHttpError'
+  /api/v1/infra/nodes/register:
+    post:
+      tags:
+      - Infrastructure
+      summary: Register a new node
+      operationId: postRegisterNode
+      parameters:
+      - name: payload
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/nodeRegistration'
+      responses:
+        "201":
+          description: Node registered successfully
+          schema:
+            $ref: '#/definitions/nodeRegistrationResponse'
+        default:
+          description: Standard error response
+          schema:
+            $ref: '#/definitions/publicHttpError'
+  /api/v1/infra/nodes/{nodeId}:
     get:
       security:
       - Bearer: []
@@ -649,7 +754,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/nodes/{nodeId}/health:
+  /api/v1/infra/nodes/{nodeId}/health:
     get:
       security:
       - Bearer: []
@@ -678,7 +783,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/sessions:
+  /api/v1/infra/sessions:
     post:
       security:
       - Bearer: []
@@ -710,7 +815,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/sessions/{sessionId}:
+  /api/v1/infra/sessions/{sessionId}:
     get:
       security:
       - Bearer: []
@@ -741,7 +846,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/sessions/{sessionId}/cancel:
+  /api/v1/infra/sessions/{sessionId}/cancel:
     post:
       security:
       - Bearer: []
@@ -770,7 +875,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/sessions/{sessionId}/join:
+  /api/v1/infra/sessions/{sessionId}/join:
     post:
       security:
       - Bearer: []
@@ -803,7 +908,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/sign:
+  /api/v1/infra/sign:
     post:
       security:
       - Bearer: []
@@ -839,7 +944,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/sign/batch:
+  /api/v1/infra/sign/batch:
     post:
       security:
       - Bearer: []
@@ -875,7 +980,7 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
-  /api/v1/mpc/verify:
+  /api/v1/infra/verify:
     post:
       security:
       - Bearer: []
@@ -950,6 +1055,53 @@ paths:
         "200":
           description: OK
 definitions:
+  authToken:
+    type: object
+    required:
+    - public_key
+    - signature
+    properties:
+      member_id:
+        type: string
+        example: user-123
+      public_key:
+        type: string
+        example: pub-0x1234567890abcdef...
+      signature:
+        type: string
+        format: byte
+        example: SGVsbG8gV29ybGQ=
+  backupShare:
+    type: object
+    properties:
+      created_at:
+        type: string
+      key_id:
+        type: string
+      node_id:
+        type: string
+      share_index:
+        type: integer
+  backupShares:
+    type: object
+    properties:
+      node_id:
+        type: string
+      shares:
+        type: array
+        items:
+          $ref: '#/definitions/backupShare'
+  backupStatus:
+    type: object
+    properties:
+      node_id:
+        type: string
+      recoverable:
+        type: boolean
+      required_shares:
+        type: integer
+      total_shares:
+        type: integer
   batchSignResponse:
     type: object
     required:
@@ -1085,6 +1237,15 @@ definitions:
       key_id:
         type: string
         example: key-1234567890abcdef
+  getBackupStatusResponse:
+    type: object
+    properties:
+      key_id:
+        type: string
+      statuses:
+        type: array
+        items:
+          $ref: '#/definitions/backupStatus'
   getKeyResponse:
     type: object
     required:
@@ -1227,6 +1388,21 @@ definitions:
         description: Unix timestamp the user's info was last updated at
         type: integer
         example: 1591960808
+  heartbeatRequest:
+    type: object
+    required:
+    - node_id
+    - status
+    properties:
+      node_id:
+        type: string
+      status:
+        type: string
+  heartbeatResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
   httpValidationErrorDetail:
     type: object
     required:
@@ -1243,6 +1419,15 @@ definitions:
       key:
         description: Key of field failing validation
         type: string
+  listBackupSharesResponse:
+    type: object
+    properties:
+      key_id:
+        type: string
+      shares_by_node:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/backupShares'
   listKeysResponse:
     type: object
     required:
@@ -1273,6 +1458,32 @@ definitions:
         type: integer
       total:
         type: integer
+  nodeRegistration:
+    type: object
+    required:
+    - device_id
+    - public_key
+    properties:
+      device_id:
+        type: string
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+      public_key:
+        type: string
+      version:
+        type: string
+  nodeRegistrationResponse:
+    type: object
+    properties:
+      node_id:
+        type: string
+      registered_at:
+        type: string
+        format: date-time
+      status:
+        type: string
   orderDir:
     type: string
     enum:
@@ -1545,6 +1756,10 @@ definitions:
     - key_id
     - message
     properties:
+      auth_tokens:
+        type: array
+        items:
+          $ref: '#/definitions/authToken'
       chain_type:
         type: string
         example: ethereum
@@ -1665,6 +1880,28 @@ definitions:
         type: string
         maxLength: 500
         example: fcm
+  recoverMPCShareRequest:
+    type: object
+    properties:
+      key_id:
+        type: string
+      node_id:
+        type: string
+      share_data:
+        description: Base64 encoded share data provided by the user
+        type: string
+        format: byte
+  recoverMPCShareResponse:
+    type: object
+    properties:
+      key_id:
+        type: string
+      message:
+        type: string
+      node_id:
+        type: string
+      success:
+        type: boolean
   registerNodeResponse:
     type: object
     required:

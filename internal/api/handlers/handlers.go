@@ -2,15 +2,16 @@
 package handlers
 
 import (
-	"github.com/kashguard/go-mpc-wallet/internal/api"
-	"github.com/kashguard/go-mpc-wallet/internal/api/handlers/auth"
-	"github.com/kashguard/go-mpc-wallet/internal/api/handlers/common"
-	"github.com/kashguard/go-mpc-wallet/internal/api/handlers/mpc/keys"
-	// "github.com/kashguard/go-mpc-wallet/internal/api/handlers/mpc/nodes"
-	"github.com/kashguard/go-mpc-wallet/internal/api/handlers/mpc/sessions"
-	"github.com/kashguard/go-mpc-wallet/internal/api/handlers/mpc/signing"
-	"github.com/kashguard/go-mpc-wallet/internal/api/handlers/push"
-	"github.com/kashguard/go-mpc-wallet/internal/api/handlers/wellknown"
+	"github.com/kashguard/go-mpc-infra/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/auth"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/common"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/backup"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/keys"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/nodes"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/sessions"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/signing"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/push"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/wellknown"
 	"github.com/labstack/echo/v4"
 )
 
@@ -32,15 +33,16 @@ func AttachAllRoutes(s *api.Server) {
 		common.GetReadyRoute(s),
 		common.GetSwaggerRoute(s),
 		common.GetVersionRoute(s),
+		backup.GetBackupStatusRoute(s),
+		backup.GetListBackupSharesRoute(s),
+		backup.PostRecoverMPCShareRoute(s),
 		keys.DeleteKeyRoute(s),
 		keys.GetKeyRoute(s),
 		keys.GetListKeysRoute(s),
 		keys.PostCreateKeyRoute(s),
 		keys.PostGenerateAddressRoute(s),
-		// nodes.GetListNodesRoute(s),
-		// nodes.GetNodeHealthRoute(s),
-		// nodes.GetNodeRoute(s),
-		// nodes.PostRegisterNodeRoute(s),
+		nodes.PostHeartbeatRoute(s),
+		nodes.PostRegisterNodeRoute(s),
 		sessions.GetSessionRoute(s),
 		sessions.PostCancelSessionRoute(s),
 		sessions.PostCreateSessionRoute(s),

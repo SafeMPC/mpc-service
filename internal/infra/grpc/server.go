@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/auth"
-	"github.com/kashguard/go-mpc-wallet/internal/config"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/backup"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/key"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/signing"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/node"
-	pb "github.com/kashguard/go-mpc-wallet/internal/pb/infra/v1"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
-	"github.com/kashguard/go-mpc-wallet/internal/util/cert"
+	"github.com/kashguard/go-mpc-infra/internal/auth"
+	"github.com/kashguard/go-mpc-infra/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/infra/backup"
+	"github.com/kashguard/go-mpc-infra/internal/infra/key"
+	"github.com/kashguard/go-mpc-infra/internal/infra/signing"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
+	pb "github.com/kashguard/go-mpc-infra/internal/pb/infra/v1"
+	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/util/cert"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -37,7 +37,7 @@ type InfrastructureServer struct {
 	pb.UnimplementedSigningServiceServer
 	pb.UnimplementedBackupServiceServer
 	pb.UnimplementedBackupDeliveryServiceServer
-	// pb.UnimplementedNodeServiceServer // Uncomment after generating code
+	pb.UnimplementedNodeServiceServer
 
 	keyService           *key.Service
 	signingService       *signing.Service
@@ -203,6 +203,7 @@ func (s *InfrastructureServer) authInterceptor(
 			}
 			ctx = context.WithValue(ctx, util.CTXKeyAppPermissions, claims.Permissions)
 			ctx = context.WithValue(ctx, util.CTXKeyAppTenantID, claims.TenantID)
+			ctx = context.WithValue(ctx, util.CTXKeyAppID, claims.AppID)
 		}
 	}
 
@@ -245,7 +246,7 @@ func (s *InfrastructureServer) Start(ctx context.Context) error {
 	pb.RegisterSigningServiceServer(s.grpcServer, s)
 	pb.RegisterBackupServiceServer(s.grpcServer, s)
 	pb.RegisterBackupDeliveryServiceServer(s.grpcServer, s)
-	// pb.RegisterNodeServiceServer(s.grpcServer, s) // Uncomment after generating code
+	pb.RegisterNodeServiceServer(s.grpcServer, s)
 
 	// 启用反射（开发环境）
 	reflection.Register(s.grpcServer)

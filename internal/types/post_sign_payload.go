@@ -8,6 +8,7 @@ package types
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
@@ -19,6 +20,9 @@ import (
 //
 // swagger:model postSignPayload
 type PostSignPayload struct {
+
+	// auth tokens
+	AuthTokens []*AuthToken `json:"auth_tokens"`
 
 	// chain type
 	// Example: ethereum
@@ -45,6 +49,10 @@ type PostSignPayload struct {
 func (m *PostSignPayload) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateAuthTokens(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if err := m.validateKeyID(formats); err != nil {
 		res = append(res, err)
 	}
@@ -60,6 +68,32 @@ func (m *PostSignPayload) Validate(formats strfmt.Registry) error {
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *PostSignPayload) validateAuthTokens(formats strfmt.Registry) error {
+	if swag.IsZero(m.AuthTokens) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(m.AuthTokens); i++ {
+		if swag.IsZero(m.AuthTokens[i]) { // not required
+			continue
+		}
+
+		if m.AuthTokens[i] != nil {
+			if err := m.AuthTokens[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("auth_tokens" + "." + strconv.Itoa(i))
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("auth_tokens" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
 	return nil
 }
 
@@ -126,8 +160,37 @@ func (m *PostSignPayload) validateMessageType(formats strfmt.Registry) error {
 	return nil
 }
 
-// ContextValidate validates this post sign payload based on context it is used
+// ContextValidate validate this post sign payload based on the context it is used
 func (m *PostSignPayload) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := m.contextValidateAuthTokens(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (m *PostSignPayload) contextValidateAuthTokens(ctx context.Context, formats strfmt.Registry) error {
+
+	for i := 0; i < len(m.AuthTokens); i++ {
+
+		if m.AuthTokens[i] != nil {
+			if err := m.AuthTokens[i].ContextValidate(ctx, formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("auth_tokens" + "." + strconv.Itoa(i))
+				} else if ce, ok := err.(*errors.CompositeError); ok {
+					return ce.ValidateName("auth_tokens" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
 	return nil
 }
 

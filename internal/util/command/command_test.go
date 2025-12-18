@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/kashguard/go-mpc-wallet/internal/api"
-	"github.com/kashguard/go-mpc-wallet/internal/test"
-	"github.com/kashguard/go-mpc-wallet/internal/util/command"
+	"github.com/kashguard/go-mpc-infra/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/test"
+	"github.com/kashguard/go-mpc-infra/internal/util/command"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

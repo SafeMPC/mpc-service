@@ -5,7 +5,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/kashguard/go-mpc-wallet/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/api"
 	"github.com/labstack/echo/v4"
 )
 

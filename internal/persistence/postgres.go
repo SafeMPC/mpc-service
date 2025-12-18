@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/config"
 )
 
 const (

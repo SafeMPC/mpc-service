@@ -8,15 +8,15 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/kashguard/go-mpc-wallet/internal/api"
-	"github.com/kashguard/go-mpc-wallet/internal/test"
-	"github.com/kashguard/go-mpc-wallet/internal/test/fixtures"
-	"github.com/kashguard/go-mpc-wallet/internal/test/mocks"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/test"
+	"github.com/kashguard/go-mpc-infra/internal/test/fixtures"
+	"github.com/kashguard/go-mpc-infra/internal/test/mocks"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 
 	"github.com/aarondl/sqlboiler/v4/types"
 	"github.com/go-openapi/swag"
-	apitypes "github.com/kashguard/go-mpc-wallet/internal/types"
+	apitypes "github.com/kashguard/go-mpc-infra/internal/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )

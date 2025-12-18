@@ -12,6 +12,10 @@ func TestUpsert(t *testing.T) {
 
 	t.Run("AuditLogs", testAuditLogsUpsert)
 
+	t.Run("BackupShareDeliveries", testBackupShareDeliveriesUpsert)
+
+	t.Run("BackupShares", testBackupSharesUpsert)
+
 	t.Run("ConfirmationTokens", testConfirmationTokensUpsert)
 
 	t.Run("Keys", testKeysUpsert)
@@ -24,7 +28,11 @@ func TestUpsert(t *testing.T) {
 
 	t.Run("RefreshTokens", testRefreshTokensUpsert)
 
+	t.Run("SigningPolicies", testSigningPoliciesUpsert)
+
 	t.Run("SigningSessions", testSigningSessionsUpsert)
+
+	t.Run("UserAuthKeys", testUserAuthKeysUpsert)
 
 	t.Run("Users", testUsersUpsert)
 }

@@ -8,26 +8,26 @@ import (
 	"net/http"
 
 	"github.com/dropbox/godropbox/time2"
-	"github.com/kashguard/go-mpc-wallet/internal/config"
-	"github.com/kashguard/go-mpc-wallet/internal/data/dto"
-	"github.com/kashguard/go-mpc-wallet/internal/data/local"
-	"github.com/kashguard/go-mpc-wallet/internal/i18n"
-	"github.com/kashguard/go-mpc-wallet/internal/mailer"
-	"github.com/kashguard/go-mpc-wallet/internal/metrics"
-	"github.com/kashguard/go-mpc-wallet/internal/push"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/data/dto"
+	"github.com/kashguard/go-mpc-infra/internal/data/local"
+	"github.com/kashguard/go-mpc-infra/internal/i18n"
+	"github.com/kashguard/go-mpc-infra/internal/mailer"
+	"github.com/kashguard/go-mpc-infra/internal/metrics"
+	"github.com/kashguard/go-mpc-infra/internal/push"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 
 	// MPC imports
-	"github.com/kashguard/go-mpc-wallet/internal/infra/coordinator"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/discovery"
-	infra_grpc "github.com/kashguard/go-mpc-wallet/internal/infra/grpc"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/key"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/session"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/signing"
-	mpcgrpc "github.com/kashguard/go-mpc-wallet/internal/mpc/grpc"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/node"
+	"github.com/kashguard/go-mpc-infra/internal/infra/coordinator"
+	"github.com/kashguard/go-mpc-infra/internal/infra/discovery"
+	infra_grpc "github.com/kashguard/go-mpc-infra/internal/infra/grpc"
+	"github.com/kashguard/go-mpc-infra/internal/infra/key"
+	"github.com/kashguard/go-mpc-infra/internal/infra/session"
+	"github.com/kashguard/go-mpc-infra/internal/infra/signing"
+	mpcgrpc "github.com/kashguard/go-mpc-infra/internal/mpc/grpc"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
 
 	// Import postgres driver for database/sql package
 	_ "github.com/lib/pq"
@@ -39,7 +39,7 @@ type Router struct {
 	Management *echo.Group
 	APIV1Auth  *echo.Group
 	APIV1Push  *echo.Group
-	APIV1MPC   *echo.Group
+	APIV1Infra *echo.Group
 	WellKnown  *echo.Group
 }
 

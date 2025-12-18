@@ -67,4 +67,3 @@ type DeriveWalletKeyByPathRequest struct {
 	Description string
 	Tags        map[string]string
 }
-

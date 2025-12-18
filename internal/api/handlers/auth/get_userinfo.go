@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/kashguard/go-mpc-wallet/internal/api"
-	"github.com/kashguard/go-mpc-wallet/internal/auth"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/auth"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 	"github.com/labstack/echo/v4"
 )
 

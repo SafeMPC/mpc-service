@@ -5,14 +5,20 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	pb "github.com/kashguard/go-mpc-wallet/internal/pb/infra/v1"
-	pkgbackup "github.com/kashguard/go-mpc-wallet/pkg/backup"
+	pb "github.com/kashguard/go-mpc-infra/internal/pb/infra/v1"
+	"github.com/kashguard/go-mpc-infra/internal/util"
+	pkgbackup "github.com/kashguard/go-mpc-infra/pkg/backup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 // RequestShareDelivery 请求分片下发
 func (s *InfrastructureServer) RequestShareDelivery(ctx context.Context, req *pb.ShareDeliveryRequest) (*pb.ShareDeliveryResponse, error) {
+	// 0. Auth Check
+	if err := s.checkAuth(ctx, req.ClientId); err != nil {
+		return nil, err
+	}
+
 	// 1. Get the backup share data
 	shareData, err := s.store.GetBackupShare(ctx, req.KeyId, req.NodeId, int(req.ShareIndex))
 	if err != nil {
@@ -50,6 +56,11 @@ func (s *InfrastructureServer) RequestShareDelivery(ctx context.Context, req *pb
 
 // ConfirmShareDelivery 确认分片下发
 func (s *InfrastructureServer) ConfirmShareDelivery(ctx context.Context, req *pb.ShareConfirmationRequest) (*pb.ShareConfirmationResponse, error) {
+	// Auth Check
+	if err := s.checkAuth(ctx, req.ClientId); err != nil {
+		return nil, err
+	}
+
 	if req.ReceivedSuccessfully {
 		err := s.deliveryStateMachine.TransitionToConfirmed(ctx, req.KeyId, req.ClientId, req.NodeId, int(req.ShareIndex))
 		if err != nil {
@@ -73,6 +84,11 @@ func (s *InfrastructureServer) ConfirmShareDelivery(ctx context.Context, req *pb
 
 // QueryShareStatus 查询分片状态
 func (s *InfrastructureServer) QueryShareStatus(ctx context.Context, req *pb.ShareStatusQuery) (*pb.ShareStatusResponse, error) {
+	// Auth Check
+	if err := s.checkAuth(ctx, req.ClientId); err != nil {
+		return nil, err
+	}
+
 	delivery, err := s.store.GetBackupShareDelivery(ctx, req.KeyId, req.ClientId, req.NodeId, int(req.ShareIndex))
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "delivery record not found: %v", err)
@@ -91,4 +107,15 @@ func (s *InfrastructureServer) QueryShareStatus(ctx context.Context, req *pb.Sha
 	resp.FailureReason = delivery.FailureReason
 
 	return resp, nil
+}
+
+// checkAuth validates that the authenticated user matches the requested client ID
+func (s *InfrastructureServer) checkAuth(ctx context.Context, requestedClientID string) error {
+	authenticatedAppID, ok := ctx.Value(util.CTXKeyAppID).(string)
+	if ok && authenticatedAppID != "" {
+		if authenticatedAppID != requestedClientID {
+			return status.Errorf(codes.PermissionDenied, "client_id mismatch: authenticated as %s but requested for %s", authenticatedAppID, requestedClientID)
+		}
+	}
+	return nil
 }

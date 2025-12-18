@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/runtime"

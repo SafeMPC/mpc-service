@@ -1,7 +1,7 @@
 package probe
 
 import (
-	"github.com/kashguard/go-mpc-wallet/internal/util/command"
+	"github.com/kashguard/go-mpc-infra/internal/util/command"
 	"github.com/spf13/cobra"
 )
 

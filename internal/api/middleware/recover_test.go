@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/kashguard/go-mpc-wallet/internal/api"
-	"github.com/kashguard/go-mpc-wallet/internal/api/middleware"
-	"github.com/kashguard/go-mpc-wallet/internal/test"
+	"github.com/kashguard/go-mpc-infra/internal/api"
+	"github.com/kashguard/go-mpc-infra/internal/api/middleware"
+	"github.com/kashguard/go-mpc-infra/internal/test"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 

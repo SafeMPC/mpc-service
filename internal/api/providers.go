@@ -8,24 +8,24 @@ import (
 	"time"
 
 	"github.com/dropbox/godropbox/time2"
-	"github.com/kashguard/go-mpc-wallet/internal/auth"
-	"github.com/kashguard/go-mpc-wallet/internal/config"
-	"github.com/kashguard/go-mpc-wallet/internal/i18n"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/backup"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/coordinator"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/discovery"
-	infra_grpc "github.com/kashguard/go-mpc-wallet/internal/infra/grpc"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/key"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/session"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/signing"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
-	"github.com/kashguard/go-mpc-wallet/internal/mailer"
-	mpcgrpc "github.com/kashguard/go-mpc-wallet/internal/mpc/grpc"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/node"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/protocol"
-	"github.com/kashguard/go-mpc-wallet/internal/persistence"
-	"github.com/kashguard/go-mpc-wallet/internal/push"
-	"github.com/kashguard/go-mpc-wallet/internal/push/provider"
+	"github.com/kashguard/go-mpc-infra/internal/auth"
+	"github.com/kashguard/go-mpc-infra/internal/config"
+	"github.com/kashguard/go-mpc-infra/internal/i18n"
+	"github.com/kashguard/go-mpc-infra/internal/infra/backup"
+	"github.com/kashguard/go-mpc-infra/internal/infra/coordinator"
+	"github.com/kashguard/go-mpc-infra/internal/infra/discovery"
+	infra_grpc "github.com/kashguard/go-mpc-infra/internal/infra/grpc"
+	"github.com/kashguard/go-mpc-infra/internal/infra/key"
+	"github.com/kashguard/go-mpc-infra/internal/infra/session"
+	"github.com/kashguard/go-mpc-infra/internal/infra/signing"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/mailer"
+	mpcgrpc "github.com/kashguard/go-mpc-infra/internal/mpc/grpc"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
+	"github.com/kashguard/go-mpc-infra/internal/persistence"
+	"github.com/kashguard/go-mpc-infra/internal/push"
+	"github.com/kashguard/go-mpc-infra/internal/push/provider"
 	"github.com/kashguard/tss-lib/tss"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
@@ -141,6 +141,7 @@ func NewMPCGRPCServer(
 	sessionManager *session.Manager,
 	keyShareStorage storage.KeyShareStorage,
 	grpcClient *mpcgrpc.GRPCClient,
+	metadataStore storage.MetadataStore,
 ) (*mpcgrpc.GRPCServer, error) {
 	nodeID := cfg.MPC.NodeID
 	if nodeID == "" {
@@ -174,7 +175,7 @@ func NewMPCGRPCServer(
 	registry.Register("gg20", gg20Engine)
 	registry.Register("frost", frostEngine)
 
-	return mpcgrpc.NewGRPCServerWithRegistry(cfg, protocolEngine, registry, sessionManager, keyShareStorage, nodeID), nil
+	return mpcgrpc.NewGRPCServerWithRegistry(cfg, protocolEngine, registry, sessionManager, keyShareStorage, metadataStore, nodeID), nil
 }
 
 func NewProtocolEngine(cfg config.Server, grpcClient *mpcgrpc.GRPCClient, keyShareStorage storage.KeyShareStorage) protocol.Engine {

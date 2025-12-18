@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/kashguard/go-mpc-wallet/scripts/internal/scaffold"
+	"github.com/kashguard/go-mpc-infra/scripts/internal/scaffold"
 	"github.com/spf13/cobra"
 )
 

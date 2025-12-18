@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/mailer/transport"
-	"github.com/kashguard/go-mpc-wallet/internal/push/provider"
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/mailer/transport"
+	"github.com/kashguard/go-mpc-infra/internal/push/provider"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 	"github.com/rs/zerolog"
 	"golang.org/x/text/language"
 )
@@ -134,13 +134,14 @@ type MPC struct {
 	JWTDuration time.Duration
 
 	// KeepAlive 配置
-	KeepAlive      time.Duration // KeepAlive 时间间隔
-	MaxConnAge     time.Duration // 最大连接存活时间
+	KeepAlive  time.Duration // KeepAlive 时间间隔
+	MaxConnAge time.Duration // 最大连接存活时间
 
 	// 功能配置
 	EnableAudit     bool
 	EnablePolicy    bool
 	KeyRotationDays int
+	IsGuardianNode  bool // 是否作为 Guardian 节点运行
 
 	// 性能配置
 	MaxConcurrentSessions int
@@ -324,6 +325,7 @@ func DefaultServiceConfigFromEnv() Server {
 			EnableAudit:           util.GetEnvAsBool("MPC_ENABLE_AUDIT", true),
 			EnablePolicy:          util.GetEnvAsBool("MPC_ENABLE_POLICY", true),
 			KeyRotationDays:       util.GetEnvAsInt("MPC_KEY_ROTATION_DAYS", 0),
+			IsGuardianNode:        util.GetEnvAsBool("MPC_IS_GUARDIAN_NODE", false),
 			MaxConcurrentSessions: util.GetEnvAsInt("MPC_MAX_CONCURRENT_SESSIONS", 100),
 			MaxConcurrentSignings: util.GetEnvAsInt("MPC_MAX_CONCURRENT_SIGNINGS", 50),
 			SessionTimeout:        util.GetEnvAsInt("MPC_SESSION_TIMEOUT", 300),

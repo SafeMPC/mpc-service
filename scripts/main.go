@@ -2,7 +2,7 @@
 
 package main
 
-import "github.com/kashguard/go-mpc-wallet/scripts/cmd"
+import "github.com/kashguard/go-mpc-infra/scripts/cmd"
 
 func main() {
 	cmd.Execute()

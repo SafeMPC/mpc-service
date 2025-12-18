@@ -109,29 +109,6 @@ var KeyTableColumns = struct {
 
 // Generated where
 
-type whereHelperint struct{ field string }
-
-func (w whereHelperint) EQ(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperint) NEQ(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperint) LT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperint) LTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperint) GT(x int) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperint) GTE(x int) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-func (w whereHelperint) IN(slice []int) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
-}
-func (w whereHelperint) NIN(slice []int) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
-
 var KeyWhere = struct {
 	KeyID        whereHelperstring
 	PublicKey    whereHelperstring
@@ -166,19 +143,57 @@ var KeyWhere = struct {
 
 // KeyRels is where relationship names are stored.
 var KeyRels = struct {
-	SigningSessions string
+	BackupShareDeliveries string
+	BackupShares          string
+	SigningSessions       string
 }{
-	SigningSessions: "SigningSessions",
+	BackupShareDeliveries: "BackupShareDeliveries",
+	BackupShares:          "BackupShares",
+	SigningSessions:       "SigningSessions",
 }
 
 // keyR is where relationships are stored.
 type keyR struct {
-	SigningSessions SigningSessionSlice `boil:"SigningSessions" json:"SigningSessions" toml:"SigningSessions" yaml:"SigningSessions"`
+	BackupShareDeliveries BackupShareDeliverySlice `boil:"BackupShareDeliveries" json:"BackupShareDeliveries" toml:"BackupShareDeliveries" yaml:"BackupShareDeliveries"`
+	BackupShares          BackupShareSlice         `boil:"BackupShares" json:"BackupShares" toml:"BackupShares" yaml:"BackupShares"`
+	SigningSessions       SigningSessionSlice      `boil:"SigningSessions" json:"SigningSessions" toml:"SigningSessions" yaml:"SigningSessions"`
 }
 
 // NewStruct creates a new relationship struct
 func (*keyR) NewStruct() *keyR {
 	return &keyR{}
+}
+
+func (o *Key) GetBackupShareDeliveries() BackupShareDeliverySlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetBackupShareDeliveries()
+}
+
+func (r *keyR) GetBackupShareDeliveries() BackupShareDeliverySlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.BackupShareDeliveries
+}
+
+func (o *Key) GetBackupShares() BackupShareSlice {
+	if o == nil {
+		return nil
+	}
+
+	return o.R.GetBackupShares()
+}
+
+func (r *keyR) GetBackupShares() BackupShareSlice {
+	if r == nil {
+		return nil
+	}
+
+	return r.BackupShares
 }
 
 func (o *Key) GetSigningSessions() SigningSessionSlice {
@@ -299,6 +314,34 @@ func (q keyQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, 
 	return count > 0, nil
 }
 
+// BackupShareDeliveries retrieves all the backup_share_delivery's BackupShareDeliveries with an executor.
+func (o *Key) BackupShareDeliveries(mods ...qm.QueryMod) backupShareDeliveryQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"backup_share_deliveries\".\"key_id\"=?", o.KeyID),
+	)
+
+	return BackupShareDeliveries(queryMods...)
+}
+
+// BackupShares retrieves all the backup_share's BackupShares with an executor.
+func (o *Key) BackupShares(mods ...qm.QueryMod) backupShareQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"backup_shares\".\"key_id\"=?", o.KeyID),
+	)
+
+	return BackupShares(queryMods...)
+}
+
 // SigningSessions retrieves all the signing_session's SigningSessions with an executor.
 func (o *Key) SigningSessions(mods ...qm.QueryMod) signingSessionQuery {
 	var queryMods []qm.QueryMod
@@ -311,6 +354,218 @@ func (o *Key) SigningSessions(mods ...qm.QueryMod) signingSessionQuery {
 	)
 
 	return SigningSessions(queryMods...)
+}
+
+// LoadBackupShareDeliveries allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (keyL) LoadBackupShareDeliveries(ctx context.Context, e boil.ContextExecutor, singular bool, maybeKey interface{}, mods queries.Applicator) error {
+	var slice []*Key
+	var object *Key
+
+	if singular {
+		var ok bool
+		object, ok = maybeKey.(*Key)
+		if !ok {
+			object = new(Key)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeKey)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeKey))
+			}
+		}
+	} else {
+		s, ok := maybeKey.(*[]*Key)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeKey)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeKey))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &keyR{}
+		}
+		args[object.KeyID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &keyR{}
+			}
+			args[obj.KeyID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`backup_share_deliveries`),
+		qm.WhereIn(`backup_share_deliveries.key_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load backup_share_deliveries")
+	}
+
+	var resultSlice []*BackupShareDelivery
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice backup_share_deliveries")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on backup_share_deliveries")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for backup_share_deliveries")
+	}
+
+	if singular {
+		object.R.BackupShareDeliveries = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &backupShareDeliveryR{}
+			}
+			foreign.R.Key = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.KeyID == foreign.KeyID {
+				local.R.BackupShareDeliveries = append(local.R.BackupShareDeliveries, foreign)
+				if foreign.R == nil {
+					foreign.R = &backupShareDeliveryR{}
+				}
+				foreign.R.Key = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadBackupShares allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (keyL) LoadBackupShares(ctx context.Context, e boil.ContextExecutor, singular bool, maybeKey interface{}, mods queries.Applicator) error {
+	var slice []*Key
+	var object *Key
+
+	if singular {
+		var ok bool
+		object, ok = maybeKey.(*Key)
+		if !ok {
+			object = new(Key)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeKey)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeKey))
+			}
+		}
+	} else {
+		s, ok := maybeKey.(*[]*Key)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeKey)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeKey))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &keyR{}
+		}
+		args[object.KeyID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &keyR{}
+			}
+			args[obj.KeyID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`backup_shares`),
+		qm.WhereIn(`backup_shares.key_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load backup_shares")
+	}
+
+	var resultSlice []*BackupShare
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice backup_shares")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on backup_shares")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for backup_shares")
+	}
+
+	if singular {
+		object.R.BackupShares = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &backupShareR{}
+			}
+			foreign.R.Key = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.KeyID == foreign.KeyID {
+				local.R.BackupShares = append(local.R.BackupShares, foreign)
+				if foreign.R == nil {
+					foreign.R = &backupShareR{}
+				}
+				foreign.R.Key = local
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadSigningSessions allows an eager lookup of values, cached into the
@@ -416,6 +671,112 @@ func (keyL) LoadSigningSessions(ctx context.Context, e boil.ContextExecutor, sin
 		}
 	}
 
+	return nil
+}
+
+// AddBackupShareDeliveries adds the given related objects to the existing relationships
+// of the key, optionally inserting them as new records.
+// Appends related to o.R.BackupShareDeliveries.
+// Sets related.R.Key appropriately.
+func (o *Key) AddBackupShareDeliveries(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*BackupShareDelivery) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.KeyID = o.KeyID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"backup_share_deliveries\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"key_id"}),
+				strmangle.WhereClause("\"", "\"", 2, backupShareDeliveryPrimaryKeyColumns),
+			)
+			values := []interface{}{o.KeyID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.KeyID = o.KeyID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &keyR{
+			BackupShareDeliveries: related,
+		}
+	} else {
+		o.R.BackupShareDeliveries = append(o.R.BackupShareDeliveries, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &backupShareDeliveryR{
+				Key: o,
+			}
+		} else {
+			rel.R.Key = o
+		}
+	}
+	return nil
+}
+
+// AddBackupShares adds the given related objects to the existing relationships
+// of the key, optionally inserting them as new records.
+// Appends related to o.R.BackupShares.
+// Sets related.R.Key appropriately.
+func (o *Key) AddBackupShares(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*BackupShare) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.KeyID = o.KeyID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"backup_shares\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"key_id"}),
+				strmangle.WhereClause("\"", "\"", 2, backupSharePrimaryKeyColumns),
+			)
+			values := []interface{}{o.KeyID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.KeyID = o.KeyID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &keyR{
+			BackupShares: related,
+		}
+	} else {
+		o.R.BackupShares = append(o.R.BackupShares, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &backupShareR{
+				Key: o,
+			}
+		} else {
+			rel.R.Key = o
+		}
+	}
 	return nil
 }
 

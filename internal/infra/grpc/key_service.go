@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/key"
-	pb "github.com/kashguard/go-mpc-wallet/internal/pb/infra/v1"
+	"github.com/kashguard/go-mpc-infra/internal/infra/key"
+	pb "github.com/kashguard/go-mpc-infra/internal/pb/infra/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc/codes"
@@ -47,18 +47,18 @@ func (s *InfrastructureServer) CreateRootKey(ctx context.Context, req *pb.Create
 	// 转换为响应
 	response := &pb.CreateRootKeyResponse{
 		Key: &pb.RootKeyMetadata{
-			KeyId:        rootKey.KeyID,
-			PublicKey:    rootKey.PublicKey,
-			Algorithm:    rootKey.Algorithm,
-			Curve:        rootKey.Curve,
-			Threshold:    int32(rootKey.Threshold),
-			TotalNodes:   int32(rootKey.TotalNodes),
-			Protocol:     rootKey.Protocol,
-			Status:       rootKey.Status,
-			Description:  rootKey.Description,
-			Tags:         rootKey.Tags,
-			CreatedAt:    rootKey.CreatedAt.Format(time.RFC3339),
-			UpdatedAt:    rootKey.UpdatedAt.Format(time.RFC3339),
+			KeyId:       rootKey.KeyID,
+			PublicKey:   rootKey.PublicKey,
+			Algorithm:   rootKey.Algorithm,
+			Curve:       rootKey.Curve,
+			Threshold:   int32(rootKey.Threshold),
+			TotalNodes:  int32(rootKey.TotalNodes),
+			Protocol:    rootKey.Protocol,
+			Status:      rootKey.Status,
+			Description: rootKey.Description,
+			Tags:        rootKey.Tags,
+			CreatedAt:   rootKey.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:   rootKey.UpdatedAt.Format(time.RFC3339),
 		},
 	}
 
@@ -78,18 +78,18 @@ func (s *InfrastructureServer) GetRootKey(ctx context.Context, req *pb.GetRootKe
 
 	response := &pb.GetRootKeyResponse{
 		Key: &pb.RootKeyMetadata{
-			KeyId:        rootKey.KeyID,
-			PublicKey:    rootKey.PublicKey,
-			Algorithm:    rootKey.Algorithm,
-			Curve:        rootKey.Curve,
-			Threshold:    int32(rootKey.Threshold),
-			TotalNodes:   int32(rootKey.TotalNodes),
-			Protocol:     rootKey.Protocol,
-			Status:       rootKey.Status,
-			Description:  rootKey.Description,
-			Tags:         rootKey.Tags,
-			CreatedAt:    rootKey.CreatedAt.Format(time.RFC3339),
-			UpdatedAt:    rootKey.UpdatedAt.Format(time.RFC3339),
+			KeyId:       rootKey.KeyID,
+			PublicKey:   rootKey.PublicKey,
+			Algorithm:   rootKey.Algorithm,
+			Curve:       rootKey.Curve,
+			Threshold:   int32(rootKey.Threshold),
+			TotalNodes:  int32(rootKey.TotalNodes),
+			Protocol:    rootKey.Protocol,
+			Status:      rootKey.Status,
+			Description: rootKey.Description,
+			Tags:        rootKey.Tags,
+			CreatedAt:   rootKey.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:   rootKey.UpdatedAt.Format(time.RFC3339),
 		},
 	}
 
@@ -143,17 +143,17 @@ func (s *InfrastructureServer) DeriveWalletKey(ctx context.Context, req *pb.Deri
 
 	response := &pb.DeriveWalletKeyResponse{
 		Wallet: &pb.WalletKeyMetadata{
-			WalletId:     wallet.WalletID,
-			RootKeyId:    wallet.RootKeyID,
-			ChainType:    wallet.ChainType,
-			Index:        wallet.Index,
-			PublicKey:    wallet.PublicKey,
-			Address:      wallet.Address,
-			Status:       wallet.Status,
-			Description:  wallet.Description,
-			Tags:         wallet.Tags,
-			CreatedAt:    wallet.CreatedAt.Format(time.RFC3339),
-			UpdatedAt:    wallet.UpdatedAt.Format(time.RFC3339),
+			WalletId:    wallet.WalletID,
+			RootKeyId:   wallet.RootKeyID,
+			ChainType:   wallet.ChainType,
+			Index:       wallet.Index,
+			PublicKey:   wallet.PublicKey,
+			Address:     wallet.Address,
+			Status:      wallet.Status,
+			Description: wallet.Description,
+			Tags:        wallet.Tags,
+			CreatedAt:   wallet.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:   wallet.UpdatedAt.Format(time.RFC3339),
 		},
 	}
 
@@ -182,4 +182,3 @@ func (s *InfrastructureServer) ListWalletKeys(ctx context.Context, req *pb.ListW
 		},
 	}, nil
 }
-

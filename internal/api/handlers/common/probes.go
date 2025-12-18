@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/util"
+	"github.com/kashguard/go-mpc-infra/internal/util"
 	"golang.org/x/sys/unix"
 )
 

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kashguard/go-mpc-wallet/internal/infra/backup"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
-	pb "github.com/kashguard/go-mpc-wallet/internal/pb/infra/v1"
+	"github.com/kashguard/go-mpc-infra/internal/infra/backup"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
+	pb "github.com/kashguard/go-mpc-infra/internal/pb/infra/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/codes"
@@ -218,4 +218,3 @@ func (m *MockKeyShareStorage) GetKeyData(ctx context.Context, keyID string, node
 	}
 	return args.Get(0).([]byte), args.Error(1)
 }
-

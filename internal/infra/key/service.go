@@ -9,10 +9,10 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/google/uuid"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/backup"
-	"github.com/kashguard/go-mpc-wallet/internal/infra/storage"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/chain"
-	"github.com/kashguard/go-mpc-wallet/internal/mpc/protocol"
+	"github.com/kashguard/go-mpc-infra/internal/infra/backup"
+	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/chain"
+	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -595,6 +595,11 @@ func (s *Service) DeriveWalletKey(ctx context.Context, req *DeriveWalletKeyReque
 	}
 
 	return walletMetadata, nil
+}
+
+// RestoreKeyShare 恢复密钥分片（用于灾难恢复）
+func (s *Service) RestoreKeyShare(ctx context.Context, keyID, nodeID string, share []byte) error {
+	return s.keyShareStorage.StoreKeyShare(ctx, keyID, nodeID, share)
 }
 
 // RotateKey 密钥轮换（Resharing）
