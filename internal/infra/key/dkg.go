@@ -8,6 +8,7 @@ import (
 	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
 	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
 	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
+	pb "github.com/kashguard/go-mpc-infra/internal/pb/mpc/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -45,9 +46,15 @@ type DKGService struct {
 	protocolRegistry *protocol.ProtocolRegistry // 协议注册表，用于根据算法和曲线选择正确的协议
 	nodeManager      *node.Manager
 	nodeDiscovery    *node.Discovery
+	grpcClient       dkgGRPCClient
 	// 同步模式配置：最大等待时间、轮询间隔
 	MaxWaitTime  time.Duration
 	PollInterval time.Duration
+}
+
+// dkgGRPCClient 最小化的 gRPC 客户端接口
+type dkgGRPCClient interface {
+	SendStartDKG(ctx context.Context, nodeID string, req *pb.StartDKGRequest) (*pb.StartDKGResponse, error)
 }
 
 // NewDKGService 创建DKG服务
@@ -58,6 +65,7 @@ func NewDKGService(
 	protocolRegistry *protocol.ProtocolRegistry, // 新增：协议注册表
 	nodeManager *node.Manager,
 	nodeDiscovery *node.Discovery,
+	grpcClient dkgGRPCClient,
 ) *DKGService {
 	return &DKGService{
 		metadataStore:    metadataStore,
@@ -66,15 +74,13 @@ func NewDKGService(
 		protocolRegistry: protocolRegistry,
 		nodeManager:      nodeManager,
 		nodeDiscovery:    nodeDiscovery,
+		grpcClient:       grpcClient,
 		// 缩短同步等待时间，加快失败检测
 		MaxWaitTime:  2 * time.Minute,
 		PollInterval: 2 * time.Second,
 	}
 }
 
-// ExecuteDKG 执行分布式密钥生成
-// 现改为同步：发起后阻塞等待完成/失败/超时
-// 支持固定 2-of-3 模式：固定节点列表 [server-proxy-1, server-proxy-2, client-{userID}]
 func (s *DKGService) ExecuteDKG(ctx context.Context, keyID string, req *CreateKeyRequest) (*protocol.KeyGenResponse, error) {
 	log.Info().
 		Str("key_id", keyID).
@@ -82,63 +88,37 @@ func (s *DKGService) ExecuteDKG(ctx context.Context, keyID string, req *CreateKe
 		Str("curve", req.Curve).
 		Int("threshold", req.Threshold).
 		Int("total_nodes", req.TotalNodes).
-		Str("user_id", req.UserID).
 		Msg("ExecuteDKG: Starting synchronous DKG execution")
 
-	// 1. 构建固定节点列表（2-of-3 模式）
 	var nodeIDs []string
-	if req.Threshold == 2 && req.TotalNodes == 3 {
-		// 固定 2-of-3 模式：使用固定节点列表
-		nodeIDs = []string{"server-proxy-1", "server-proxy-2"}
 
-		// 添加客户端节点（如果提供了 UserID）
-		if req.UserID != "" {
-			clientNodeID := "client-" + req.UserID
-			nodeIDs = append(nodeIDs, clientNodeID)
-		} else {
-			// 如果没有 UserID，尝试从会话中获取
-			session, err := s.metadataStore.GetSigningSession(ctx, keyID)
-			if err == nil && len(session.ParticipatingNodes) > 0 {
-				// 从会话中查找客户端节点
-				for _, nid := range session.ParticipatingNodes {
-					if strings.HasPrefix(nid, "client-") {
-						nodeIDs = append(nodeIDs, nid)
-						break
-					}
-				}
-			}
-
-			// 如果仍然没有客户端节点，使用占位符（不推荐，但保持兼容性）
-			if len(nodeIDs) < 3 {
-				log.Warn().
-					Str("key_id", keyID).
-					Msg("ExecuteDKG: No client node found, using placeholder")
-				nodeIDs = append(nodeIDs, "client-placeholder")
-			}
-		}
+	// 优先从 DKG 会话中获取参与节点列表（由 coordinator 决定参与者）
+	// 这样可以避免在 coordinator 上执行本地 DKG，真正的 DKG 只在 participant 节点上运行
+	session, err := s.metadataStore.GetSigningSession(ctx, keyID)
+	if err == nil && len(session.ParticipatingNodes) > 0 {
+		nodeIDs = session.ParticipatingNodes
 
 		log.Info().
 			Str("key_id", keyID).
 			Strs("node_ids", nodeIDs).
 			Int("node_count", len(nodeIDs)).
-			Msg("ExecuteDKG: Using fixed 2-of-3 node list")
+			Msg("ExecuteDKG: Using node IDs from DKG session")
 	} else {
-		// 非 2-of-3 模式：从会话中获取节点列表（保持向后兼容）
-		session, err := s.metadataStore.GetSigningSession(ctx, keyID)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get DKG session")
-		}
+		// 回退：如果没有会话信息，则在典型 2-of-3 模式下使用固定节点列表
+		if req.Threshold == 2 && req.TotalNodes == 3 {
+			nodeIDs = []string{"server-proxy-1", "server-proxy-2", "server-backup-1"}
 
-		nodeIDs = session.ParticipatingNodes
-		if len(nodeIDs) == 0 {
+			log.Info().
+				Str("key_id", keyID).
+				Strs("node_ids", nodeIDs).
+				Int("node_count", len(nodeIDs)).
+				Msg("ExecuteDKG: Using fallback fixed 2-of-3 node list")
+		} else {
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get DKG session")
+			}
 			return nil, errors.New("no participating nodes in DKG session")
 		}
-
-		log.Info().
-			Str("key_id", keyID).
-			Strs("node_ids", nodeIDs).
-			Int("node_count", len(nodeIDs)).
-			Msg("ExecuteDKG: Retrieved participating nodes from session")
 	}
 
 	if len(nodeIDs) < req.Threshold {
@@ -189,24 +169,84 @@ func (s *DKGService) ExecuteDKG(ctx context.Context, keyID string, req *CreateKe
 		selectedEngine = s.protocolEngine
 	}
 
+	// 如果具备 gRPC 客户端，则作为 coordinator 触发远端参与者执行 DKG
+	if s.grpcClient != nil {
+		// 确保会话已创建
+		session := &storage.SigningSession{
+			SessionID:          keyID,
+			KeyID:              keyID,
+			Protocol:           inferProtocolForDKG(req.Algorithm, req.Curve),
+			Status:             "pending",
+			Threshold:          req.Threshold,
+			TotalNodes:         req.TotalNodes,
+			ParticipatingNodes: nodeIDs,
+			CreatedAt:          time.Now(),
+		}
+		// 尝试保存会话，如果已存在则忽略错误（或者是更新？）
+		// 这里简化处理，直接保存，覆盖旧的 pending 会话
+		if err := s.metadataStore.SaveSigningSession(ctx, session); err != nil {
+			log.Warn().Err(err).Msg("Failed to save DKG session, it might already exist")
+		} else {
+			log.Info().Str("session_id", keyID).Msg("DKG session created by coordinator")
+		}
+
+		leaderNodeID := nodeIDs[0]
+		startReq := &pb.StartDKGRequest{
+			SessionId:  keyID,
+			KeyId:      keyID,
+			Algorithm:  req.Algorithm,
+			Curve:      req.Curve,
+			Threshold:  int32(req.Threshold),
+			TotalNodes: int32(req.TotalNodes),
+			NodeIds:    nodeIDs,
+		}
+		startCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+		_, _ = s.grpcClient.SendStartDKG(startCtx, leaderNodeID, startReq)
+		cancel()
+
+		deadline := time.Now().Add(s.MaxWaitTime)
+		for time.Now().Before(deadline) {
+			sess, gErr := s.metadataStore.GetSigningSession(ctx, keyID)
+			if gErr == nil {
+				if strings.EqualFold(sess.Status, "completed") || strings.EqualFold(sess.Status, "success") {
+					pubHex := sess.Signature
+					if pubHex == "" {
+						return nil, errors.New("DKG completed but public key missing in session")
+					}
+					return &protocol.KeyGenResponse{
+						KeyShares: map[string]*protocol.KeyShare{},
+						PublicKey: &protocol.PublicKey{Bytes: nil, Hex: pubHex},
+					}, nil
+				}
+				if strings.EqualFold(sess.Status, "failed") {
+					return nil, errors.Errorf("dkg session %s failed", keyID)
+				}
+			}
+			time.Sleep(s.PollInterval)
+		}
+		return nil, errors.Errorf("dkg session %s timeout (waited %s)", keyID, s.MaxWaitTime)
+	}
+
 	log.Info().
 		Str("key_id", keyID).
 		Str("algorithm", req.Algorithm).
 		Str("curve", req.Curve).
-		Msg("ExecuteDKG: Calling protocolEngine.GenerateKeyShare")
+		Msg("ExecuteDKG: Calling protocolEngine.GenerateKeyShare (local participant)")
 
 	// 5. 执行DKG协议 (带重试机制)
 	var dkgResp *protocol.KeyGenResponse
-
-	err := s.retryProtocol(ctx, "ExecuteDKG", func() error {
-		var err error
-		dkgResp, err = selectedEngine.GenerateKeyShare(ctx, dkgReq)
-		return err
+	callErr := s.retryProtocol(ctx, "ExecuteDKG", func() error {
+		resp, innerErr := selectedEngine.GenerateKeyShare(ctx, dkgReq)
+		if innerErr != nil {
+			return innerErr
+		}
+		dkgResp = resp
+		return nil
 	})
 
-	if err != nil {
-		log.Error().Err(err).Str("key_id", keyID).Msg("ExecuteDKG: GenerateKeyShare failed after retries")
-		return nil, errors.Wrap(err, "failed to execute DKG protocol")
+	if callErr != nil {
+		log.Error().Err(callErr).Str("key_id", keyID).Msg("ExecuteDKG: GenerateKeyShare failed after retries")
+		return nil, errors.Wrap(callErr, "failed to execute DKG protocol")
 	}
 
 	log.Info().

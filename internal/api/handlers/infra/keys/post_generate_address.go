@@ -11,7 +11,7 @@ import (
 )
 
 func PostGenerateAddressRoute(s *api.Server) *echo.Route {
-	return s.Router.APIV1Infra.POST("/keys/address", postGenerateAddressHandler(s))
+	return s.Router.APIV1Infra.POST("/keys/:keyId/address", postGenerateAddressHandler(s))
 }
 
 func postGenerateAddressHandler(s *api.Server) echo.HandlerFunc {

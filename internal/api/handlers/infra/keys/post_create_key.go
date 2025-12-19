@@ -1,6 +1,8 @@
 package keys
 
 import (
+	"net/http"
+
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/kashguard/go-mpc-infra/internal/api"
@@ -9,7 +11,6 @@ import (
 	"github.com/kashguard/go-mpc-infra/internal/types"
 	"github.com/kashguard/go-mpc-infra/internal/util"
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 func PostCreateKeyRoute(s *api.Server) *echo.Route {
@@ -32,15 +33,6 @@ func postCreateKeyHandler(s *api.Server) echo.HandlerFunc {
 			return httperrors.NewHTTPError(http.StatusForbidden, types.PublicHTTPErrorTypeGeneric, "Key creation is only allowed on coordinator nodes")
 		}
 
-		// 获取当前用户ID（假设已通过鉴权中间件注入）
-		userID, ok := c.Get("user_id").(string)
-		if !ok || userID == "" {
-			// 如果没有用户ID，使用默认值（开发环境）或报错
-			// 这里为了兼容性，暂时使用 "admin"
-			userID = "admin"
-			log.Warn().Msg("No user_id in context, using default 'admin'")
-		}
-
 		// 构建 CreateRootKeyRequest
 		req := &key.CreateRootKeyRequest{
 			Algorithm:   swag.StringValue(body.Algorithm),
@@ -49,7 +41,6 @@ func postCreateKeyHandler(s *api.Server) echo.HandlerFunc {
 			TotalNodes:  int(swag.Int64Value(body.TotalNodes)),
 			Description: body.Description,
 			Tags:        convertTags(body.Tags),
-			UserID:      userID,
 		}
 
 		// 调用 KeyService.CreateRootKey

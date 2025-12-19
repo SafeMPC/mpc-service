@@ -237,7 +237,7 @@ func Init(s *api.Server) error {
 
 		// Your other endpoints, typically secured by bearer auth, available at /api/v1/**
 		APIV1Push:  s.Echo.Group("/api/v1/push", middleware.Auth(s)),
-		APIV1Infra: s.Echo.Group("/api/v1/infra", middleware.Auth(s)),
+		APIV1Infra: s.Echo.Group("/api/v1/infra", middleware.E2EJWT(s)),
 	}
 
 	// 注册健康检查路由（已移除旧的 internal/grpc 实现）

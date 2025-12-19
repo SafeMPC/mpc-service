@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -240,6 +241,7 @@ func (m *tssPartyManager) executeKeygen(
 	nodeIDs []string,
 	threshold int,
 	thisNodeID string,
+	algorithm string, // Add algorithm parameter
 ) (*keygen.LocalPartySaveData, error) {
 	var outMessageCount int64
 	var processedMessageCount int64
@@ -287,8 +289,26 @@ func (m *tssPartyManager) executeKeygen(
 		return nil, errors.Errorf("this node ID not found: %s", thisNodeID)
 	}
 
+	// TSS threshold is number of corruptible parties (t).
+	// User input 'threshold' is typically minimal number of signers (t+1).
+	// So we pass threshold - 1 to tss-lib.
+	tssThreshold := threshold - 1
+	if tssThreshold < 0 {
+		tssThreshold = 0
+	}
+
+	// 确定曲线
+	if strings.ToLower(algorithm) == "eddsa" {
+		// DKG for EdDSA is separate (executeEdDSAKeygen), but if we merge logic later:
+		// curve = tss.Edwards()
+		// However, tss-lib keygen.NewParameters takes *tss.Parameters which assumes secp256k1 for ECDSA DKG
+		// EdDSA DKG uses different package.
+		// So this function executeKeygen is strictly for ECDSA (GG18/GG20)
+		// We ignore algorithm here as tss.S256() is hardcoded for ECDSA DKG
+	}
+
 	ctxTSS := tss.NewPeerContext(parties)
-	params := tss.NewParameters(tss.S256(), ctxTSS, thisPartyID, len(parties), threshold)
+	params := tss.NewParameters(tss.S256(), ctxTSS, thisPartyID, len(parties), tssThreshold)
 
 	// 创建消息通道
 	outCh := make(chan tss.Message, len(parties))
@@ -554,6 +574,15 @@ func (m *tssPartyManager) executeKeygen(
 				Str("key_id", keyID).
 				Str("this_node_id", thisNodeID).
 				Msg("DKG completed successfully, received LocalPartySaveData from endCh")
+
+			// 🔍 [DIAGNOSTIC] Check Ks in saveData
+			if saveData != nil {
+				log.Info().
+					Int("ks_len", len(saveData.Ks)).
+					Int("bigxj_len", len(saveData.BigXj)).
+					Msg("🔍 [DIAGNOSTIC] DKG Result SaveData Check")
+			}
+
 			m.mu.Lock()
 			delete(m.activeKeygen, keyID)
 			// 清理消息队列
@@ -844,19 +873,81 @@ func (m *tssPartyManager) executeSigning(
 	keyData *keygen.LocalPartySaveData,
 	opts TSSSigningOptions,
 ) (*common.SignatureData, error) {
-	if err := m.setupPartyIDs(nodeIDs); err != nil {
+	// 确保节点列表有序，避免 PartyID 映射索引与 DKG 阶段不一致
+	sortedNodeIDs := make([]string, len(nodeIDs))
+	copy(sortedNodeIDs, nodeIDs)
+	sort.Strings(sortedNodeIDs)
+
+	if err := m.setupPartyIDs(sortedNodeIDs); err != nil {
 		return nil, errors.Wrap(err, "setup party IDs")
 	}
 
-	parties, err := m.getPartyIDs(nodeIDs)
+	// 使用 getPartyIDs 获取 PartyID (它们通过 setupPartyIDs 创建，使用 nodeID 哈希作为 Key)
+	parties, err := m.getPartyIDs(sortedNodeIDs)
 	if err != nil {
 		return nil, errors.Wrap(err, "get party IDs")
+	}
+
+	// 🔍 [DIAGNOSTIC] 详细检查 Key 匹配情况
+	log.Info().Int("keyData_Ks_len", len(keyData.Ks)).Msg("🔍 [DIAGNOSTIC] Checking keyData.Ks")
+	for i, k := range keyData.Ks {
+		if k != nil {
+			log.Info().Int("index", i).Str("key_hex", hex.EncodeToString(k.Bytes())).Msg("🔍 [DIAGNOSTIC] keyData.Ks entry")
+		} else {
+			log.Info().Int("index", i).Msg("🔍 [DIAGNOSTIC] keyData.Ks entry is NIL")
+		}
+	}
+
+	for i, p := range parties {
+		log.Info().
+			Int("index", i).
+			Str("party_id", p.Id).
+			Str("key_hex", hex.EncodeToString(p.Key)).
+			Msg("🔍 [DIAGNOSTIC] Party in signing set")
+
+		// Check if this party key exists in Ks
+		found := false
+		pKeyBig := new(big.Int).SetBytes(p.Key)
+		for _, k := range keyData.Ks {
+			if k != nil && k.Cmp(pKeyBig) == 0 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			log.Error().Str("party_id", p.Id).Msg("❌ CRITICAL: Party Key NOT found in keyData.Ks! This will cause panic.")
+		} else {
+			log.Info().Str("party_id", p.Id).Msg("✅ Party Key found in keyData.Ks")
+		}
 	}
 
 	thisPartyID, ok := m.getPartyID(thisNodeID)
 	if !ok {
 		return nil, errors.Errorf("this node ID not found: %s", thisNodeID)
 	}
+
+	// Check thisPartyID as well
+	{
+		found := false
+		pKeyBig := new(big.Int).SetBytes(thisPartyID.Key)
+		for _, k := range keyData.Ks {
+			if k != nil && k.Cmp(pKeyBig) == 0 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			log.Error().Str("this_party_id", thisPartyID.Id).Msg("❌ CRITICAL: This Party Key NOT found in keyData.Ks!")
+		}
+	}
+
+	// 🔍 [DIAGNOSTIC] Log detailed PartyID info for debugging panic
+	log.Info().
+		Str("session_id", sessionID).
+		Str("this_node_id", thisNodeID).
+		Str("this_party_id", thisPartyID.Id).
+		Interface("requested_node_ids", nodeIDs).
+		Msg("🔍 [DIAGNOSTIC] Pre-signing PartyID Check")
 
 	ctxTSS := tss.NewPeerContext(parties)
 	threshold := len(parties) - 1
@@ -1725,8 +1816,15 @@ func (m *tssPartyManager) executeEdDSAKeygen(
 		return nil, errors.Errorf("this node ID not found: %s", thisNodeID)
 	}
 
+	// User input 'threshold' is typically minimal number of signers (t+1).
+	// So we pass threshold - 1 to tss-lib.
+	tssThreshold := threshold - 1
+	if tssThreshold < 0 {
+		tssThreshold = 0
+	}
+
 	ctxTSS := tss.NewPeerContext(parties)
-	params := tss.NewParameters(tss.Edwards(), ctxTSS, thisPartyID, len(parties), threshold)
+	params := tss.NewParameters(tss.Edwards(), ctxTSS, thisPartyID, len(parties), tssThreshold)
 
 	// 创建消息通道
 	outCh := make(chan tss.Message, len(parties))
@@ -1984,7 +2082,44 @@ func (m *tssPartyManager) executeEdDSASigning(
 		return nil, errors.Errorf("this node ID not found: %s", thisNodeID)
 	}
 
+	// User input 'threshold' is typically minimal number of signers (t+1).
+	// So we pass threshold - 1 to tss-lib.
+	// 对于 EdDSA (FROST)，threshold 参数通常也是 t
+	// 注意：在 FROST 中，threshold 是参与签名的最小节点数 (t+1)，所以我们需要减去 1
+	// 并且我们需要使用 parties 的数量作为 n (TotalNodes)，而不是传入的 nodeIDs 的长度
+	// 这样可以确保 n 和 t 的关系是正确的：t <= n-1
+
+	// 从 keyData 中获取 threshold (这是 KeyGen 时的 threshold)
+	// 但实际上 executeEdDSASigning 没有 threshold 参数，所以我们假设 threshold 是 parties 的数量减 1 (n-1)
+	// 或者我们可以尝试从 keyData 中恢复 threshold，但 keyData 中可能没有保存
+	// 幸运的是，EdDSA KeyGen 时使用的 threshold 已经确定了多项式的阶数 t
+	// 在 Signing 时，tss-lib 的 NewParameters 需要传入 threshold
+	// 对于 EdDSA Signing，这里的 threshold 实际上是指本次签名会话的 threshold
+	// 但 tss-lib 的 EdDSA Signing 参数校验要求 threshold <= len(parties)-1
+	// 并且通常 threshold 应该与 KeyGen 时的 threshold 一致，或者至少满足安全性要求
+	// 在这里，我们实际上是在构建本次签名会话的参数
+	// 由于我们没有显式传入 threshold 参数到 executeEdDSASigning，我们暂时使用 len(parties)-1
+	// 但这可能不对，应该使用 KeyGen 时的 threshold
+	// 让我们尝试添加 threshold 参数到 executeEdDSASigning
+
+	// 临时解决方案：使用 len(parties)-1，这在 n-of-n 签名中是正确的
+	// 但对于 t-of-n 签名，我们需要知道 t
+	// 然而，executeEdDSASigning 签名目前被硬编码为使用 len(parties)-1
+	// 这意味着它总是执行 n-of-n 签名 (对于选定的 n 个参与者)
+	// 如果选定的参与者数量 >= t+1，这应该是可以工作的
+	// 但我们需要确保传入的 parties 列表只包含参与签名的节点
+
+	// tssThreshold := len(parties) - 1
+	// if tssThreshold < 0 {
+	// 	tssThreshold = 0
+	// }
+
 	ctxTSS := tss.NewPeerContext(parties)
+	// 对于 EdDSA Signing，参数中的 threshold 必须是参与者数量减 1 (len(parties)-1)
+	// 这是因为 tss-lib 的 EdDSA 实现目前似乎强制要求 n-of-n 签名
+	// 如果我们传入真实的 threshold (例如 1)，而 parties 有 2 个，tss-lib 会报错：
+	// "threshold %d must be equal to len(parties)-1 %d"
+	// 所以我们这里强制使用 len(parties)-1
 	params := tss.NewParameters(tss.Edwards(), ctxTSS, thisPartyID, len(parties), len(parties)-1)
 
 	// 使用原始消息（tss-lib v0.1 已支持标准 Ed25519，内部会使用 SHA-512）

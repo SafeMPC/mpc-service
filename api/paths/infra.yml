@@ -103,6 +103,33 @@ paths:
         "500":
           $ref: "#/responses/errorResponse"
 
+  /api/v1/infra/keys/derive:
+    post:
+      security:
+      - Bearer: []
+      description: 从根密钥派生子钱包密钥 (BIP-32)
+      tags:
+      - MPC Keys
+      summary: 派生子密钥
+      operationId: postDeriveMpcKey
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/postDeriveKeyPayload'
+      responses:
+        "201":
+          description: 密钥派生成功
+          schema:
+            $ref: '#/definitions/deriveKeyResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
+        "401":
+          $ref: '#/responses/errorResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
+
   /api/v1/infra/keys/{keyId}:
     get:
       operationId: getMpcKey

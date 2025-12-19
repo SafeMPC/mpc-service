@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -57,6 +56,7 @@ func (s *Service) GetKey(ctx context.Context, keyID string) (*KeyMetadata, error
 		PublicKey:    storageKey.PublicKey,
 		Algorithm:    storageKey.Algorithm,
 		Curve:        storageKey.Curve,
+		ChainCode:    storageKey.ChainCode,
 		Threshold:    storageKey.Threshold,
 		TotalNodes:   storageKey.TotalNodes,
 		ChainType:    storageKey.ChainType,
@@ -185,6 +185,8 @@ func (s *Service) GenerateAddress(ctx context.Context, keyID string, chainType s
 		adapter = chain.NewBitcoinAdapter(&chaincfg.MainNetParams)
 	case "ethereum", "eth", "evm":
 		adapter = chain.NewEthereumAdapter(big.NewInt(1)) // mainnet
+	case "solana", "sol":
+		adapter = chain.NewSolanaAdapter()
 	default:
 		return "", errors.Errorf("unsupported chain type: %s", chainType)
 	}
@@ -249,9 +251,31 @@ func (s *Service) CreateRootKey(ctx context.Context, req *CreateRootKeyRequest) 
 		Curve:       req.Curve,
 		Threshold:   threshold,
 		TotalNodes:  totalNodes,
-		UserID:      req.UserID,
 		Description: req.Description,
 		Tags:        req.Tags,
+	}
+
+	// 预先保存密钥状态为 Pending，以满足 DKG Session 的外键约束
+	now := time.Now()
+	pendingKey := &storage.KeyMetadata{
+		KeyID:       keyID,
+		PublicKey:   "", // 暂时为空，DKG 完成后更新
+		Algorithm:   req.Algorithm,
+		Curve:       req.Curve,
+		ChainCode:   "",
+		Threshold:   threshold,
+		TotalNodes:  totalNodes,
+		ChainType:   "",
+		Address:     "",
+		Status:      "Pending",
+		Description: req.Description,
+		Tags:        req.Tags,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+
+	if err := s.metadataStore.SaveKeyMetadata(ctx, pendingKey); err != nil {
+		return nil, errors.Wrap(err, "failed to save pending key metadata")
 	}
 
 	// 执行 DKG
@@ -260,27 +284,27 @@ func (s *Service) CreateRootKey(ctx context.Context, req *CreateRootKeyRequest) 
 	if s.dkgService != nil {
 		dkgResp, err = s.dkgService.ExecuteDKG(ctx, keyID, dkgReq)
 		if err != nil {
+			// DKG 失败，更新状态为 Failed
+			pendingKey.Status = "Failed"
+			pendingKey.UpdatedAt = time.Now()
+			_ = s.metadataStore.UpdateKeyMetadata(ctx, pendingKey)
 			return nil, errors.Wrap(err, "failed to execute DKG")
 		}
 	} else {
 		return nil, errors.New("DKG service is required for root key creation")
 	}
 
-	// 存储密钥分片（只存储服务器节点的分片，客户端分片不存储）
+	// 存储密钥分片
 	for nodeID, share := range dkgResp.KeyShares {
-		// 只存储服务器节点（server-proxy-1, server-proxy-2）的分片
-		// 客户端节点（client-{userID}）的分片不存储在服务器端
-		if strings.HasPrefix(nodeID, "server-") {
-			if err := s.keyShareStorage.StoreKeyShare(ctx, keyID, nodeID, share.Share); err != nil {
-				return nil, errors.Wrapf(err, "failed to store key share for node %s", nodeID)
-			}
+		// 存储所有参与节点的分片
+		// server-proxy-1, server-proxy-2 用于在线签名
+		// server-backup-1 用于灾备恢复 (也存储在DB中，但签名时不加载)
+		if err := s.keyShareStorage.StoreKeyShare(ctx, keyID, nodeID, share.Share); err != nil {
+			return nil, errors.Wrapf(err, "failed to store key share for node %s", nodeID)
 		}
-		// 客户端分片：不存储在服务器端，依赖 SSS 备份分片
 	}
 
 	// 保存根密钥元数据
-	now := time.Now()
-
 	// 生成随机 ChainCode
 	chainCode, err := s.derivationService.GenerateRandomChainCode()
 	if err != nil {
@@ -301,10 +325,10 @@ func (s *Service) CreateRootKey(ctx context.Context, req *CreateRootKeyRequest) 
 		Description: req.Description,
 		Tags:        req.Tags,
 		CreatedAt:   now,
-		UpdatedAt:   now,
+		UpdatedAt:   time.Now(),
 	}
 
-	// 使用现有的 KeyMetadata 存储（暂时复用，后续可以分离）
+	// 更新 KeyMetadata
 	storageKey := &storage.KeyMetadata{
 		KeyID:        rootKeyMetadata.KeyID,
 		PublicKey:    rootKeyMetadata.PublicKey,
@@ -323,8 +347,8 @@ func (s *Service) CreateRootKey(ctx context.Context, req *CreateRootKeyRequest) 
 		DeletionDate: rootKeyMetadata.DeletionDate,
 	}
 
-	if err := s.metadataStore.SaveKeyMetadata(ctx, storageKey); err != nil {
-		return nil, errors.Wrap(err, "failed to save root key metadata")
+	if err := s.metadataStore.UpdateKeyMetadata(ctx, storageKey); err != nil {
+		return nil, errors.Wrap(err, "failed to update root key metadata")
 	}
 
 	// 集成 SSS 备份服务：对每个 MPC 分片分别进行 SSS 备份
@@ -360,27 +384,6 @@ func (s *Service) CreateRootKey(ctx context.Context, req *CreateRootKeyRequest) 
 							Msg("Failed to save backup share")
 						// 继续处理其他备份分片
 						continue
-					}
-
-					// 如果是客户端分片或需要下发的服务器分片，调用下发接口
-					if (strings.HasPrefix(nodeID, "client-") && shareIndex == 1) ||
-						(strings.HasPrefix(nodeID, "server-") && shareIndex == 3) {
-						// 下发备份分片到客户端
-						if err := s.backupService.DeliverBackupShareToClient(ctx, keyID, req.UserID, nodeID, shareIndex, backupShare); err != nil {
-							log.Warn().
-								Err(err).
-								Str("key_id", keyID).
-								Str("node_id", nodeID).
-								Int("share_index", shareIndex).
-								Msg("Failed to deliver backup share to client (non-critical)")
-							// 下发失败不影响主流程，只记录警告
-						} else {
-							log.Info().
-								Str("key_id", keyID).
-								Str("node_id", nodeID).
-								Int("share_index", shareIndex).
-								Msg("Backup share delivered to client")
-						}
 					}
 				}
 			}
@@ -465,6 +468,27 @@ func (s *Service) DeleteRootKey(ctx context.Context, keyID string) error {
 	return nil
 }
 
+// DeleteWalletKey 删除钱包密钥
+func (s *Service) DeleteWalletKey(ctx context.Context, walletID string) error {
+	// 获取密钥元数据
+	key, err := s.metadataStore.GetKeyMetadata(ctx, walletID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get key metadata")
+	}
+
+	// 更新状态
+	now := time.Now()
+	key.Status = "Deleted"
+	key.DeletionDate = &now
+	key.UpdatedAt = now
+
+	if err := s.metadataStore.UpdateKeyMetadata(ctx, key); err != nil {
+		return errors.Wrap(err, "failed to update key status")
+	}
+
+	return nil
+}
+
 // DeriveWalletKey 派生钱包密钥（Non-Hardened Derivation based on BIP-32）
 func (s *Service) DeriveWalletKey(ctx context.Context, req *DeriveWalletKeyRequest) (*WalletKeyMetadata, error) {
 	// 获取根密钥
@@ -537,6 +561,8 @@ func (s *Service) DeriveWalletKey(ctx context.Context, req *DeriveWalletKeyReque
 		adapter = chain.NewBitcoinAdapter(&chaincfg.MainNetParams)
 	case "ethereum", "eth", "evm":
 		adapter = chain.NewEthereumAdapter(big.NewInt(1)) // mainnet
+	case "solana", "sol":
+		adapter = chain.NewSolanaAdapter()
 	default:
 		return nil, errors.Errorf("unsupported chain type: %s", req.ChainType)
 	}

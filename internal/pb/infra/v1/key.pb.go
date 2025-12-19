@@ -30,7 +30,6 @@ type CreateRootKeyRequest struct {
 	Protocol      string                 `protobuf:"bytes,4,opt,name=protocol,proto3" json:"protocol,omitempty"`                        // gg18, gg20, frost
 	Threshold     int32                  `protobuf:"varint,5,opt,name=threshold,proto3" json:"threshold,omitempty"`                     // 默认 2
 	TotalNodes    int32                  `protobuf:"varint,6,opt,name=total_nodes,json=totalNodes,proto3" json:"total_nodes,omitempty"` // 默认 3
-	UserId        string                 `protobuf:"bytes,7,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`              // 用户ID，用于生成客户端节点ID
 	Description   string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
 	Tags          map[string]string      `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
@@ -107,13 +106,6 @@ func (x *CreateRootKeyRequest) GetTotalNodes() int32 {
 		return x.TotalNodes
 	}
 	return 0
-}
-
-func (x *CreateRootKeyRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
 }
 
 func (x *CreateRootKeyRequest) GetDescription() string {
@@ -310,6 +302,51 @@ func (x *DeleteRootKeyRequest) GetKeyId() string {
 	return ""
 }
 
+// DeleteWalletKeyRequest 删除钱包密钥请求
+type DeleteWalletKeyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WalletId      string                 `protobuf:"bytes,1,opt,name=wallet_id,json=walletId,proto3" json:"wallet_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteWalletKeyRequest) Reset() {
+	*x = DeleteWalletKeyRequest{}
+	mi := &file_infra_v1_key_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteWalletKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteWalletKeyRequest) ProtoMessage() {}
+
+func (x *DeleteWalletKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_infra_v1_key_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteWalletKeyRequest.ProtoReflect.Descriptor instead.
+func (*DeleteWalletKeyRequest) Descriptor() ([]byte, []int) {
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DeleteWalletKeyRequest) GetWalletId() string {
+	if x != nil {
+		return x.WalletId
+	}
+	return ""
+}
+
 // ListRootKeysRequest 列出根密钥请求
 type ListRootKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -321,7 +358,7 @@ type ListRootKeysRequest struct {
 
 func (x *ListRootKeysRequest) Reset() {
 	*x = ListRootKeysRequest{}
-	mi := &file_infra_v1_key_proto_msgTypes[5]
+	mi := &file_infra_v1_key_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -333,7 +370,7 @@ func (x *ListRootKeysRequest) String() string {
 func (*ListRootKeysRequest) ProtoMessage() {}
 
 func (x *ListRootKeysRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_infra_v1_key_proto_msgTypes[5]
+	mi := &file_infra_v1_key_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -346,7 +383,7 @@ func (x *ListRootKeysRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRootKeysRequest.ProtoReflect.Descriptor instead.
 func (*ListRootKeysRequest) Descriptor() ([]byte, []int) {
-	return file_infra_v1_key_proto_rawDescGZIP(), []int{5}
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListRootKeysRequest) GetStatus() string {
@@ -374,7 +411,7 @@ type ListRootKeysResponse struct {
 
 func (x *ListRootKeysResponse) Reset() {
 	*x = ListRootKeysResponse{}
-	mi := &file_infra_v1_key_proto_msgTypes[6]
+	mi := &file_infra_v1_key_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -386,7 +423,7 @@ func (x *ListRootKeysResponse) String() string {
 func (*ListRootKeysResponse) ProtoMessage() {}
 
 func (x *ListRootKeysResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_infra_v1_key_proto_msgTypes[6]
+	mi := &file_infra_v1_key_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -399,7 +436,7 @@ func (x *ListRootKeysResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRootKeysResponse.ProtoReflect.Descriptor instead.
 func (*ListRootKeysResponse) Descriptor() ([]byte, []int) {
-	return file_infra_v1_key_proto_rawDescGZIP(), []int{6}
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListRootKeysResponse) GetKeys() []*RootKeyMetadata {
@@ -430,7 +467,7 @@ type DeriveWalletKeyRequest struct {
 
 func (x *DeriveWalletKeyRequest) Reset() {
 	*x = DeriveWalletKeyRequest{}
-	mi := &file_infra_v1_key_proto_msgTypes[7]
+	mi := &file_infra_v1_key_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -442,7 +479,7 @@ func (x *DeriveWalletKeyRequest) String() string {
 func (*DeriveWalletKeyRequest) ProtoMessage() {}
 
 func (x *DeriveWalletKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_infra_v1_key_proto_msgTypes[7]
+	mi := &file_infra_v1_key_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -455,7 +492,7 @@ func (x *DeriveWalletKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeriveWalletKeyRequest.ProtoReflect.Descriptor instead.
 func (*DeriveWalletKeyRequest) Descriptor() ([]byte, []int) {
-	return file_infra_v1_key_proto_rawDescGZIP(), []int{7}
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DeriveWalletKeyRequest) GetRootKeyId() string {
@@ -503,7 +540,7 @@ type DeriveWalletKeyResponse struct {
 
 func (x *DeriveWalletKeyResponse) Reset() {
 	*x = DeriveWalletKeyResponse{}
-	mi := &file_infra_v1_key_proto_msgTypes[8]
+	mi := &file_infra_v1_key_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -515,7 +552,7 @@ func (x *DeriveWalletKeyResponse) String() string {
 func (*DeriveWalletKeyResponse) ProtoMessage() {}
 
 func (x *DeriveWalletKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_infra_v1_key_proto_msgTypes[8]
+	mi := &file_infra_v1_key_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -528,7 +565,7 @@ func (x *DeriveWalletKeyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeriveWalletKeyResponse.ProtoReflect.Descriptor instead.
 func (*DeriveWalletKeyResponse) Descriptor() ([]byte, []int) {
-	return file_infra_v1_key_proto_rawDescGZIP(), []int{8}
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DeriveWalletKeyResponse) GetWallet() *WalletKeyMetadata {
@@ -548,7 +585,7 @@ type GetWalletKeyRequest struct {
 
 func (x *GetWalletKeyRequest) Reset() {
 	*x = GetWalletKeyRequest{}
-	mi := &file_infra_v1_key_proto_msgTypes[9]
+	mi := &file_infra_v1_key_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -560,7 +597,7 @@ func (x *GetWalletKeyRequest) String() string {
 func (*GetWalletKeyRequest) ProtoMessage() {}
 
 func (x *GetWalletKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_infra_v1_key_proto_msgTypes[9]
+	mi := &file_infra_v1_key_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -573,7 +610,7 @@ func (x *GetWalletKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWalletKeyRequest.ProtoReflect.Descriptor instead.
 func (*GetWalletKeyRequest) Descriptor() ([]byte, []int) {
-	return file_infra_v1_key_proto_rawDescGZIP(), []int{9}
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetWalletKeyRequest) GetWalletId() string {
@@ -593,7 +630,7 @@ type GetWalletKeyResponse struct {
 
 func (x *GetWalletKeyResponse) Reset() {
 	*x = GetWalletKeyResponse{}
-	mi := &file_infra_v1_key_proto_msgTypes[10]
+	mi := &file_infra_v1_key_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -605,7 +642,7 @@ func (x *GetWalletKeyResponse) String() string {
 func (*GetWalletKeyResponse) ProtoMessage() {}
 
 func (x *GetWalletKeyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_infra_v1_key_proto_msgTypes[10]
+	mi := &file_infra_v1_key_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -618,7 +655,7 @@ func (x *GetWalletKeyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWalletKeyResponse.ProtoReflect.Descriptor instead.
 func (*GetWalletKeyResponse) Descriptor() ([]byte, []int) {
-	return file_infra_v1_key_proto_rawDescGZIP(), []int{10}
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetWalletKeyResponse) GetWallet() *WalletKeyMetadata {
@@ -640,7 +677,7 @@ type ListWalletKeysRequest struct {
 
 func (x *ListWalletKeysRequest) Reset() {
 	*x = ListWalletKeysRequest{}
-	mi := &file_infra_v1_key_proto_msgTypes[11]
+	mi := &file_infra_v1_key_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -652,7 +689,7 @@ func (x *ListWalletKeysRequest) String() string {
 func (*ListWalletKeysRequest) ProtoMessage() {}
 
 func (x *ListWalletKeysRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_infra_v1_key_proto_msgTypes[11]
+	mi := &file_infra_v1_key_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -665,7 +702,7 @@ func (x *ListWalletKeysRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWalletKeysRequest.ProtoReflect.Descriptor instead.
 func (*ListWalletKeysRequest) Descriptor() ([]byte, []int) {
-	return file_infra_v1_key_proto_rawDescGZIP(), []int{11}
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListWalletKeysRequest) GetRootKeyId() string {
@@ -700,7 +737,7 @@ type ListWalletKeysResponse struct {
 
 func (x *ListWalletKeysResponse) Reset() {
 	*x = ListWalletKeysResponse{}
-	mi := &file_infra_v1_key_proto_msgTypes[12]
+	mi := &file_infra_v1_key_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -712,7 +749,7 @@ func (x *ListWalletKeysResponse) String() string {
 func (*ListWalletKeysResponse) ProtoMessage() {}
 
 func (x *ListWalletKeysResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_infra_v1_key_proto_msgTypes[12]
+	mi := &file_infra_v1_key_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -725,7 +762,7 @@ func (x *ListWalletKeysResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWalletKeysResponse.ProtoReflect.Descriptor instead.
 func (*ListWalletKeysResponse) Descriptor() ([]byte, []int) {
-	return file_infra_v1_key_proto_rawDescGZIP(), []int{12}
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListWalletKeysResponse) GetWallets() []*WalletKeyMetadata {
@@ -764,7 +801,7 @@ type RootKeyMetadata struct {
 
 func (x *RootKeyMetadata) Reset() {
 	*x = RootKeyMetadata{}
-	mi := &file_infra_v1_key_proto_msgTypes[13]
+	mi := &file_infra_v1_key_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -776,7 +813,7 @@ func (x *RootKeyMetadata) String() string {
 func (*RootKeyMetadata) ProtoMessage() {}
 
 func (x *RootKeyMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_infra_v1_key_proto_msgTypes[13]
+	mi := &file_infra_v1_key_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -789,7 +826,7 @@ func (x *RootKeyMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RootKeyMetadata.ProtoReflect.Descriptor instead.
 func (*RootKeyMetadata) Descriptor() ([]byte, []int) {
-	return file_infra_v1_key_proto_rawDescGZIP(), []int{13}
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *RootKeyMetadata) GetKeyId() string {
@@ -904,7 +941,7 @@ type WalletKeyMetadata struct {
 
 func (x *WalletKeyMetadata) Reset() {
 	*x = WalletKeyMetadata{}
-	mi := &file_infra_v1_key_proto_msgTypes[14]
+	mi := &file_infra_v1_key_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -916,7 +953,7 @@ func (x *WalletKeyMetadata) String() string {
 func (*WalletKeyMetadata) ProtoMessage() {}
 
 func (x *WalletKeyMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_infra_v1_key_proto_msgTypes[14]
+	mi := &file_infra_v1_key_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -929,7 +966,7 @@ func (x *WalletKeyMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WalletKeyMetadata.ProtoReflect.Descriptor instead.
 func (*WalletKeyMetadata) Descriptor() ([]byte, []int) {
-	return file_infra_v1_key_proto_rawDescGZIP(), []int{14}
+	return file_infra_v1_key_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *WalletKeyMetadata) GetWalletId() string {
@@ -1020,7 +1057,7 @@ var File_infra_v1_key_proto protoreflect.FileDescriptor
 
 const file_infra_v1_key_proto_rawDesc = "" +
 	"\n" +
-	"\x12infra/v1/key.proto\x12\binfra.v1\x1a\x15infra/v1/common.proto\"\xee\x02\n" +
+	"\x12infra/v1/key.proto\x12\binfra.v1\x1a\x15infra/v1/common.proto\"\xd5\x02\n" +
 	"\x14CreateRootKeyRequest\x12\x15\n" +
 	"\x06key_id\x18\x01 \x01(\tR\x05keyId\x12\x1c\n" +
 	"\talgorithm\x18\x02 \x01(\tR\talgorithm\x12\x14\n" +
@@ -1028,8 +1065,7 @@ const file_infra_v1_key_proto_rawDesc = "" +
 	"\bprotocol\x18\x04 \x01(\tR\bprotocol\x12\x1c\n" +
 	"\tthreshold\x18\x05 \x01(\x05R\tthreshold\x12\x1f\n" +
 	"\vtotal_nodes\x18\x06 \x01(\x05R\n" +
-	"totalNodes\x12\x17\n" +
-	"\auser_id\x18\a \x01(\tR\x06userId\x12 \n" +
+	"totalNodes\x12 \n" +
 	"\vdescription\x18\b \x01(\tR\vdescription\x12<\n" +
 	"\x04tags\x18\t \x03(\v2(.infra.v1.CreateRootKeyRequest.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
@@ -1042,7 +1078,9 @@ const file_infra_v1_key_proto_rawDesc = "" +
 	"\x12GetRootKeyResponse\x12+\n" +
 	"\x03key\x18\x01 \x01(\v2\x19.infra.v1.RootKeyMetadataR\x03key\"-\n" +
 	"\x14DeleteRootKeyRequest\x12\x15\n" +
-	"\x06key_id\x18\x01 \x01(\tR\x05keyId\"j\n" +
+	"\x06key_id\x18\x01 \x01(\tR\x05keyId\"5\n" +
+	"\x16DeleteWalletKeyRequest\x12\x1b\n" +
+	"\twallet_id\x18\x01 \x01(\tR\bwalletId\"j\n" +
 	"\x13ListRootKeysRequest\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12;\n" +
 	"\n" +
@@ -1123,7 +1161,7 @@ const file_infra_v1_key_proto_rawDesc = "" +
 	"\rdeletion_date\x18\f \x01(\tR\fdeletionDate\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xbd\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\x8c\x05\n" +
 	"\n" +
 	"KeyService\x12P\n" +
 	"\rCreateRootKey\x12\x1e.infra.v1.CreateRootKeyRequest\x1a\x1f.infra.v1.CreateRootKeyResponse\x12G\n" +
@@ -1132,7 +1170,8 @@ const file_infra_v1_key_proto_rawDesc = "" +
 	"\rDeleteRootKey\x12\x1e.infra.v1.DeleteRootKeyRequest\x1a\x18.infra.v1.StatusResponse\x12M\n" +
 	"\fListRootKeys\x12\x1d.infra.v1.ListRootKeysRequest\x1a\x1e.infra.v1.ListRootKeysResponse\x12V\n" +
 	"\x0fDeriveWalletKey\x12 .infra.v1.DeriveWalletKeyRequest\x1a!.infra.v1.DeriveWalletKeyResponse\x12M\n" +
-	"\fGetWalletKey\x12\x1d.infra.v1.GetWalletKeyRequest\x1a\x1e.infra.v1.GetWalletKeyResponse\x12S\n" +
+	"\fGetWalletKey\x12\x1d.infra.v1.GetWalletKeyRequest\x1a\x1e.infra.v1.GetWalletKeyResponse\x12M\n" +
+	"\x0fDeleteWalletKey\x12 .infra.v1.DeleteWalletKeyRequest\x1a\x18.infra.v1.StatusResponse\x12S\n" +
 	"\x0eListWalletKeys\x12\x1f.infra.v1.ListWalletKeysRequest\x1a .infra.v1.ListWalletKeysResponseB8Z6github.com/kashguard/go-mpc-infra/internal/pb/infra/v1b\x06proto3"
 
 var (
@@ -1147,62 +1186,65 @@ func file_infra_v1_key_proto_rawDescGZIP() []byte {
 	return file_infra_v1_key_proto_rawDescData
 }
 
-var file_infra_v1_key_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_infra_v1_key_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_infra_v1_key_proto_goTypes = []any{
 	(*CreateRootKeyRequest)(nil),    // 0: infra.v1.CreateRootKeyRequest
 	(*CreateRootKeyResponse)(nil),   // 1: infra.v1.CreateRootKeyResponse
 	(*GetRootKeyRequest)(nil),       // 2: infra.v1.GetRootKeyRequest
 	(*GetRootKeyResponse)(nil),      // 3: infra.v1.GetRootKeyResponse
 	(*DeleteRootKeyRequest)(nil),    // 4: infra.v1.DeleteRootKeyRequest
-	(*ListRootKeysRequest)(nil),     // 5: infra.v1.ListRootKeysRequest
-	(*ListRootKeysResponse)(nil),    // 6: infra.v1.ListRootKeysResponse
-	(*DeriveWalletKeyRequest)(nil),  // 7: infra.v1.DeriveWalletKeyRequest
-	(*DeriveWalletKeyResponse)(nil), // 8: infra.v1.DeriveWalletKeyResponse
-	(*GetWalletKeyRequest)(nil),     // 9: infra.v1.GetWalletKeyRequest
-	(*GetWalletKeyResponse)(nil),    // 10: infra.v1.GetWalletKeyResponse
-	(*ListWalletKeysRequest)(nil),   // 11: infra.v1.ListWalletKeysRequest
-	(*ListWalletKeysResponse)(nil),  // 12: infra.v1.ListWalletKeysResponse
-	(*RootKeyMetadata)(nil),         // 13: infra.v1.RootKeyMetadata
-	(*WalletKeyMetadata)(nil),       // 14: infra.v1.WalletKeyMetadata
-	nil,                             // 15: infra.v1.CreateRootKeyRequest.TagsEntry
-	nil,                             // 16: infra.v1.DeriveWalletKeyRequest.TagsEntry
-	nil,                             // 17: infra.v1.RootKeyMetadata.TagsEntry
-	nil,                             // 18: infra.v1.WalletKeyMetadata.TagsEntry
-	(*PaginationRequest)(nil),       // 19: infra.v1.PaginationRequest
-	(*PaginationResponse)(nil),      // 20: infra.v1.PaginationResponse
-	(*StatusResponse)(nil),          // 21: infra.v1.StatusResponse
+	(*DeleteWalletKeyRequest)(nil),  // 5: infra.v1.DeleteWalletKeyRequest
+	(*ListRootKeysRequest)(nil),     // 6: infra.v1.ListRootKeysRequest
+	(*ListRootKeysResponse)(nil),    // 7: infra.v1.ListRootKeysResponse
+	(*DeriveWalletKeyRequest)(nil),  // 8: infra.v1.DeriveWalletKeyRequest
+	(*DeriveWalletKeyResponse)(nil), // 9: infra.v1.DeriveWalletKeyResponse
+	(*GetWalletKeyRequest)(nil),     // 10: infra.v1.GetWalletKeyRequest
+	(*GetWalletKeyResponse)(nil),    // 11: infra.v1.GetWalletKeyResponse
+	(*ListWalletKeysRequest)(nil),   // 12: infra.v1.ListWalletKeysRequest
+	(*ListWalletKeysResponse)(nil),  // 13: infra.v1.ListWalletKeysResponse
+	(*RootKeyMetadata)(nil),         // 14: infra.v1.RootKeyMetadata
+	(*WalletKeyMetadata)(nil),       // 15: infra.v1.WalletKeyMetadata
+	nil,                             // 16: infra.v1.CreateRootKeyRequest.TagsEntry
+	nil,                             // 17: infra.v1.DeriveWalletKeyRequest.TagsEntry
+	nil,                             // 18: infra.v1.RootKeyMetadata.TagsEntry
+	nil,                             // 19: infra.v1.WalletKeyMetadata.TagsEntry
+	(*PaginationRequest)(nil),       // 20: infra.v1.PaginationRequest
+	(*PaginationResponse)(nil),      // 21: infra.v1.PaginationResponse
+	(*StatusResponse)(nil),          // 22: infra.v1.StatusResponse
 }
 var file_infra_v1_key_proto_depIdxs = []int32{
-	15, // 0: infra.v1.CreateRootKeyRequest.tags:type_name -> infra.v1.CreateRootKeyRequest.TagsEntry
-	13, // 1: infra.v1.CreateRootKeyResponse.key:type_name -> infra.v1.RootKeyMetadata
-	13, // 2: infra.v1.GetRootKeyResponse.key:type_name -> infra.v1.RootKeyMetadata
-	19, // 3: infra.v1.ListRootKeysRequest.pagination:type_name -> infra.v1.PaginationRequest
-	13, // 4: infra.v1.ListRootKeysResponse.keys:type_name -> infra.v1.RootKeyMetadata
-	20, // 5: infra.v1.ListRootKeysResponse.pagination:type_name -> infra.v1.PaginationResponse
-	16, // 6: infra.v1.DeriveWalletKeyRequest.tags:type_name -> infra.v1.DeriveWalletKeyRequest.TagsEntry
-	14, // 7: infra.v1.DeriveWalletKeyResponse.wallet:type_name -> infra.v1.WalletKeyMetadata
-	14, // 8: infra.v1.GetWalletKeyResponse.wallet:type_name -> infra.v1.WalletKeyMetadata
-	19, // 9: infra.v1.ListWalletKeysRequest.pagination:type_name -> infra.v1.PaginationRequest
-	14, // 10: infra.v1.ListWalletKeysResponse.wallets:type_name -> infra.v1.WalletKeyMetadata
-	20, // 11: infra.v1.ListWalletKeysResponse.pagination:type_name -> infra.v1.PaginationResponse
-	17, // 12: infra.v1.RootKeyMetadata.tags:type_name -> infra.v1.RootKeyMetadata.TagsEntry
-	18, // 13: infra.v1.WalletKeyMetadata.tags:type_name -> infra.v1.WalletKeyMetadata.TagsEntry
+	16, // 0: infra.v1.CreateRootKeyRequest.tags:type_name -> infra.v1.CreateRootKeyRequest.TagsEntry
+	14, // 1: infra.v1.CreateRootKeyResponse.key:type_name -> infra.v1.RootKeyMetadata
+	14, // 2: infra.v1.GetRootKeyResponse.key:type_name -> infra.v1.RootKeyMetadata
+	20, // 3: infra.v1.ListRootKeysRequest.pagination:type_name -> infra.v1.PaginationRequest
+	14, // 4: infra.v1.ListRootKeysResponse.keys:type_name -> infra.v1.RootKeyMetadata
+	21, // 5: infra.v1.ListRootKeysResponse.pagination:type_name -> infra.v1.PaginationResponse
+	17, // 6: infra.v1.DeriveWalletKeyRequest.tags:type_name -> infra.v1.DeriveWalletKeyRequest.TagsEntry
+	15, // 7: infra.v1.DeriveWalletKeyResponse.wallet:type_name -> infra.v1.WalletKeyMetadata
+	15, // 8: infra.v1.GetWalletKeyResponse.wallet:type_name -> infra.v1.WalletKeyMetadata
+	20, // 9: infra.v1.ListWalletKeysRequest.pagination:type_name -> infra.v1.PaginationRequest
+	15, // 10: infra.v1.ListWalletKeysResponse.wallets:type_name -> infra.v1.WalletKeyMetadata
+	21, // 11: infra.v1.ListWalletKeysResponse.pagination:type_name -> infra.v1.PaginationResponse
+	18, // 12: infra.v1.RootKeyMetadata.tags:type_name -> infra.v1.RootKeyMetadata.TagsEntry
+	19, // 13: infra.v1.WalletKeyMetadata.tags:type_name -> infra.v1.WalletKeyMetadata.TagsEntry
 	0,  // 14: infra.v1.KeyService.CreateRootKey:input_type -> infra.v1.CreateRootKeyRequest
 	2,  // 15: infra.v1.KeyService.GetRootKey:input_type -> infra.v1.GetRootKeyRequest
 	4,  // 16: infra.v1.KeyService.DeleteRootKey:input_type -> infra.v1.DeleteRootKeyRequest
-	5,  // 17: infra.v1.KeyService.ListRootKeys:input_type -> infra.v1.ListRootKeysRequest
-	7,  // 18: infra.v1.KeyService.DeriveWalletKey:input_type -> infra.v1.DeriveWalletKeyRequest
-	9,  // 19: infra.v1.KeyService.GetWalletKey:input_type -> infra.v1.GetWalletKeyRequest
-	11, // 20: infra.v1.KeyService.ListWalletKeys:input_type -> infra.v1.ListWalletKeysRequest
-	1,  // 21: infra.v1.KeyService.CreateRootKey:output_type -> infra.v1.CreateRootKeyResponse
-	3,  // 22: infra.v1.KeyService.GetRootKey:output_type -> infra.v1.GetRootKeyResponse
-	21, // 23: infra.v1.KeyService.DeleteRootKey:output_type -> infra.v1.StatusResponse
-	6,  // 24: infra.v1.KeyService.ListRootKeys:output_type -> infra.v1.ListRootKeysResponse
-	8,  // 25: infra.v1.KeyService.DeriveWalletKey:output_type -> infra.v1.DeriveWalletKeyResponse
-	10, // 26: infra.v1.KeyService.GetWalletKey:output_type -> infra.v1.GetWalletKeyResponse
-	12, // 27: infra.v1.KeyService.ListWalletKeys:output_type -> infra.v1.ListWalletKeysResponse
-	21, // [21:28] is the sub-list for method output_type
-	14, // [14:21] is the sub-list for method input_type
+	6,  // 17: infra.v1.KeyService.ListRootKeys:input_type -> infra.v1.ListRootKeysRequest
+	8,  // 18: infra.v1.KeyService.DeriveWalletKey:input_type -> infra.v1.DeriveWalletKeyRequest
+	10, // 19: infra.v1.KeyService.GetWalletKey:input_type -> infra.v1.GetWalletKeyRequest
+	5,  // 20: infra.v1.KeyService.DeleteWalletKey:input_type -> infra.v1.DeleteWalletKeyRequest
+	12, // 21: infra.v1.KeyService.ListWalletKeys:input_type -> infra.v1.ListWalletKeysRequest
+	1,  // 22: infra.v1.KeyService.CreateRootKey:output_type -> infra.v1.CreateRootKeyResponse
+	3,  // 23: infra.v1.KeyService.GetRootKey:output_type -> infra.v1.GetRootKeyResponse
+	22, // 24: infra.v1.KeyService.DeleteRootKey:output_type -> infra.v1.StatusResponse
+	7,  // 25: infra.v1.KeyService.ListRootKeys:output_type -> infra.v1.ListRootKeysResponse
+	9,  // 26: infra.v1.KeyService.DeriveWalletKey:output_type -> infra.v1.DeriveWalletKeyResponse
+	11, // 27: infra.v1.KeyService.GetWalletKey:output_type -> infra.v1.GetWalletKeyResponse
+	22, // 28: infra.v1.KeyService.DeleteWalletKey:output_type -> infra.v1.StatusResponse
+	13, // 29: infra.v1.KeyService.ListWalletKeys:output_type -> infra.v1.ListWalletKeysResponse
+	22, // [22:30] is the sub-list for method output_type
+	14, // [14:22] is the sub-list for method input_type
 	14, // [14:14] is the sub-list for extension type_name
 	14, // [14:14] is the sub-list for extension extendee
 	0,  // [0:14] is the sub-list for field type_name
@@ -1220,7 +1262,7 @@ func file_infra_v1_key_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_infra_v1_key_proto_rawDesc), len(file_infra_v1_key_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   19,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

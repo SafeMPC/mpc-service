@@ -141,7 +141,14 @@ func (s *Service) ThresholdSign(ctx context.Context, req *SignRequest) (*SignRes
 
 		// 获取根密钥的ChainCode
 		if rootKey.ChainCode != "" {
-			parentChainCode, _ = hex.DecodeString(rootKey.ChainCode)
+			var err error
+			parentChainCode, err = hex.DecodeString(rootKey.ChainCode)
+			if err != nil {
+				log.Error().Err(err).Str("chain_code", rootKey.ChainCode).Msg("Failed to decode chain code")
+			}
+			log.Info().Str("chain_code_hex", rootKey.ChainCode).Int("chain_code_len", len(parentChainCode)).Msg("Resolved parent chain code")
+		} else {
+			log.Warn().Msg("Root key has empty chain code")
 		}
 
 		// 确定派生路径

@@ -120,9 +120,10 @@ type MPC struct {
 	DefaultProtocol    string
 
 	// 服务配置
-	HTTPPort   int
-	GRPCPort   int
-	TLSEnabled bool
+	HTTPPort      int
+	GRPCPort      int
+	InfraGRPCPort int
+	TLSEnabled    bool
 
 	// TLS 配置（mTLS 用于基础设施层与应用层通信）
 	TLSCertFile   string // 服务器证书文件路径
@@ -316,6 +317,7 @@ func DefaultServiceConfigFromEnv() Server {
 			DefaultProtocol:       util.GetEnv("MPC_DEFAULT_PROTOCOL", "gg20"),
 			HTTPPort:              util.GetEnvAsInt("MPC_HTTP_PORT", 8080),
 			GRPCPort:              util.GetEnvAsInt("MPC_GRPC_PORT", 9090),
+			InfraGRPCPort:         util.GetEnvAsInt("MPC_INFRA_GRPC_PORT", 9094),
 			TLSEnabled:            util.GetEnvAsBool("MPC_TLS_ENABLED", true),
 			TLSCertFile:           util.GetEnv("MPC_TLS_CERT_FILE", ""),
 			TLSKeyFile:            util.GetEnv("MPC_TLS_KEY_FILE", ""),

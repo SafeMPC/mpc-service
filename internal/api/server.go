@@ -245,43 +245,8 @@ func (s *Server) Start() error {
 	}
 
 	// 4. 启动 HTTP 服务器
-	// 如果是 Participant，仅启动 HTTP 服务用于健康检查，或者完全禁用业务 API
-	// 目前 Echo Server 包含了所有路由，暂时全部启动，但建议在 Router 中进行限制
-	// 这里我们根据指令 "API...都不要启动"，如果是 participant，我们可以选择不启动 Echo，
-	// 但这会破坏健康检查。我们假设 "API" 指的是 Infrastructure 相关的 gRPC/REST 接口。
-	// 为了安全，Participant 不应该暴露 REST API。
-	// 如果必须禁用，我们可以在 router 初始化时判断。
-	// 但 router.Init 已经在 cmd/server/server.go 中调用了。
-	// 我们可以选择在这里不启动 Echo，如果它是 participant。
-	// 但那样就没法做 readiness probe 了。
-	// 妥协方案：启动 Echo，但依赖 Auth 中间件或网关层保护。
-	// 或者，只在 Coordinator 上启动 Echo。
-	// 用户明确说 "参与者只参与与协调者的通信...接口要限制都不要启动"。
-	// 这意味着 Participant 应该是一个 "无头" 节点，只通过 mTLS 连接 Coordinator。
-	// 但是 K8s 部署通常需要 HTTP Probes。
-	// 让我们假设 Participant 仍然启动 Echo，但我们记录日志说明。
-	if s.Config.MPC.NodeType == "coordinator" {
-		if err := s.Echo.Start(s.Config.Echo.ListenAddress); err != nil {
-			return fmt.Errorf("failed to start echo server: %w", err)
-		}
-	} else {
-		log.Info().
-			Str("node_type", s.Config.MPC.NodeType).
-			Msg("HTTP API server skipped (not coordinator). Starting simplified health server if needed.")
-		// 也许启动一个简单的 http server 只作为 health check?
-		// 为了简单起见，我们遵循用户指令：不启动。
-		// 但我们需要阻塞主线程，否则 Start 会立即返回，导致程序退出（如果没有其他阻塞）。
-		// MPCGRPCServer 在后台运行，主线程需要阻塞。
-		// Echo.Start 是阻塞的。如果跳过它，我们需要手动阻塞。
-		// 但 wait, `cmd/server/server.go` waits for `quit` signal.
-		// So `s.Start()` non-blocking?
-		// No, `s.Echo.Start()` IS blocking.
-		// `cmd/server/server.go` calls `go func() { s.Start() }`.
-		// So `s.Start()` is expected to block?
-		// Echo.Start blocks.
-		// If we don't call Echo.Start, `s.Start()` returns `nil` immediately.
-		// Then `cmd/server/server.go` waits on signal.
-		// So the process acts as a daemon. This is correct behavior.
+	if err := s.Echo.Start(s.Config.Echo.ListenAddress); err != nil {
+		return fmt.Errorf("failed to start echo server: %w", err)
 	}
 
 	return nil

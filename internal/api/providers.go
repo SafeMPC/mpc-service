@@ -276,10 +276,10 @@ func NewDKGServiceProvider(
 	protocolEngine protocol.Engine,
 	nodeManager *node.Manager,
 	nodeDiscovery *node.Discovery,
-	grpcClient *mpcgrpc.GRPCClient, // 新增：需要gRPC客户端来创建协议引擎
-	cfg config.Server, // 新增：需要配置来获取节点ID
+	grpcClient *mpcgrpc.GRPCClient, // 用于 coordinator 触发参与者 StartDKG
+	cfg config.Server,
 ) *key.DKGService {
-	// 创建协议注册表，用于DKG服务根据算法和曲线选择正确的协议
+	// 为 DKG 选择协议注册表：与 gRPC server 共用，实现 GG18/GG20/FROST 切换
 	registry := protocol.NewProtocolRegistry()
 	curve := "secp256k1"
 	thisNodeID := cfg.MPC.NodeID
@@ -287,19 +287,14 @@ func NewDKGServiceProvider(
 		thisNodeID = "default-node"
 	}
 
-	// 创建消息路由器（与 NewProtocolEngine 和 NewMPCGRPCServer 中的逻辑相同）
 	messageRouter := func(sessionID string, targetNodeID string, msg tss.Message, isBroadcast bool) error {
 		ctx := context.Background()
 		if len(sessionID) > 0 && sessionID[:4] == "key-" {
-			// DKG消息
 			return grpcClient.SendKeygenMessage(ctx, targetNodeID, msg, sessionID, isBroadcast)
-		} else {
-			// 签名消息
-			return grpcClient.SendSigningMessage(ctx, targetNodeID, msg, sessionID)
 		}
+		return grpcClient.SendSigningMessage(ctx, targetNodeID, msg, sessionID)
 	}
 
-	// 注册所有支持的协议引擎
 	gg18Engine := protocol.NewGG18Protocol(curve, thisNodeID, messageRouter, keyShareStorage)
 	gg20Engine := protocol.NewGG20Protocol(curve, thisNodeID, messageRouter, keyShareStorage)
 	frostEngine := protocol.NewFROSTProtocol(curve, thisNodeID, messageRouter, keyShareStorage)
@@ -308,7 +303,8 @@ func NewDKGServiceProvider(
 	registry.Register("gg20", gg20Engine)
 	registry.Register("frost", frostEngine)
 
-	return key.NewDKGService(metadataStore, keyShareStorage, protocolEngine, registry, nodeManager, nodeDiscovery)
+	// coordinator 节点注入 grpcClient，participant 节点也会构造 DKGService 但不会在本地调用 ExecuteDKG
+	return key.NewDKGService(metadataStore, keyShareStorage, protocolEngine, registry, nodeManager, nodeDiscovery, grpcClient)
 }
 
 func NewBackupService(metadataStore storage.MetadataStore) backup.SSSBackupService {

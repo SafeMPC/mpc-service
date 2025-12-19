@@ -25,6 +25,7 @@ const (
 	KeyService_ListRootKeys_FullMethodName    = "/infra.v1.KeyService/ListRootKeys"
 	KeyService_DeriveWalletKey_FullMethodName = "/infra.v1.KeyService/DeriveWalletKey"
 	KeyService_GetWalletKey_FullMethodName    = "/infra.v1.KeyService/GetWalletKey"
+	KeyService_DeleteWalletKey_FullMethodName = "/infra.v1.KeyService/DeleteWalletKey"
 	KeyService_ListWalletKeys_FullMethodName  = "/infra.v1.KeyService/ListWalletKeys"
 )
 
@@ -46,6 +47,8 @@ type KeyServiceClient interface {
 	DeriveWalletKey(ctx context.Context, in *DeriveWalletKeyRequest, opts ...grpc.CallOption) (*DeriveWalletKeyResponse, error)
 	// 获取钱包密钥信息
 	GetWalletKey(ctx context.Context, in *GetWalletKeyRequest, opts ...grpc.CallOption) (*GetWalletKeyResponse, error)
+	// 删除钱包密钥
+	DeleteWalletKey(ctx context.Context, in *DeleteWalletKeyRequest, opts ...grpc.CallOption) (*StatusResponse, error)
 	// 列出钱包密钥
 	ListWalletKeys(ctx context.Context, in *ListWalletKeysRequest, opts ...grpc.CallOption) (*ListWalletKeysResponse, error)
 }
@@ -118,6 +121,16 @@ func (c *keyServiceClient) GetWalletKey(ctx context.Context, in *GetWalletKeyReq
 	return out, nil
 }
 
+func (c *keyServiceClient) DeleteWalletKey(ctx context.Context, in *DeleteWalletKeyRequest, opts ...grpc.CallOption) (*StatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StatusResponse)
+	err := c.cc.Invoke(ctx, KeyService_DeleteWalletKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *keyServiceClient) ListWalletKeys(ctx context.Context, in *ListWalletKeysRequest, opts ...grpc.CallOption) (*ListWalletKeysResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListWalletKeysResponse)
@@ -146,6 +159,8 @@ type KeyServiceServer interface {
 	DeriveWalletKey(context.Context, *DeriveWalletKeyRequest) (*DeriveWalletKeyResponse, error)
 	// 获取钱包密钥信息
 	GetWalletKey(context.Context, *GetWalletKeyRequest) (*GetWalletKeyResponse, error)
+	// 删除钱包密钥
+	DeleteWalletKey(context.Context, *DeleteWalletKeyRequest) (*StatusResponse, error)
 	// 列出钱包密钥
 	ListWalletKeys(context.Context, *ListWalletKeysRequest) (*ListWalletKeysResponse, error)
 	mustEmbedUnimplementedKeyServiceServer()
@@ -175,6 +190,9 @@ func (UnimplementedKeyServiceServer) DeriveWalletKey(context.Context, *DeriveWal
 }
 func (UnimplementedKeyServiceServer) GetWalletKey(context.Context, *GetWalletKeyRequest) (*GetWalletKeyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetWalletKey not implemented")
+}
+func (UnimplementedKeyServiceServer) DeleteWalletKey(context.Context, *DeleteWalletKeyRequest) (*StatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteWalletKey not implemented")
 }
 func (UnimplementedKeyServiceServer) ListWalletKeys(context.Context, *ListWalletKeysRequest) (*ListWalletKeysResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListWalletKeys not implemented")
@@ -308,6 +326,24 @@ func _KeyService_GetWalletKey_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KeyService_DeleteWalletKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteWalletKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KeyServiceServer).DeleteWalletKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KeyService_DeleteWalletKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KeyServiceServer).DeleteWalletKey(ctx, req.(*DeleteWalletKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _KeyService_ListWalletKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListWalletKeysRequest)
 	if err := dec(in); err != nil {
@@ -356,6 +392,10 @@ var KeyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetWalletKey",
 			Handler:    _KeyService_GetWalletKey_Handler,
+		},
+		{
+			MethodName: "DeleteWalletKey",
+			Handler:    _KeyService_DeleteWalletKey_Handler,
 		},
 		{
 			MethodName: "ListWalletKeys",

@@ -139,7 +139,7 @@ func (p *GG20Protocol) ThresholdSign(ctx context.Context, sessionID string, req 
 		p.thisNodeID,
 		keyData,
 		TSSSigningOptions{
-			Timeout:                 1 * time.Minute,
+			Timeout:                 5 * time.Minute, // Increased timeout for emulated environments/slow crypto
 			EnableIdentifiableAbort: true,
 			ProtocolName:            "GG20",
 		},
@@ -266,7 +266,7 @@ func (p *GG20Protocol) ExecuteResharing(
 		}
 	}
 
-	// 2. 执行 Resharing
+	// 2.// 使用 tss-lib 执行 Resharing
 	newKeyData, err := p.partyManager.executeResharing(
 		ctx,
 		keyID,

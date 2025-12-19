@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -59,6 +60,34 @@ func (m AuthMode) String() string {
 		return "none"
 	default:
 		return fmt.Sprintf("unknown (%d)", m)
+	}
+}
+
+func E2EJWT(s *api.Server) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if c == nil || c.Request() == nil {
+				return echo.ErrInternalServerError
+			}
+			token := c.Request().Header.Get(echo.HeaderAuthorization)
+			if len(token) == 0 {
+				return echo.ErrUnauthorized
+			}
+			if len(token) > 7 && token[:7] == "Bearer " {
+				token = token[7:]
+			}
+			mgr := auth.NewJWTManager(s.Config.MPC.JWTSecret, "mpc-infra", s.Config.MPC.JWTDuration)
+			claims, err := mgr.Validate(token)
+			if err != nil {
+				return echo.ErrUnauthorized
+			}
+			ctx := c.Request().Context()
+			ctx = context.WithValue(ctx, util.CTXKeyAppID, claims.AppID)
+			ctx = context.WithValue(ctx, util.CTXKeyAppTenantID, claims.TenantID)
+			ctx = context.WithValue(ctx, util.CTXKeyAppPermissions, claims.Permissions)
+			c.SetRequest(c.Request().WithContext(ctx))
+			return next(c)
+		}
 	}
 }
 
