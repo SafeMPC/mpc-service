@@ -223,7 +223,7 @@ func (s *InfrastructureServer) Start(ctx context.Context) error {
 		log.Info().Msg("TLS certificates verified successfully")
 	}
 
-	addr := fmt.Sprintf(":%d", s.cfg.MPC.GRPCPort)
+	addr := fmt.Sprintf(":%d", s.cfg.MPC.InfraGRPCPort)
 
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {

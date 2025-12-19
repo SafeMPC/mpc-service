@@ -66,7 +66,7 @@ definitions:
         example: 3
       chain_type:
         type: string
-        enum: [bitcoin, ethereum, bsc, avalanche]
+        enum: [bitcoin, ethereum, bsc, avalanche, solana]
         example: ethereum
       description:
         type: string
@@ -103,7 +103,7 @@ definitions:
         example: 3
       chain_type:
         type: string
-        example: "ethereum"
+        example: ethereum
       address:
         type: string
         example: "addr-0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
@@ -120,7 +120,87 @@ definitions:
       created_at:
         type: string
         format: date-time
-  
+
+  PostDeriveKeyPayload:
+    type: object
+    required:
+      - root_key_id
+      - chain_type
+      - index
+    properties:
+      root_key_id:
+        type: string
+        example: key-1234567890abcdef
+      chain_type:
+        type: string
+        enum:
+        - bitcoin
+        - ethereum
+        - bsc
+        - avalanche
+        - solana
+        example: ethereum
+      index:
+        type: integer
+        example: 0
+      description:
+        type: string
+        example: 派生子钱包
+      tags:
+        type: object
+        additionalProperties:
+          type: string
+        example:
+          environment: production
+
+  DeriveKeyResponse:
+    type: object
+    required:
+      - wallet_id
+      - root_key_id
+      - public_key
+      - chain_code
+      - chain_type
+      - index
+      - status
+    properties:
+      wallet_id:
+        type: string
+        example: wallet-1234567890abcdef
+      root_key_id:
+        type: string
+        example: key-1234567890abcdef
+      public_key:
+        type: string
+        example: pub-0x1234567890abcdef...
+      chain_code:
+        type: string
+        example: "0x..."
+      chain_type:
+        type: string
+        example: ethereum
+      address:
+        type: string
+        example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+      index:
+        type: integer
+        example: 0
+      status:
+        type: string
+        enum:
+        - Active
+        - Inactive
+        example: Active
+      description:
+        type: string
+      tags:
+        type: object
+        additionalProperties:
+          type: string
+      created_at:
+        type: string
+        format: date-time
+
   GetKeyResponse:
     type: object
     required: [key_id, public_key, algorithm, curve, threshold, total_nodes, chain_type, status]

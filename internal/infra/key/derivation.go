@@ -153,13 +153,13 @@ func (s *DerivationService) DeriveChildKey(req *DeriveChildKeyRequest) (*Derived
 func (s *DerivationService) deriveEd25519(pubKey []byte, chainCode []byte, index uint32) (*DerivedKeyResult, error) {
 	ilNum, IR, err := s.computeIL(pubKey, chainCode, index)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "computeIL failed for Ed25519")
 	}
 
 	// 解析父公钥
 	// Ed25519 公钥是 32 字节
 	if len(pubKey) != 32 {
-		return nil, errors.New("invalid ed25519 public key length")
+		return nil, errors.Errorf("invalid ed25519 public key length: %d", len(pubKey))
 	}
 
 	parentPoint, err := edwards.ParsePubKey(pubKey)
@@ -240,8 +240,18 @@ func (s *DerivationService) computeIL(pubKey []byte, chainCode []byte, index uin
 	ilNum := new(big.Int).SetBytes(IL)
 
 	// 验证 IL < n
-	if ilNum.Cmp(curveOrder) >= 0 || ilNum.Sign() == 0 {
-		return nil, nil, errors.New("invalid derived key (IL >= n or IL = 0)")
+	// Note: For Ed25519, order L is ~2^252, so most 256-bit numbers are >= L.
+	// We MUST use modulo reduction for Ed25519 instead of rejection.
+	// For secp256k1, probability of IL >= n is negligible, so rejection is fine (and required by BIP32).
+	if len(pubKey) != 32 { // secp256k1
+		if ilNum.Cmp(curveOrder) >= 0 || ilNum.Sign() == 0 {
+			return nil, nil, errors.New("invalid derived key (IL >= n or IL = 0)")
+		}
+	} else { // Ed25519
+		// We accept any IL and will modulo it later.
+		if ilNum.Sign() == 0 {
+			return nil, nil, errors.New("invalid derived key (IL = 0)")
+		}
 	}
 
 	return ilNum, IR, nil

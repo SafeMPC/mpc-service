@@ -256,6 +256,22 @@ func (p *FROSTProtocol) ThresholdSign(ctx context.Context, sessionID string, req
 		return nil, errors.Wrap(err, "resolve message payload")
 	}
 
+	// Handle Key Derivation
+	keyData := record.KeyData
+	if req.DerivationPath != "" {
+		log.Info().Str("path", req.DerivationPath).Msg("Performing EdDSA key derivation for signing")
+
+		if len(req.ParentChainCode) == 0 {
+			return nil, errors.New("parent chain code is required for derivation")
+		}
+
+		derivedData, err := DeriveEdDSALocalPartySaveData(keyData, req.ParentChainCode, req.DerivationPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to derive key data")
+		}
+		keyData = derivedData
+	}
+
 	// 使用 tss-lib 执行 FROST 签名协议（通过 tssPartyManager，使用 EdDSA signing）
 	sigData, err := p.partyManager.executeEdDSASigning(
 		ctx,
@@ -264,7 +280,7 @@ func (p *FROSTProtocol) ThresholdSign(ctx context.Context, sessionID string, req
 		message,
 		req.NodeIDs,
 		p.thisNodeID,
-		record.KeyData,
+		keyData,
 		FROSTSigningOptions(),
 	)
 	if err != nil {

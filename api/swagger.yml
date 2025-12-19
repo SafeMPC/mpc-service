@@ -513,6 +513,39 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
+  /api/v1/infra/keys/derive:
+    post:
+      security:
+      - Bearer: []
+      - Management: []
+      description: 从根密钥派生子钱包密钥 (BIP-32)
+      tags:
+      - MPC Keys
+      summary: 派生子密钥
+      operationId: postDeriveMpcKey
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/postDeriveKeyPayload'
+      responses:
+        "201":
+          description: 密钥派生成功
+          schema:
+            $ref: '#/definitions/deriveKeyResponse'
+        "400":
+          description: Standard error response
+          schema:
+            $ref: '#/definitions/publicHttpError'
+        "401":
+          description: Standard error response
+          schema:
+            $ref: '#/definitions/publicHttpError'
+        "500":
+          description: Standard error response
+          schema:
+            $ref: '#/definitions/publicHttpError'
   /api/v1/infra/keys/{keyId}:
     get:
       security:
@@ -1221,6 +1254,53 @@ definitions:
         maxLength: 500
         minLength: 1
         example: correct horse battery staple
+  deriveKeyResponse:
+    type: object
+    required:
+    - wallet_id
+    - root_key_id
+    - public_key
+    - chain_code
+    - chain_type
+    - index
+    - status
+    properties:
+      address:
+        type: string
+        example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+      chain_code:
+        type: string
+        example: 0x...
+      chain_type:
+        type: string
+        example: ethereum
+      created_at:
+        type: string
+        format: date-time
+      description:
+        type: string
+      index:
+        type: integer
+        example: 0
+      public_key:
+        type: string
+        example: pub-0x1234567890abcdef...
+      root_key_id:
+        type: string
+        example: key-1234567890abcdef
+      status:
+        type: string
+        enum:
+        - Active
+        - Inactive
+        example: Active
+      tags:
+        type: object
+        additionalProperties:
+          type: string
+      wallet_id:
+        type: string
+        example: wallet-1234567890abcdef
   generateAddressResponse:
     type: object
     required:
@@ -1559,6 +1639,7 @@ definitions:
         - ethereum
         - bsc
         - avalanche
+        - solana
         example: ethereum
       curve:
         type: string
@@ -1606,6 +1687,37 @@ definitions:
       timeout:
         type: integer
         example: 300
+  postDeriveKeyPayload:
+    type: object
+    required:
+    - root_key_id
+    - chain_type
+    - index
+    properties:
+      chain_type:
+        type: string
+        enum:
+        - bitcoin
+        - ethereum
+        - bsc
+        - avalanche
+        - solana
+        example: ethereum
+      description:
+        type: string
+        example: 派生子钱包
+      index:
+        type: integer
+        example: 0
+      root_key_id:
+        type: string
+        example: key-1234567890abcdef
+      tags:
+        type: object
+        additionalProperties:
+          type: string
+        example:
+          environment: production
   postForgotPasswordCompletePayload:
     type: object
     required:

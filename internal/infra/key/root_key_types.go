@@ -45,7 +45,6 @@ type CreateRootKeyRequest struct {
 	Protocol    string // gg18, gg20, frost
 	Threshold   int    // 默认 2
 	TotalNodes  int    // 默认 3
-	UserID      string // 用户ID，用于生成客户端节点ID
 	Description string
 	Tags        map[string]string
 }

@@ -19,6 +19,7 @@ services:
     ports:
       - "8080:8080"  # HTTP API
       - "9090:9090"  # gRPC
+      - "9094:9094"  # Infra gRPC
     working_dir: /app
     user: development
     volumes:
@@ -64,6 +65,7 @@ services:
       SERVER_ECHO_BASE_URL: "http://coordinator:8080"
       MPC_HTTP_PORT: "8080"
       MPC_GRPC_PORT: "9090"
+      MPC_INFRA_GRPC_PORT: "9094"
       MPC_TLS_ENABLED: "false"
       MPC_ENABLE_AUDIT: "true"
       MPC_ENABLE_POLICY: "true"
@@ -75,40 +77,20 @@ services:
       - SYS_PTRACE
     security_opt:
       - seccomp:unconfined
+    # Overrides default command so things don't shut down after the process ends.
     command:
       - /bin/sh
       - -c
       - |
-        sudo chown -R development:development /app/api/tmp /app/bin /app/tmp /app/var/lib/mpc/key-shares 2>/dev/null || true
-        chmod +x /app/rksh 2>/dev/null || true
-        git config --global --add safe.directory /app 2>/dev/null || true
-        # 构建二进制文件（如果不存在或需要更新）
-        if [ ! -f /app/bin/app ] || [ internal/api/server.go -nt /app/bin/app ] || [ internal/api/wire.go -nt /app/bin/app ]; then
-          echo "Building binary..."
-          # 确保 Wire 代码已生成
-          cd /app && go generate ./internal/api/... || echo "Wire generation skipped"
-          make go-build
-        fi
-        # 等待数据库就绪
-        echo "Waiting for database to be ready..."
-        until PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -c '\q' 2>/dev/null; do
-          echo "Database is unavailable - sleeping"
-          sleep 2
-        done
-        # 创建数据库（如果不存在）
-        echo "Checking database..."
-        PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$${PGDATABASE}'" | grep -q 1 || \
-          PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -c "CREATE DATABASE \"$${PGDATABASE}\" WITH OWNER $${PGUSER} TEMPLATE template0;" || true
-        # 运行数据库迁移（仅 coordinator 执行，避免并发问题）
-        if [ "$${MPC_NODE_TYPE}" = "coordinator" ]; then
-          echo "Running database migrations..."
-          /app/bin/app db migrate || echo "Migration failed or already applied"
-        else
-          echo "Waiting for coordinator to complete migrations..."
-          sleep 5
-        fi
-        # 启动服务器
+        sudo chown -R development:development /app/api/tmp
+        sudo chown -R development:development /app/bin
+        sudo chown -R development:development /app/tmp
+        chmod +x /app/rksh
+        git config --global --add safe.directory /app
         exec /app/bin/app server
+        while sleep 1000; do :; done
+
+
     healthcheck:
       test: ["CMD", "curl", "-f", "-s", "http://localhost:8080/-/healthy?mgmt-secret=mgmtpass"]
       interval: 10s
@@ -117,9 +99,9 @@ services:
       start_period: 30s
 
   # ============================================
-  # Participant 节点 1（参与者）
+  # Server Proxy 1 节点（运营方 - Operator）
   # ============================================
-  participant-1:
+  server-proxy-1:
     build:
       context: .
       target: development
@@ -134,7 +116,7 @@ services:
       - workdir-api-tmp:/app/api/tmp
       - workdir-bin:/app/bin
       - workdir-tmp:/app/tmp
-      - participant1-key-shares:/app/var/lib/mpc/key-shares
+      - server-proxy-1-key-shares:/app/var/lib/mpc/key-shares
     depends_on:
       postgres:
         condition: service_healthy
@@ -157,7 +139,7 @@ services:
       CHANGIE_CONFIG_PATH: "/app/.changie-go-starter.yaml"
       # MPC Participant configuration
       MPC_NODE_TYPE: "participant"
-      MPC_NODE_ID: "participant-1"
+      MPC_NODE_ID: "server-proxy-1"
       MPC_COORDINATOR_ENDPOINT: "coordinator:9090"
       MPC_CONSUL_ADDRESS: "consul:8500"
       MPC_STORAGE_BACKEND: "postgresql"
@@ -167,7 +149,7 @@ services:
       MPC_SUPPORTED_PROTOCOLS: "gg18,gg20,frost"
       MPC_DEFAULT_PROTOCOL: "frost"
       SERVER_ECHO_LISTEN_ADDRESS: ":8081"
-      SERVER_ECHO_BASE_URL: "http://participant-1:8081"
+      SERVER_ECHO_BASE_URL: "http://server-proxy-1:8081"
       MPC_HTTP_PORT: "8081"
       MPC_GRPC_PORT: "9091"
       MPC_TLS_ENABLED: "false"
@@ -185,36 +167,13 @@ services:
       - /bin/sh
       - -c
       - |
-        sudo chown -R development:development /app/api/tmp /app/bin /app/tmp /app/var/lib/mpc/key-shares 2>/dev/null || true
-        chmod +x /app/rksh 2>/dev/null || true
-        git config --global --add safe.directory /app 2>/dev/null || true
-        # 构建二进制文件（如果不存在或需要更新）
-        if [ ! -f /app/bin/app ] || [ internal/api/server.go -nt /app/bin/app ] || [ internal/api/wire.go -nt /app/bin/app ]; then
-          echo "Building binary..."
-          # 确保 Wire 代码已生成
-          cd /app && go generate ./internal/api/... || echo "Wire generation skipped"
-          make go-build
-        fi
-        # 等待数据库就绪
-        echo "Waiting for database to be ready..."
-        until PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -c '\q' 2>/dev/null; do
-          echo "Database is unavailable - sleeping"
-          sleep 2
-        done
-        # 创建数据库（如果不存在）
-        echo "Checking database..."
-        PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$${PGDATABASE}'" | grep -q 1 || \
-          PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -c "CREATE DATABASE \"$${PGDATABASE}\" WITH OWNER $${PGUSER} TEMPLATE template0;" || true
-        # 运行数据库迁移（仅 coordinator 执行，避免并发问题）
-        if [ "$${MPC_NODE_TYPE}" = "coordinator" ]; then
-          echo "Running database migrations..."
-          /app/bin/app db migrate || echo "Migration failed or already applied"
-        else
-          echo "Waiting for coordinator to complete migrations..."
-          sleep 5
-        fi
-        # 启动服务器
+        sudo chown -R development:development /app/api/tmp
+        sudo chown -R development:development /app/bin
+        sudo chown -R development:development /app/tmp
+        chmod +x /app/rksh
+        git config --global --add safe.directory /app
         exec /app/bin/app server
+        while sleep 1000; do :; done
     healthcheck:
       test: ["CMD", "curl", "-f", "-s", "http://localhost:8081/-/healthy?mgmt-secret=mgmtpass"]
       interval: 10s
@@ -223,9 +182,9 @@ services:
       start_period: 30s
 
   # ============================================
-  # Participant 节点 2（参与者）
+  # Server Proxy 2 节点（鉴权代理 - Guardian）
   # ============================================
-  participant-2:
+  server-proxy-2:
     build:
       context: .
       target: development
@@ -240,7 +199,7 @@ services:
       - workdir-api-tmp:/app/api/tmp
       - workdir-bin:/app/bin
       - workdir-tmp:/app/tmp
-      - participant2-key-shares:/app/var/lib/mpc/key-shares
+      - server-proxy-2-key-shares:/app/var/lib/mpc/key-shares
     depends_on:
       postgres:
         condition: service_healthy
@@ -263,7 +222,7 @@ services:
       CHANGIE_CONFIG_PATH: "/app/.changie-go-starter.yaml"
       # MPC Participant configuration
       MPC_NODE_TYPE: "participant"
-      MPC_NODE_ID: "participant-2"
+      MPC_NODE_ID: "server-proxy-2"
       MPC_COORDINATOR_ENDPOINT: "coordinator:9090"
       MPC_CONSUL_ADDRESS: "consul:8500"
       MPC_STORAGE_BACKEND: "postgresql"
@@ -273,7 +232,7 @@ services:
       MPC_SUPPORTED_PROTOCOLS: "gg18,gg20,frost"
       MPC_DEFAULT_PROTOCOL: "frost"
       SERVER_ECHO_LISTEN_ADDRESS: ":8082"
-      SERVER_ECHO_BASE_URL: "http://participant-2:8082"
+      SERVER_ECHO_BASE_URL: "http://server-proxy-2:8082"
       MPC_HTTP_PORT: "8082"
       MPC_GRPC_PORT: "9092"
       MPC_TLS_ENABLED: "false"
@@ -291,36 +250,13 @@ services:
       - /bin/sh
       - -c
       - |
-        sudo chown -R development:development /app/api/tmp /app/bin /app/tmp /app/var/lib/mpc/key-shares 2>/dev/null || true
-        chmod +x /app/rksh 2>/dev/null || true
-        git config --global --add safe.directory /app 2>/dev/null || true
-        # 构建二进制文件（如果不存在或需要更新）
-        if [ ! -f /app/bin/app ] || [ internal/api/server.go -nt /app/bin/app ] || [ internal/api/wire.go -nt /app/bin/app ]; then
-          echo "Building binary..."
-          # 确保 Wire 代码已生成
-          cd /app && go generate ./internal/api/... || echo "Wire generation skipped"
-          make go-build
-        fi
-        # 等待数据库就绪
-        echo "Waiting for database to be ready..."
-        until PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -c '\q' 2>/dev/null; do
-          echo "Database is unavailable - sleeping"
-          sleep 2
-        done
-        # 创建数据库（如果不存在）
-        echo "Checking database..."
-        PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$${PGDATABASE}'" | grep -q 1 || \
-          PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -c "CREATE DATABASE \"$${PGDATABASE}\" WITH OWNER $${PGUSER} TEMPLATE template0;" || true
-        # 运行数据库迁移（仅 coordinator 执行，避免并发问题）
-        if [ "$${MPC_NODE_TYPE}" = "coordinator" ]; then
-          echo "Running database migrations..."
-          /app/bin/app db migrate || echo "Migration failed or already applied"
-        else
-          echo "Waiting for coordinator to complete migrations..."
-          sleep 5
-        fi
-        # 启动服务器
+        sudo chown -R development:development /app/api/tmp
+        sudo chown -R development:development /app/bin
+        sudo chown -R development:development /app/tmp
+        chmod +x /app/rksh
+        git config --global --add safe.directory /app
         exec /app/bin/app server
+        while sleep 1000; do :; done
     healthcheck:
       test: ["CMD", "curl", "-f", "-s", "http://localhost:8082/-/healthy?mgmt-secret=mgmtpass"]
       interval: 10s
@@ -329,9 +265,9 @@ services:
       start_period: 30s
 
   # ============================================
-  # Participant 节点 3（参与者）
+  # Server Backup 1 节点（冷备份 - Cold Backup）
   # ============================================
-  participant-3:
+  server-backup-1:
     build:
       context: .
       target: development
@@ -346,7 +282,7 @@ services:
       - workdir-api-tmp:/app/api/tmp
       - workdir-bin:/app/bin
       - workdir-tmp:/app/tmp
-      - participant3-key-shares:/app/var/lib/mpc/key-shares
+      - server-backup-1-key-shares:/app/var/lib/mpc/key-shares
     depends_on:
       postgres:
         condition: service_healthy
@@ -369,7 +305,7 @@ services:
       CHANGIE_CONFIG_PATH: "/app/.changie-go-starter.yaml"
       # MPC Participant configuration
       MPC_NODE_TYPE: "participant"
-      MPC_NODE_ID: "participant-3"
+      MPC_NODE_ID: "server-backup-1"
       MPC_COORDINATOR_ENDPOINT: "coordinator:9090"
       MPC_CONSUL_ADDRESS: "consul:8500"
       MPC_STORAGE_BACKEND: "postgresql"
@@ -379,7 +315,7 @@ services:
       MPC_SUPPORTED_PROTOCOLS: "gg18,gg20,frost"
       MPC_DEFAULT_PROTOCOL: "frost"
       SERVER_ECHO_LISTEN_ADDRESS: ":8083"
-      SERVER_ECHO_BASE_URL: "http://participant-3:8083"
+      SERVER_ECHO_BASE_URL: "http://server-backup-1:8083"
       MPC_HTTP_PORT: "8083"
       MPC_GRPC_PORT: "9093"
       MPC_TLS_ENABLED: "false"
@@ -397,36 +333,13 @@ services:
       - /bin/sh
       - -c
       - |
-        sudo chown -R development:development /app/api/tmp /app/bin /app/tmp /app/var/lib/mpc/key-shares 2>/dev/null || true
-        chmod +x /app/rksh 2>/dev/null || true
-        git config --global --add safe.directory /app 2>/dev/null || true
-        # 构建二进制文件（如果不存在或需要更新）
-        if [ ! -f /app/bin/app ] || [ internal/api/server.go -nt /app/bin/app ] || [ internal/api/wire.go -nt /app/bin/app ]; then
-          echo "Building binary..."
-          # 确保 Wire 代码已生成
-          cd /app && go generate ./internal/api/... || echo "Wire generation skipped"
-          make go-build
-        fi
-        # 等待数据库就绪
-        echo "Waiting for database to be ready..."
-        until PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -c '\q' 2>/dev/null; do
-          echo "Database is unavailable - sleeping"
-          sleep 2
-        done
-        # 创建数据库（如果不存在）
-        echo "Checking database..."
-        PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$${PGDATABASE}'" | grep -q 1 || \
-          PGPASSWORD=$${PGPASSWORD} psql -h $${PGHOST} -U $${PGUSER} -d postgres -c "CREATE DATABASE \"$${PGDATABASE}\" WITH OWNER $${PGUSER} TEMPLATE template0;" || true
-        # 运行数据库迁移（仅 coordinator 执行，避免并发问题）
-        if [ "$${MPC_NODE_TYPE}" = "coordinator" ]; then
-          echo "Running database migrations..."
-          /app/bin/app db migrate || echo "Migration failed or already applied"
-        else
-          echo "Waiting for coordinator to complete migrations..."
-          sleep 5
-        fi
-        # 启动服务器
+        sudo chown -R development:development /app/api/tmp
+        sudo chown -R development:development /app/bin
+        sudo chown -R development:development /app/tmp
+        chmod +x /app/rksh
+        git config --global --add safe.directory /app
         exec /app/bin/app server
+        while sleep 1000; do :; done
     healthcheck:
       test: ["CMD", "curl", "-f", "-s", "http://localhost:8083/-/healthy?mgmt-secret=mgmtpass"]
       interval: 10s
@@ -549,6 +462,6 @@ volumes:
 
   # MPC key shares storage (每个节点独立的存储卷，确保密钥分片隔离)
   coordinator-key-shares:
-  participant1-key-shares:
-  participant2-key-shares:
-  participant3-key-shares:
+  server-proxy-1-key-shares:
+  server-proxy-2-key-shares:
+  server-backup-1-key-shares:

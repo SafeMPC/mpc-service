@@ -7,6 +7,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
@@ -98,9 +99,40 @@ func (p *GG18Protocol) GenerateKeyShare(ctx context.Context, req *KeyGenRequest)
 	}
 
 	// 使用 tss-lib 执行真正的 DKG
-	keyData, err := p.partyManager.executeKeygen(ctx, keyID, nodeIDs, req.Threshold, p.thisNodeID)
+	keyData, err := p.partyManager.executeKeygen(
+		ctx,
+		keyID,
+		nodeIDs,
+		req.Threshold,
+		p.thisNodeID,
+		"ECDSA", // GG18/GG20 use ECDSA
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "execute tss-lib keygen")
+	}
+
+	// 🔍 [DIAGNOSTIC] Check Ks in keyData (before deep copy)
+	if keyData != nil {
+		log.Info().
+			Int("ks_len", len(keyData.Ks)).
+			Int("bigxj_len", len(keyData.BigXj)).
+			Msg("🔍 [DIAGNOSTIC] DKG Result keyData Check (Before Copy)")
+	}
+
+	// Deep copy keyData using serialization to ensure we have a stable, detached copy
+	// and to guarantee Ks is preserved via our wrapper logic.
+	{
+		dataBytes, err := serializeLocalPartySaveData(keyData)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to serialize keyData for deep copy")
+			return nil, errors.Wrap(err, "failed to serialize keyData for deep copy")
+		}
+		keyDataCopy, err := deserializeLocalPartySaveData(dataBytes)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to deserialize keyData for deep copy")
+			return nil, errors.Wrap(err, "failed to deserialize keyData for deep copy")
+		}
+		keyData = keyDataCopy
 	}
 
 	// 转换 tss-lib 数据为我们的格式
@@ -467,18 +499,61 @@ func (p *GG18Protocol) ValidateSignRequest(req *SignRequest) error {
 
 // serializeLocalPartySaveData 序列化 LocalPartySaveData 为字节
 // 使用 encoding/gob 进行序列化，因为 LocalPartySaveData 包含 big.Int 等复杂类型
+// keyDataWrapper 用于增强序列化可靠性，特别是针对 Ks 字段
+type keyDataWrapper struct {
+	Data    *keygen.LocalPartySaveData
+	KsBytes [][]byte // 显式存储 Ks 为字节切片，避免 gob 处理 big.Int 指针的问题
+}
+
+// serializeLocalPartySaveData 序列化 LocalPartySaveData 为字节
+// 使用 encoding/gob 进行序列化，并使用 wrapper 确保 Ks 被保存
 func serializeLocalPartySaveData(keyData *keygen.LocalPartySaveData) ([]byte, error) {
 	if keyData == nil {
 		return nil, errors.New("keyData is nil")
 	}
 
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(keyData); err != nil {
-		return nil, errors.Wrap(err, "failed to encode LocalPartySaveData")
+	// 🔍 [DIAGNOSTIC] Check Ks before serialization
+	log.Info().
+		Int("ks_len", len(keyData.Ks)).
+		Int("bigxj_len", len(keyData.BigXj)).
+		Msg("🔍 [DIAGNOSTIC] serializeLocalPartySaveData: Before Encode")
+
+	// 构造 wrapper
+	wrapper := keyDataWrapper{
+		Data:    keyData,
+		KsBytes: make([][]byte, len(keyData.Ks)),
+	}
+	for i, k := range keyData.Ks {
+		if k != nil {
+			wrapper.KsBytes[i] = k.Bytes()
+		}
 	}
 
-	return buf.Bytes(), nil
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(wrapper); err != nil {
+		return nil, errors.Wrap(err, "failed to encode keyDataWrapper")
+	}
+
+	data := buf.Bytes()
+
+	// 🔍 [DIAGNOSTIC] Verify serialization by decoding immediately
+	var verifyWrapper keyDataWrapper
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+	if err := decoder.Decode(&verifyWrapper); err != nil {
+		log.Error().Err(err).Msg("🔍 [DIAGNOSTIC] Verification Decode FAILED")
+	} else {
+		ksLen := 0
+		if verifyWrapper.Data != nil {
+			ksLen = len(verifyWrapper.Data.Ks)
+		}
+		log.Info().
+			Int("wrapper_ks_bytes_len", len(verifyWrapper.KsBytes)).
+			Int("inner_ks_len", ksLen).
+			Msg("🔍 [DIAGNOSTIC] serializeLocalPartySaveData: Verification Decode Result")
+	}
+
+	return data, nil
 }
 
 // deserializeLocalPartySaveData 从字节反序列化 LocalPartySaveData
@@ -487,11 +562,49 @@ func deserializeLocalPartySaveData(data []byte) (*keygen.LocalPartySaveData, err
 		return nil, errors.New("data is empty")
 	}
 
-	var keyData keygen.LocalPartySaveData
+	// 尝试作为 wrapper 解码
+	var wrapper keyDataWrapper
 	decoder := gob.NewDecoder(bytes.NewReader(data))
-	if err := decoder.Decode(&keyData); err != nil {
-		return nil, errors.Wrap(err, "failed to decode LocalPartySaveData")
+	if err := decoder.Decode(&wrapper); err == nil {
+		// 解码成功
+		keyData := wrapper.Data
+		if keyData == nil {
+			return nil, errors.New("decoded keyData is nil")
+		}
+
+		// 如果内部 Ks 为空，尝试从 KsBytes 恢复
+		if len(keyData.Ks) == 0 && len(wrapper.KsBytes) > 0 {
+			log.Info().Msg("🔍 [DIAGNOSTIC] Restoring Ks from KsBytes wrapper")
+			keyData.Ks = make([]*big.Int, len(wrapper.KsBytes))
+			for i, b := range wrapper.KsBytes {
+				if len(b) > 0 {
+					keyData.Ks[i] = new(big.Int).SetBytes(b)
+				}
+			}
+		}
+
+		// 🔍 [DIAGNOSTIC] Check Ks after deserialization
+		log.Info().
+			Int("ks_len", len(keyData.Ks)).
+			Int("bigxj_len", len(keyData.BigXj)).
+			Msg("🔍 [DIAGNOSTIC] deserializeLocalPartySaveData (Wrapper) Check")
+
+		return keyData, nil
 	}
+
+	// 如果 wrapper 解码失败，尝试直接解码（兼容旧数据）
+	// 注意：gob decoder 读取后 stream 会移动，需要重新创建 reader
+	var keyData keygen.LocalPartySaveData
+	decoder2 := gob.NewDecoder(bytes.NewReader(data))
+	if err := decoder2.Decode(&keyData); err != nil {
+		return nil, errors.Wrap(err, "failed to decode LocalPartySaveData (raw fallback)")
+	}
+
+	// 🔍 [DIAGNOSTIC] Check Ks after deserialization
+	log.Info().
+		Int("ks_len", len(keyData.Ks)).
+		Int("bigxj_len", len(keyData.BigXj)).
+		Msg("🔍 [DIAGNOSTIC] deserializeLocalPartySaveData (Raw) Check")
 
 	return &keyData, nil
 }

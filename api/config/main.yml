@@ -40,6 +40,10 @@ definitions:
     $ref: "../definitions/infra.yml#/definitions/PostCreateKeyPayload"
   createKeyResponse:
     $ref: "../definitions/infra.yml#/definitions/CreateKeyResponse"
+  postDeriveKeyPayload:
+    $ref: "../definitions/infra.yml#/definitions/PostDeriveKeyPayload"
+  deriveKeyResponse:
+    $ref: "../definitions/infra.yml#/definitions/DeriveKeyResponse"
   getKeyResponse:
     $ref: "../definitions/infra.yml#/definitions/GetKeyResponse"
   listKeysResponse:

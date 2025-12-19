@@ -29,7 +29,7 @@ type PostCreateKeyPayload struct {
 	// chain type
 	// Example: ethereum
 	// Required: true
-	// Enum: [bitcoin ethereum bsc avalanche]
+	// Enum: [bitcoin ethereum bsc avalanche solana]
 	ChainType *string `json:"chain_type"`
 
 	// curve
@@ -136,7 +136,7 @@ var postCreateKeyPayloadTypeChainTypePropEnum []interface{}
 
 func init() {
 	var res []string
-	if err := json.Unmarshal([]byte(`["bitcoin","ethereum","bsc","avalanche"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["bitcoin","ethereum","bsc","avalanche","solana"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {
@@ -157,6 +157,9 @@ const (
 
 	// PostCreateKeyPayloadChainTypeAvalanche captures enum value "avalanche"
 	PostCreateKeyPayloadChainTypeAvalanche string = "avalanche"
+
+	// PostCreateKeyPayloadChainTypeSolana captures enum value "solana"
+	PostCreateKeyPayloadChainTypeSolana string = "solana"
 )
 
 // prop value enum

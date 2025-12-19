@@ -21,7 +21,6 @@ func (s *InfrastructureServer) CreateRootKey(ctx context.Context, req *pb.Create
 		Str("protocol", req.Protocol).
 		Int32("threshold", req.Threshold).
 		Int32("total_nodes", req.TotalNodes).
-		Str("user_id", req.UserId).
 		Msg("CreateRootKey gRPC request")
 
 	// 构建请求
@@ -32,7 +31,6 @@ func (s *InfrastructureServer) CreateRootKey(ctx context.Context, req *pb.Create
 		Protocol:    req.Protocol,
 		Threshold:   int(req.Threshold),
 		TotalNodes:  int(req.TotalNodes),
-		UserID:      req.UserId,
 		Description: req.Description,
 		Tags:        req.Tags,
 	}

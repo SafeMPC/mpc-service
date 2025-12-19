@@ -29,8 +29,8 @@ func (s *PostgreSQLStore) SaveKeyMetadata(ctx context.Context, key *KeyMetadata)
 	query := `
 		INSERT INTO keys (
 			key_id, public_key, algorithm, curve, threshold, total_nodes,
-			chain_type, address, status, description, tags, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			chain_type, chain_code, address, status, description, tags, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		ON CONFLICT (key_id) DO UPDATE SET
 			public_key = EXCLUDED.public_key,
 			algorithm = EXCLUDED.algorithm,
@@ -38,6 +38,7 @@ func (s *PostgreSQLStore) SaveKeyMetadata(ctx context.Context, key *KeyMetadata)
 			threshold = EXCLUDED.threshold,
 			total_nodes = EXCLUDED.total_nodes,
 			chain_type = EXCLUDED.chain_type,
+			chain_code = EXCLUDED.chain_code,
 			address = EXCLUDED.address,
 			status = EXCLUDED.status,
 			description = EXCLUDED.description,
@@ -47,7 +48,7 @@ func (s *PostgreSQLStore) SaveKeyMetadata(ctx context.Context, key *KeyMetadata)
 
 	result, err := s.db.ExecContext(ctx, query,
 		key.KeyID, key.PublicKey, key.Algorithm, key.Curve, key.Threshold, key.TotalNodes,
-		key.ChainType, key.Address, key.Status, key.Description, tagsJSON,
+		key.ChainType, key.ChainCode, key.Address, key.Status, key.Description, tagsJSON,
 		key.CreatedAt, key.UpdatedAt,
 	)
 	if err != nil {
@@ -70,7 +71,7 @@ func (s *PostgreSQLStore) SaveKeyMetadata(ctx context.Context, key *KeyMetadata)
 func (s *PostgreSQLStore) GetKeyMetadata(ctx context.Context, keyID string) (*KeyMetadata, error) {
 	query := `
 		SELECT key_id, public_key, algorithm, curve, threshold, total_nodes,
-			chain_type, address, status, description, tags, created_at, updated_at, deletion_date
+			chain_type, chain_code, address, status, description, tags, created_at, updated_at, deletion_date
 		FROM keys
 		WHERE key_id = $1
 	`
@@ -78,10 +79,11 @@ func (s *PostgreSQLStore) GetKeyMetadata(ctx context.Context, keyID string) (*Ke
 	var key KeyMetadata
 	var tagsJSON []byte
 	var deletionDate sql.NullTime
+	var chainCode sql.NullString
 
 	err := s.db.QueryRowContext(ctx, query, keyID).Scan(
 		&key.KeyID, &key.PublicKey, &key.Algorithm, &key.Curve, &key.Threshold, &key.TotalNodes,
-		&key.ChainType, &key.Address, &key.Status, &key.Description, &tagsJSON,
+		&key.ChainType, &chainCode, &key.Address, &key.Status, &key.Description, &tagsJSON,
 		&key.CreatedAt, &key.UpdatedAt, &deletionDate,
 	)
 	if err != nil {
@@ -89,6 +91,10 @@ func (s *PostgreSQLStore) GetKeyMetadata(ctx context.Context, keyID string) (*Ke
 			return nil, errors.New("key not found")
 		}
 		return nil, errors.Wrap(err, "failed to get key metadata")
+	}
+
+	if chainCode.Valid {
+		key.ChainCode = chainCode.String
 	}
 
 	if len(tagsJSON) > 0 {
@@ -122,12 +128,13 @@ func (s *PostgreSQLStore) UpdateKeyMetadata(ctx context.Context, key *KeyMetadat
 			threshold = $5,
 			total_nodes = $6,
 			chain_type = $7,
-			address = $8,
-			status = $9,
-			description = $10,
-			tags = $11,
-			updated_at = $12,
-			deletion_date = $13
+			chain_code = $8,
+			address = $9,
+			status = $10,
+			description = $11,
+			tags = $12,
+			updated_at = $13,
+			deletion_date = $14
 		WHERE key_id = $1
 	`
 
@@ -138,7 +145,7 @@ func (s *PostgreSQLStore) UpdateKeyMetadata(ctx context.Context, key *KeyMetadat
 
 	_, err = s.db.ExecContext(ctx, query,
 		key.KeyID, key.PublicKey, key.Algorithm, key.Curve, key.Threshold, key.TotalNodes,
-		key.ChainType, key.Address, key.Status, key.Description, tagsJSON,
+		key.ChainType, key.ChainCode, key.Address, key.Status, key.Description, tagsJSON,
 		key.UpdatedAt, deletionDate,
 	)
 	if err != nil {
@@ -168,7 +175,7 @@ func (s *PostgreSQLStore) ListKeys(ctx context.Context, filter *KeyFilter) ([]*K
 	}
 
 	query := `SELECT key_id, public_key, algorithm, curve, threshold, total_nodes,
-		chain_type, address, status, description, tags, created_at, updated_at, deletion_date
+		chain_type, chain_code, address, status, description, tags, created_at, updated_at, deletion_date
 		FROM keys WHERE 1=1`
 	args := []interface{}{}
 	argIndex := 1
@@ -199,14 +206,19 @@ func (s *PostgreSQLStore) ListKeys(ctx context.Context, filter *KeyFilter) ([]*K
 		var key KeyMetadata
 		var tagsJSON []byte
 		var deletionDate sql.NullTime
+		var chainCode sql.NullString
 
 		err := rows.Scan(
 			&key.KeyID, &key.PublicKey, &key.Algorithm, &key.Curve, &key.Threshold, &key.TotalNodes,
-			&key.ChainType, &key.Address, &key.Status, &key.Description, &tagsJSON,
+			&key.ChainType, &chainCode, &key.Address, &key.Status, &key.Description, &tagsJSON,
 			&key.CreatedAt, &key.UpdatedAt, &deletionDate,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to scan key")
+		}
+
+		if chainCode.Valid {
+			key.ChainCode = chainCode.String
 		}
 
 		if len(tagsJSON) > 0 {

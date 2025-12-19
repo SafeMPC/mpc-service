@@ -26,6 +26,9 @@ service KeyService {
   // 获取钱包密钥信息
   rpc GetWalletKey(GetWalletKeyRequest) returns (GetWalletKeyResponse);
   
+  // 删除钱包密钥
+  rpc DeleteWalletKey(DeleteWalletKeyRequest) returns (StatusResponse);
+  
   // 列出钱包密钥
   rpc ListWalletKeys(ListWalletKeysRequest) returns (ListWalletKeysResponse);
 }
@@ -38,7 +41,6 @@ message CreateRootKeyRequest {
   string protocol = 4;   // gg18, gg20, frost
   int32 threshold = 5;   // 默认 2
   int32 total_nodes = 6; // 默认 3
-  string user_id = 7;    // 用户ID，用于生成客户端节点ID
   string description = 8;
   map<string, string> tags = 9;
 }
@@ -61,6 +63,11 @@ message GetRootKeyResponse {
 // DeleteRootKeyRequest 删除根密钥请求
 message DeleteRootKeyRequest {
   string key_id = 1;
+}
+
+// DeleteWalletKeyRequest 删除钱包密钥请求
+message DeleteWalletKeyRequest {
+  string wallet_id = 1;
 }
 
 // ListRootKeysRequest 列出根密钥请求

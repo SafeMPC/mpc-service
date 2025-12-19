@@ -96,9 +96,8 @@ func TestService_CreateRootKey_2of3(t *testing.T) {
 
 	// 设置存储响应
 	mockMetadataStore.On("SaveKeyMetadata", mock.Anything, mock.Anything).Return(nil)
-	mockKeyShareStorage.On("StoreKeyShare", mock.Anything, mock.Anything, mock.MatchedBy(func(nodeID string) bool {
-		return nodeID == "server-proxy-1" || nodeID == "server-proxy-2"
-	}), mock.Anything).Return(nil)
+	mockMetadataStore.On("UpdateKeyMetadata", mock.Anything, mock.Anything).Return(nil)
+	mockKeyShareStorage.On("StoreKeyShare", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockMetadataStore.
 		On("GetSigningSession", mock.Anything, mock.Anything).
 		Return(&storage.SigningSession{
@@ -146,7 +145,6 @@ func TestService_CreateRootKey_2of3(t *testing.T) {
 		Protocol:   "gg20",
 		Threshold:  2,
 		TotalNodes: 3,
-		UserID:     "user123",
 	}
 
 	rootKey, err := service.CreateRootKey(ctx, req)
@@ -156,9 +154,8 @@ func TestService_CreateRootKey_2of3(t *testing.T) {
 	assert.Equal(t, 3, rootKey.TotalNodes)
 	assert.Equal(t, "Active", rootKey.Status)
 
-	// 验证只存储了服务器分片
-	mockKeyShareStorage.AssertNumberOfCalls(t, "StoreKeyShare", 2)
-	mockKeyShareStorage.AssertNotCalled(t, "StoreKeyShare", mock.Anything, mock.Anything, "client-user123", mock.Anything)
+	// 验证存储了所有分片
+	mockKeyShareStorage.AssertNumberOfCalls(t, "StoreKeyShare", 3)
 
 	// 验证生成了备份分片（每个MPC分片生成5个备份分片）
 	mockBackupService.AssertNumberOfCalls(t, "GenerateBackupShares", 3) // 3个MPC分片
@@ -277,6 +274,22 @@ func (m *MockMetadataStore) ListKeys(ctx context.Context, filter *storage.KeyFil
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*storage.KeyMetadata), args.Error(1)
+}
+
+func (m *MockMetadataStore) GetSigningPolicy(ctx context.Context, keyID string) (*storage.SigningPolicy, error) {
+	args := m.Called(ctx, keyID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*storage.SigningPolicy), args.Error(1)
+}
+
+func (m *MockMetadataStore) ListUserAuthKeys(ctx context.Context, keyID string) ([]*storage.UserAuthKey, error) {
+	args := m.Called(ctx, keyID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*storage.UserAuthKey), args.Error(1)
 }
 
 // BackupShareStorage 相关方法（用于类型断言）
@@ -456,6 +469,14 @@ func (m *MockProtocolEngine) ProcessIncomingSigningMessage(ctx context.Context, 
 func (m *MockProtocolEngine) RotateKey(ctx context.Context, keyID string) error {
 	args := m.Called(ctx, keyID)
 	return args.Error(0)
+}
+
+func (m *MockProtocolEngine) ExecuteResharing(ctx context.Context, keyID string, oldNodeIDs []string, newNodeIDs []string, oldThreshold int, newThreshold int) (*protocol.KeyGenResponse, error) {
+	args := m.Called(ctx, keyID, oldNodeIDs, newNodeIDs, oldThreshold, newThreshold)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*protocol.KeyGenResponse), args.Error(1)
 }
 
 func (m *MockProtocolEngine) KeyRefresh(ctx context.Context, keyID string) error {

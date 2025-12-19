@@ -2,11 +2,9 @@ package backup
 
 import (
 	"context"
-	"time"
 
 	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog/log"
 )
 
 // SSSBackupService SSS 备份服务接口
@@ -18,9 +16,6 @@ type SSSBackupService interface {
 	// RecoverMPCShareFromBackup 从备份分片恢复单个MPC分片
 	// 注意：恢复的是MPC分片，不是完整密钥
 	RecoverMPCShareFromBackup(ctx context.Context, shares []*BackupShare) ([]byte, error)
-
-	// DeliverBackupShareToClient 下发备份分片到客户端
-	DeliverBackupShareToClient(ctx context.Context, keyID, userID, nodeID string, shareIndex int, share *BackupShare) error
 }
 
 // Service SSS 备份服务实现
@@ -99,49 +94,4 @@ func (s *Service) RecoverMPCShareFromBackup(
 	}
 
 	return mpcShare, nil
-}
-
-// DeliverBackupShareToClient 下发备份分片到客户端
-func (s *Service) DeliverBackupShareToClient(
-	ctx context.Context,
-	keyID, userID, nodeID string,
-	shareIndex int,
-	share *BackupShare,
-) error {
-	// 1. 保存备份分片到存储（用于后续恢复）
-	// 注意：这里保存的是 SSS 备份分片，不是原始 MPC 分片
-	if err := s.backupStorage.SaveBackupShare(ctx, keyID, nodeID, shareIndex, share.ShareData); err != nil {
-		return errors.Wrapf(err, "failed to save backup share %d for node %s", shareIndex, nodeID)
-	}
-
-	// 2. 创建下发记录（初始状态为 pending）
-	now := time.Now()
-	delivery := &storage.BackupShareDelivery{
-		KeyID:      keyID,
-		UserID:     userID,
-		NodeID:     nodeID,
-		ShareIndex: shareIndex,
-		Status:     "pending",
-		CreatedAt:  now,
-		UpdatedAt:  now,
-	}
-
-	if err := s.metadataStore.SaveBackupShareDelivery(ctx, delivery); err != nil {
-		return errors.Wrap(err, "failed to save backup share delivery record")
-	}
-
-	// 3. 准备下发记录（状态为 pending）
-	// 实际的加密和传输将由客户端通过 gRPC (RequestShareDelivery) 主动拉取触发
-	// 服务端只需确保数据已保存且状态记录已创建
-
-	// 当前实现：保存备份分片和下发记录，状态为 pending
-	// 客户端将通过 RequestShareDelivery 接口获取加密分片并确认接收
-	log.Info().
-		Str("key_id", keyID).
-		Str("user_id", userID).
-		Str("node_id", nodeID).
-		Int("share_index", shareIndex).
-		Msg("Backup share saved and delivery record created. Waiting for client retrieval.")
-
-	return nil
 }
