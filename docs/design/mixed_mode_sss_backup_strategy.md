@@ -108,6 +108,21 @@
 - 设定删除策略与审批门槛（软删/硬删/回滚窗口），对零保留场景制定额外验收。
 - 建立监控指标面板与告警项（覆盖率、成功率、耗时、失败原因）。
 
+## 轮换（Resharing）后的备份与审计补齐
+- 触发时机：`StartResharing` 完成并持久化新分片后
+- 备份策略：沿用 `total=5, threshold=3` 的混合模式（2 份服务端保留，3 份外部分发）
+- 实施步骤：
+  - 1）对每个节点的新增 `MPC share` 调用 `GenerateBackupShares(ctx, share, 3, 5)`
+  - 2）将 SSS 分片保存到备份库（含审计）；并通过 `BackupDeliveryService` 执行外部分发与确认
+  - 3）更新 `GetBackupStatus` 的覆盖率与可恢复性标志；记录审计事件
+- 代码集成点：
+  - `internal/mpc/grpc/server.go:674-707`：在存储新分片后，复制 DKG 路径的备份逻辑（参考 `StartDKG` 中 301-331 行）到 Resharing 路径
+  - `internal/infra/key/service.go:731-735`：`RotateKey` 中存储新分片后，调用备份服务生成并保存分片
+  - 统一从配置读取备份阈值与总份数，避免硬编码
+- 验证与演练：
+  - 执行一次 Resharing 后，调用 `ListBackupShares` 与 `GetBackupStatus` 验证所有参与节点的备份分片已生成
+  - 以仅外部分片为输入，执行一次恢复演练，验证轮换后仍可独立恢复
+
 ## 备份/恢复接口参考
 - 恢复 RPC：
   - `proto/infra/v1/backup.proto:12` `RecoverMPCShare`
