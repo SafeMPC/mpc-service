@@ -1,9 +1,10 @@
 # 混合模式 SSS 备份与恢复方案（设计草案）
 
 ## 文档索引
-- 方案设计：`docs/design/mixed_mode_sss_backup_strategy.md`（当前文档）
-- 运维指引：`docs/design/mixed_mode_sss_backup_sop.md`（标准作业流程与检查表）
-- 演练脚本：`docs/design/mixed_mode_sss_recovery_drill.md`（可执行演练步骤与示例调用）
+- 方案设计：[docs/design/mixed_mode_sss_backup_strategy.md](./mixed_mode_sss_backup_strategy.md)（当前文档）
+- 运维指引：[docs/design/mixed_mode_sss_backup_sop.md](./mixed_mode_sss_backup_sop.md)（标准作业流程与检查表）
+- 演练脚本：[docs/design/mixed_mode_sss_recovery_drill.md](./mixed_mode_sss_recovery_drill.md)（可执行演练步骤与示例调用）
+- 存储改造：[docs/design/storage_header_envelope_encryption_migration.md](./storage_header_envelope_encryption_migration.md)（头部格式、随机 salt、信封加密）
 
 ## 目标与范围
 - 目标：在不增加实现复杂度的前提下，提供“混合模式”分片备份与恢复方案，兼顾可恢复性、安全合规与运营可控性。
