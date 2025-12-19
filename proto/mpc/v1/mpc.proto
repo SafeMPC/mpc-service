@@ -33,7 +33,84 @@ service MPCCoordinator {
   rpc AggregateSignatures(AggregateRequest) returns (AggregateResponse);
 }
 
+// MPC管理服务
+service MPCManagement {
+  // 设置签名策略
+  rpc SetSigningPolicy(SetSigningPolicyRequest) returns (SetSigningPolicyResponse);
+  // 获取签名策略
+  rpc GetSigningPolicy(GetSigningPolicyRequest) returns (GetSigningPolicyResponse);
+
+  // 添加用户鉴权公钥
+  rpc AddUserAuthKey(AddUserAuthKeyRequest) returns (AddUserAuthKeyResponse);
+  // 删除用户鉴权公钥
+  rpc RemoveUserAuthKey(RemoveUserAuthKeyRequest) returns (RemoveUserAuthKeyResponse);
+  // 列出用户鉴权公钥
+  rpc ListUserAuthKeys(ListUserAuthKeysRequest) returns (ListUserAuthKeysResponse);
+}
+
 // 基础消息类型
+
+// 管理相关消息
+message SetSigningPolicyRequest {
+  string key_id = 1;
+  string policy_type = 2; // "single", "team"
+  int32 min_signatures = 3;
+}
+
+message SetSigningPolicyResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetSigningPolicyRequest {
+  string key_id = 1;
+}
+
+message GetSigningPolicyResponse {
+  string key_id = 1;
+  string policy_type = 2;
+  int32 min_signatures = 3;
+}
+
+message AddUserAuthKeyRequest {
+  string key_id = 1;
+  string public_key_hex = 2;
+  string key_type = 3; // "ed25519", "secp256k1"
+  string member_name = 4;
+  string role = 5;
+}
+
+message AddUserAuthKeyResponse {
+  bool success = 1;
+  string message = 2;
+  string auth_key_id = 3;
+}
+
+message RemoveUserAuthKeyRequest {
+  string key_id = 1;
+  string public_key_hex = 2;
+}
+
+message RemoveUserAuthKeyResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ListUserAuthKeysRequest {
+  string key_id = 1;
+}
+
+message ListUserAuthKeysResponse {
+  message UserAuthKey {
+    string id = 1;
+    string public_key_hex = 2;
+    string key_type = 3;
+    string member_name = 4;
+    string role = 5;
+    string created_at = 6;
+  }
+  repeated UserAuthKey keys = 1;
+}
 
 // 会话相关消息
 message CreateSessionRequest {

@@ -98,7 +98,11 @@ type MetadataStore interface {
 
 	// 鉴权代理操作 (Delegated Guardian)
 	GetSigningPolicy(ctx context.Context, keyID string) (*SigningPolicy, error)
+	SaveSigningPolicy(ctx context.Context, policy *SigningPolicy) error
+
 	ListUserAuthKeys(ctx context.Context, keyID string) ([]*UserAuthKey, error)
+	SaveUserAuthKey(ctx context.Context, authKey *UserAuthKey) error
+	DeleteUserAuthKey(ctx context.Context, walletID string, publicKeyHex string) error
 
 	// 备份分片下发记录操作
 	SaveBackupShareDelivery(ctx context.Context, delivery *BackupShareDelivery) error

@@ -53,6 +53,7 @@ func inferProtocolForDKG(algorithm, curve string) string {
 // GRPCServer gRPC服务端，用于接收节点间消息
 type GRPCServer struct {
 	pb.UnimplementedMPCNodeServer
+	pb.UnimplementedMPCManagementServer
 
 	protocolEngine   protocol.Engine            // 默认协议引擎
 	protocolRegistry *protocol.ProtocolRegistry // 协议注册表（用于动态选择协议）
@@ -699,9 +700,53 @@ func (s *GRPCServer) StartResharing(ctx context.Context, req *pb.StartResharingR
 
 				// 存储新分片
 				if s.keyShareStorage != nil && len(resp.KeyShares) > 0 {
+					// 检查 MetadataStore 是否支持备份存储
+					var backupStorage storage.BackupShareStorage
+					if s.backupService != nil {
+						if bs, ok := s.metadataStore.(storage.BackupShareStorage); ok {
+							backupStorage = bs
+						} else {
+							log.Warn().Msg("MetadataStore does not implement BackupShareStorage, skipping SSS backup during resharing")
+						}
+					}
+
 					for nodeID, share := range resp.KeyShares {
 						if err := s.keyShareStorage.StoreKeyShare(resharingCtx, req.KeyId, nodeID, share.Share); err != nil {
 							log.Error().Err(err).Msg("Failed to store new key share")
+						}
+
+						// 生成并存储备份 (仅当 backupService 和 backupStorage 可用时)
+						if s.backupService != nil && backupStorage != nil {
+							// 对单个MPC分片进行SSS备份
+							// 注意：这里硬编码了 threshold=3, total=5，实际应从配置或策略中读取
+							// 暂时保持与 CreateRootKey 一致
+							backupShares, err := s.backupService.GenerateBackupShares(resharingCtx, share.Share, 3, 5)
+							if err != nil {
+								log.Error().
+									Err(err).
+									Str("key_id", req.KeyId).
+									Str("node_id", nodeID).
+									Msg("Failed to generate backup shares for reshared MPC share")
+								continue
+							}
+
+							for i, backupShare := range backupShares {
+								shareIndex := i + 1
+								if err := backupStorage.SaveBackupShare(resharingCtx, req.KeyId, nodeID, shareIndex, backupShare.ShareData); err != nil {
+									log.Error().
+										Err(err).
+										Str("key_id", req.KeyId).
+										Str("node_id", nodeID).
+										Int("share_index", shareIndex).
+										Msg("Failed to save backup share during resharing")
+								} else {
+									log.Info().
+										Str("key_id", req.KeyId).
+										Str("node_id", nodeID).
+										Int("share_index", shareIndex).
+										Msg("Saved SSS backup share during resharing")
+								}
+							}
 						}
 					}
 				}
@@ -1075,6 +1120,7 @@ func (s *GRPCServer) Start(ctx context.Context) error {
 
 	// 注册服务
 	pb.RegisterMPCNodeServer(s.grpcServer, s)
+	pb.RegisterMPCManagementServer(s.grpcServer, s)
 
 	// 启用反射（开发环境）
 	reflection.Register(s.grpcServer)

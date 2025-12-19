@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -238,6 +239,43 @@ func (s *PostgreSQLStore) ListKeys(ctx context.Context, filter *KeyFilter) ([]*K
 	}
 
 	return keys, nil
+}
+
+// SaveUserAuthKey 保存用户鉴权公钥
+func (s *PostgreSQLStore) SaveUserAuthKey(ctx context.Context, authKey *UserAuthKey) error {
+	if authKey.ID == "" {
+		authKey.ID = uuid.New().String()
+	}
+
+	query := `
+		INSERT INTO user_auth_keys (id, wallet_id, public_key_hex, key_type, member_name, role, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (wallet_id, public_key_hex) DO UPDATE SET
+			key_type = EXCLUDED.key_type,
+			member_name = EXCLUDED.member_name,
+			role = EXCLUDED.role,
+			updated_at = NOW()
+	`
+
+	_, err := s.db.ExecContext(ctx, query,
+		authKey.ID, authKey.WalletID, authKey.PublicKeyHex, authKey.KeyType,
+		authKey.MemberName, authKey.Role, authKey.CreatedAt,
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to save user auth key")
+	}
+
+	return nil
+}
+
+// DeleteUserAuthKey 删除用户鉴权公钥
+func (s *PostgreSQLStore) DeleteUserAuthKey(ctx context.Context, walletID string, publicKeyHex string) error {
+	query := `DELETE FROM user_auth_keys WHERE wallet_id = $1 AND public_key_hex = $2`
+	_, err := s.db.ExecContext(ctx, query, walletID, publicKeyHex)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete user auth key")
+	}
+	return nil
 }
 
 // SaveNode 保存节点信息
@@ -943,6 +981,28 @@ func (s *PostgreSQLStore) GetSigningPolicy(ctx context.Context, keyID string) (*
 	}
 
 	return &policy, nil
+}
+
+// SaveSigningPolicy 保存签名策略
+func (s *PostgreSQLStore) SaveSigningPolicy(ctx context.Context, policy *SigningPolicy) error {
+	query := `
+		INSERT INTO signing_policies (wallet_id, policy_type, min_signatures, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (wallet_id) DO UPDATE SET
+			policy_type = EXCLUDED.policy_type,
+			min_signatures = EXCLUDED.min_signatures,
+			updated_at = EXCLUDED.updated_at
+	`
+
+	_, err := s.db.ExecContext(ctx, query,
+		policy.WalletID, policy.PolicyType, policy.MinSignatures,
+		policy.CreatedAt, policy.UpdatedAt,
+	)
+	if err != nil {
+		return errors.Wrap(err, "failed to save signing policy")
+	}
+
+	return nil
 }
 
 // ListUserAuthKeys 列出用户鉴权公钥
