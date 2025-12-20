@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v3.19.4
-// source: mpc/v1/mpc.proto
+// source: proto/mpc/v1/mpc.proto
 
 package v1
 
@@ -283,7 +283,7 @@ var MPCNode_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "mpc/v1/mpc.proto",
+	Metadata: "proto/mpc/v1/mpc.proto",
 }
 
 const (
@@ -467,15 +467,13 @@ var MPCCoordinator_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "mpc/v1/mpc.proto",
+	Metadata: "proto/mpc/v1/mpc.proto",
 }
 
 const (
-	MPCManagement_SetSigningPolicy_FullMethodName  = "/mpc.v1.MPCManagement/SetSigningPolicy"
-	MPCManagement_GetSigningPolicy_FullMethodName  = "/mpc.v1.MPCManagement/GetSigningPolicy"
-	MPCManagement_AddUserAuthKey_FullMethodName    = "/mpc.v1.MPCManagement/AddUserAuthKey"
-	MPCManagement_RemoveUserAuthKey_FullMethodName = "/mpc.v1.MPCManagement/RemoveUserAuthKey"
-	MPCManagement_ListUserAuthKeys_FullMethodName  = "/mpc.v1.MPCManagement/ListUserAuthKeys"
+	MPCManagement_SetSigningPolicy_FullMethodName = "/mpc.v1.MPCManagement/SetSigningPolicy"
+	MPCManagement_GetSigningPolicy_FullMethodName = "/mpc.v1.MPCManagement/GetSigningPolicy"
+	MPCManagement_AddUserPasskey_FullMethodName   = "/mpc.v1.MPCManagement/AddUserPasskey"
 )
 
 // MPCManagementClient is the client API for MPCManagement service.
@@ -488,12 +486,8 @@ type MPCManagementClient interface {
 	SetSigningPolicy(ctx context.Context, in *SetSigningPolicyRequest, opts ...grpc.CallOption) (*SetSigningPolicyResponse, error)
 	// 获取签名策略
 	GetSigningPolicy(ctx context.Context, in *GetSigningPolicyRequest, opts ...grpc.CallOption) (*GetSigningPolicyResponse, error)
-	// 添加用户鉴权公钥
-	AddUserAuthKey(ctx context.Context, in *AddUserAuthKeyRequest, opts ...grpc.CallOption) (*AddUserAuthKeyResponse, error)
-	// 删除用户鉴权公钥
-	RemoveUserAuthKey(ctx context.Context, in *RemoveUserAuthKeyRequest, opts ...grpc.CallOption) (*RemoveUserAuthKeyResponse, error)
-	// 列出用户鉴权公钥
-	ListUserAuthKeys(ctx context.Context, in *ListUserAuthKeysRequest, opts ...grpc.CallOption) (*ListUserAuthKeysResponse, error)
+	// 添加用户 Passkey 公钥
+	AddUserPasskey(ctx context.Context, in *AddUserPasskeyRequest, opts ...grpc.CallOption) (*AddUserPasskeyResponse, error)
 }
 
 type mPCManagementClient struct {
@@ -524,30 +518,10 @@ func (c *mPCManagementClient) GetSigningPolicy(ctx context.Context, in *GetSigni
 	return out, nil
 }
 
-func (c *mPCManagementClient) AddUserAuthKey(ctx context.Context, in *AddUserAuthKeyRequest, opts ...grpc.CallOption) (*AddUserAuthKeyResponse, error) {
+func (c *mPCManagementClient) AddUserPasskey(ctx context.Context, in *AddUserPasskeyRequest, opts ...grpc.CallOption) (*AddUserPasskeyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AddUserAuthKeyResponse)
-	err := c.cc.Invoke(ctx, MPCManagement_AddUserAuthKey_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *mPCManagementClient) RemoveUserAuthKey(ctx context.Context, in *RemoveUserAuthKeyRequest, opts ...grpc.CallOption) (*RemoveUserAuthKeyResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RemoveUserAuthKeyResponse)
-	err := c.cc.Invoke(ctx, MPCManagement_RemoveUserAuthKey_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *mPCManagementClient) ListUserAuthKeys(ctx context.Context, in *ListUserAuthKeysRequest, opts ...grpc.CallOption) (*ListUserAuthKeysResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListUserAuthKeysResponse)
-	err := c.cc.Invoke(ctx, MPCManagement_ListUserAuthKeys_FullMethodName, in, out, cOpts...)
+	out := new(AddUserPasskeyResponse)
+	err := c.cc.Invoke(ctx, MPCManagement_AddUserPasskey_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -564,12 +538,8 @@ type MPCManagementServer interface {
 	SetSigningPolicy(context.Context, *SetSigningPolicyRequest) (*SetSigningPolicyResponse, error)
 	// 获取签名策略
 	GetSigningPolicy(context.Context, *GetSigningPolicyRequest) (*GetSigningPolicyResponse, error)
-	// 添加用户鉴权公钥
-	AddUserAuthKey(context.Context, *AddUserAuthKeyRequest) (*AddUserAuthKeyResponse, error)
-	// 删除用户鉴权公钥
-	RemoveUserAuthKey(context.Context, *RemoveUserAuthKeyRequest) (*RemoveUserAuthKeyResponse, error)
-	// 列出用户鉴权公钥
-	ListUserAuthKeys(context.Context, *ListUserAuthKeysRequest) (*ListUserAuthKeysResponse, error)
+	// 添加用户 Passkey 公钥
+	AddUserPasskey(context.Context, *AddUserPasskeyRequest) (*AddUserPasskeyResponse, error)
 	mustEmbedUnimplementedMPCManagementServer()
 }
 
@@ -586,14 +556,8 @@ func (UnimplementedMPCManagementServer) SetSigningPolicy(context.Context, *SetSi
 func (UnimplementedMPCManagementServer) GetSigningPolicy(context.Context, *GetSigningPolicyRequest) (*GetSigningPolicyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSigningPolicy not implemented")
 }
-func (UnimplementedMPCManagementServer) AddUserAuthKey(context.Context, *AddUserAuthKeyRequest) (*AddUserAuthKeyResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method AddUserAuthKey not implemented")
-}
-func (UnimplementedMPCManagementServer) RemoveUserAuthKey(context.Context, *RemoveUserAuthKeyRequest) (*RemoveUserAuthKeyResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RemoveUserAuthKey not implemented")
-}
-func (UnimplementedMPCManagementServer) ListUserAuthKeys(context.Context, *ListUserAuthKeysRequest) (*ListUserAuthKeysResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListUserAuthKeys not implemented")
+func (UnimplementedMPCManagementServer) AddUserPasskey(context.Context, *AddUserPasskeyRequest) (*AddUserPasskeyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddUserPasskey not implemented")
 }
 func (UnimplementedMPCManagementServer) mustEmbedUnimplementedMPCManagementServer() {}
 func (UnimplementedMPCManagementServer) testEmbeddedByValue()                       {}
@@ -652,56 +616,20 @@ func _MPCManagement_GetSigningPolicy_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MPCManagement_AddUserAuthKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddUserAuthKeyRequest)
+func _MPCManagement_AddUserPasskey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddUserPasskeyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MPCManagementServer).AddUserAuthKey(ctx, in)
+		return srv.(MPCManagementServer).AddUserPasskey(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: MPCManagement_AddUserAuthKey_FullMethodName,
+		FullMethod: MPCManagement_AddUserPasskey_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MPCManagementServer).AddUserAuthKey(ctx, req.(*AddUserAuthKeyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _MPCManagement_RemoveUserAuthKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RemoveUserAuthKeyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MPCManagementServer).RemoveUserAuthKey(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: MPCManagement_RemoveUserAuthKey_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MPCManagementServer).RemoveUserAuthKey(ctx, req.(*RemoveUserAuthKeyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _MPCManagement_ListUserAuthKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListUserAuthKeysRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MPCManagementServer).ListUserAuthKeys(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: MPCManagement_ListUserAuthKeys_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MPCManagementServer).ListUserAuthKeys(ctx, req.(*ListUserAuthKeysRequest))
+		return srv.(MPCManagementServer).AddUserPasskey(ctx, req.(*AddUserPasskeyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -722,18 +650,10 @@ var MPCManagement_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _MPCManagement_GetSigningPolicy_Handler,
 		},
 		{
-			MethodName: "AddUserAuthKey",
-			Handler:    _MPCManagement_AddUserAuthKey_Handler,
-		},
-		{
-			MethodName: "RemoveUserAuthKey",
-			Handler:    _MPCManagement_RemoveUserAuthKey_Handler,
-		},
-		{
-			MethodName: "ListUserAuthKeys",
-			Handler:    _MPCManagement_ListUserAuthKeys_Handler,
+			MethodName: "AddUserPasskey",
+			Handler:    _MPCManagement_AddUserPasskey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "mpc/v1/mpc.proto",
+	Metadata: "proto/mpc/v1/mpc.proto",
 }

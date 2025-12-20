@@ -40,21 +40,28 @@ service MPCManagement {
   // 获取签名策略
   rpc GetSigningPolicy(GetSigningPolicyRequest) returns (GetSigningPolicyResponse);
 
-  // 添加用户鉴权公钥
-  rpc AddUserAuthKey(AddUserAuthKeyRequest) returns (AddUserAuthKeyResponse);
-  // 删除用户鉴权公钥
-  rpc RemoveUserAuthKey(RemoveUserAuthKeyRequest) returns (RemoveUserAuthKeyResponse);
-  // 列出用户鉴权公钥
-  rpc ListUserAuthKeys(ListUserAuthKeysRequest) returns (ListUserAuthKeysResponse);
+  // 添加用户 Passkey 公钥
+  rpc AddUserPasskey(AddUserPasskeyRequest) returns (AddUserPasskeyResponse);
 }
 
 // 基础消息类型
+
+// 通用的 Admin 鉴权 Token
+message AdminAuthToken {
+  string req_id = 1;               // 请求ID (防重放)
+  string user_id = 2;              // Admin 用户ID
+  bytes passkey_signature = 3;     // assertion signature
+  bytes authenticator_data = 4;    // authData
+  bytes client_data_json = 5;      // clientDataJSON
+  string credential_id = 6;        // credential ID
+}
 
 // 管理相关消息
 message SetSigningPolicyRequest {
   string key_id = 1;
   string policy_type = 2; // "single", "team"
   int32 min_signatures = 3;
+  AdminAuthToken admin_auth = 4; // Admin 鉴权
 }
 
 message SetSigningPolicyResponse {
@@ -72,44 +79,17 @@ message GetSigningPolicyResponse {
   int32 min_signatures = 3;
 }
 
-message AddUserAuthKeyRequest {
-  string key_id = 1;
-  string public_key_hex = 2;
-  string key_type = 3; // "ed25519", "secp256k1"
-  string member_name = 4;
-  string role = 5;
+message AddUserPasskeyRequest {
+  string credential_id = 1;      // WebAuthn Credential ID
+  string public_key = 2;         // COSE Key Format (Hex or Base64)
+  string user_id = 3;            // 关联的用户ID
+  string device_name = 4;        // 设备名称
+  AdminAuthToken admin_auth = 5; // Admin 鉴权 (或用户自签名)
 }
 
-message AddUserAuthKeyResponse {
+message AddUserPasskeyResponse {
   bool success = 1;
   string message = 2;
-  string auth_key_id = 3;
-}
-
-message RemoveUserAuthKeyRequest {
-  string key_id = 1;
-  string public_key_hex = 2;
-}
-
-message RemoveUserAuthKeyResponse {
-  bool success = 1;
-  string message = 2;
-}
-
-message ListUserAuthKeysRequest {
-  string key_id = 1;
-}
-
-message ListUserAuthKeysResponse {
-  message UserAuthKey {
-    string id = 1;
-    string public_key_hex = 2;
-    string key_type = 3;
-    string member_name = 4;
-    string role = 5;
-    string created_at = 6;
-  }
-  repeated UserAuthKey keys = 1;
 }
 
 // 会话相关消息
@@ -172,6 +152,7 @@ message StartDKGRequest {
   int32 threshold = 5;
   int32 total_nodes = 6;
   repeated string node_ids = 7; // 参与节点列表
+  AdminAuthToken admin_auth = 8; // Admin 鉴权
 }
 
 message StartDKGResponse {
@@ -194,9 +175,15 @@ message StartSignRequest {
   
   // 鉴权令牌列表
   message AuthToken {
-    string public_key = 1; // 签名者的公钥 (用于快速查找)
-    bytes signature = 2;   // 对本次交易 (message/message_hex) 的签名
-    string member_id = 3;  // 可选：成员标识
+    string user_id = 1;              // 签名者用户ID
+    bytes passkey_signature = 2;     // WebAuthn Assertion Signature
+    bytes authenticator_data = 3;    // WebAuthn AuthData
+    bytes client_data_json = 4;      // WebAuthn ClientDataJSON
+    string credential_id = 5;        // WebAuthn Credential ID
+    // 兼容字段 (可保留或废弃)
+    string public_key = 6; 
+    bytes signature = 7;
+    string member_id = 8;
   }
   repeated AuthToken auth_tokens = 11;
 }
@@ -214,6 +201,7 @@ message StartResharingRequest {
   repeated string new_node_ids = 4; // 新参与节点列表
   int32 old_threshold = 5;
   int32 new_threshold = 6;
+  AdminAuthToken admin_auth = 7; // Admin 鉴权
 }
 
 message StartResharingResponse {

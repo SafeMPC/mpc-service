@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -241,41 +240,76 @@ func (s *PostgreSQLStore) ListKeys(ctx context.Context, filter *KeyFilter) ([]*K
 	return keys, nil
 }
 
-// SaveUserAuthKey 保存用户鉴权公钥
-func (s *PostgreSQLStore) SaveUserAuthKey(ctx context.Context, authKey *UserAuthKey) error {
-	if authKey.ID == "" {
-		authKey.ID = uuid.New().String()
-	}
-
+// SaveUserPasskey 保存用户 Passkey
+func (s *PostgreSQLStore) SaveUserPasskey(ctx context.Context, passkey *UserPasskey) error {
 	query := `
-		INSERT INTO user_auth_keys (id, wallet_id, public_key_hex, key_type, member_name, role, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (wallet_id, public_key_hex) DO UPDATE SET
-			key_type = EXCLUDED.key_type,
-			member_name = EXCLUDED.member_name,
-			role = EXCLUDED.role,
-			updated_at = NOW()
+		INSERT INTO user_passkeys (user_id, credential_id, public_key, device_name, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (user_id, credential_id) DO UPDATE SET
+			public_key = EXCLUDED.public_key,
+			device_name = EXCLUDED.device_name
 	`
 
 	_, err := s.db.ExecContext(ctx, query,
-		authKey.ID, authKey.WalletID, authKey.PublicKeyHex, authKey.KeyType,
-		authKey.MemberName, authKey.Role, authKey.CreatedAt,
+		passkey.UserID, passkey.CredentialID, passkey.PublicKey, passkey.DeviceName, passkey.CreatedAt,
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed to save user auth key")
+		return errors.Wrap(err, "failed to save user passkey")
 	}
 
 	return nil
 }
 
-// DeleteUserAuthKey 删除用户鉴权公钥
-func (s *PostgreSQLStore) DeleteUserAuthKey(ctx context.Context, walletID string, publicKeyHex string) error {
-	query := `DELETE FROM user_auth_keys WHERE wallet_id = $1 AND public_key_hex = $2`
-	_, err := s.db.ExecContext(ctx, query, walletID, publicKeyHex)
+// GetUserPasskey 获取用户 Passkey
+func (s *PostgreSQLStore) GetUserPasskey(ctx context.Context, userID, credentialID string) (*UserPasskey, error) {
+	query := `
+		SELECT user_id, credential_id, public_key, device_name, created_at
+		FROM user_passkeys
+		WHERE user_id = $1 AND credential_id = $2
+	`
+
+	var passkey UserPasskey
+	err := s.db.QueryRowContext(ctx, query, userID, credentialID).Scan(
+		&passkey.UserID, &passkey.CredentialID, &passkey.PublicKey, &passkey.DeviceName, &passkey.CreatedAt,
+	)
 	if err != nil {
-		return errors.Wrap(err, "failed to delete user auth key")
+		if err == sql.ErrNoRows {
+			return nil, errors.New("passkey not found")
+		}
+		return nil, errors.Wrap(err, "failed to get user passkey")
 	}
-	return nil
+
+	return &passkey, nil
+}
+
+// ListUserPasskeys 列出用户 Passkeys
+func (s *PostgreSQLStore) ListUserPasskeys(ctx context.Context, userID string) ([]*UserPasskey, error) {
+	query := `
+		SELECT user_id, credential_id, public_key, device_name, created_at
+		FROM user_passkeys
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+	`
+
+	rows, err := s.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list user passkeys")
+	}
+	defer rows.Close()
+
+	var passkeys []*UserPasskey
+	for rows.Next() {
+		var passkey UserPasskey
+		err := rows.Scan(
+			&passkey.UserID, &passkey.CredentialID, &passkey.PublicKey, &passkey.DeviceName, &passkey.CreatedAt,
+		)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to scan user passkey")
+		}
+		passkeys = append(passkeys, &passkey)
+	}
+
+	return passkeys, nil
 }
 
 // SaveNode 保存节点信息
@@ -1003,44 +1037,4 @@ func (s *PostgreSQLStore) SaveSigningPolicy(ctx context.Context, policy *Signing
 	}
 
 	return nil
-}
-
-// ListUserAuthKeys 列出用户鉴权公钥
-func (s *PostgreSQLStore) ListUserAuthKeys(ctx context.Context, keyID string) ([]*UserAuthKey, error) {
-	query := `
-		SELECT id, wallet_id, public_key_hex, key_type, member_name, role, created_at
-		FROM user_auth_keys
-		WHERE wallet_id = $1
-	`
-
-	rows, err := s.db.QueryContext(ctx, query, keyID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list user auth keys")
-	}
-	defer rows.Close()
-
-	var keys []*UserAuthKey
-	for rows.Next() {
-		var key UserAuthKey
-		var memberName, role sql.NullString
-
-		err := rows.Scan(
-			&key.ID, &key.WalletID, &key.PublicKeyHex, &key.KeyType,
-			&memberName, &role, &key.CreatedAt,
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to scan user auth key")
-		}
-
-		if memberName.Valid {
-			key.MemberName = memberName.String
-		}
-		if role.Valid {
-			key.Role = role.String
-		}
-
-		keys = append(keys, &key)
-	}
-
-	return keys, nil
 }

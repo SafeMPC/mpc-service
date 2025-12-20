@@ -2,14 +2,18 @@ package grpc
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"encoding/base64"
 	"encoding/hex"
 
+	"github.com/kashguard/go-mpc-infra/internal/auth"
 	"github.com/kashguard/go-mpc-infra/internal/config"
 	"github.com/kashguard/go-mpc-infra/internal/infra/backup"
 	"github.com/kashguard/go-mpc-infra/internal/infra/session"
@@ -185,6 +189,33 @@ func (s *GRPCServer) StartDKG(ctx context.Context, req *pb.StartDKGRequest) (*pb
 		Strs("node_ids", req.NodeIds).
 		Str("this_node_id", s.nodeID).
 		Msg("StartDKG RPC received")
+
+	// 验证 Admin 权限 (TODO: 实现 verifyAdminPasskey)
+	if req.AdminAuth != nil {
+		// 构造 Challenge
+		// 注意: NodeIds 排序以确保一致性
+		sortedNodeIDs := make([]string, len(req.NodeIds))
+		copy(sortedNodeIDs, req.NodeIds)
+		sort.Strings(sortedNodeIDs)
+
+		challengeRaw := fmt.Sprintf("%s|%s|%s|%s|%d|%d|%s",
+			req.KeyId, req.SessionId, req.Algorithm, req.Curve,
+			req.Threshold, req.TotalNodes, strings.Join(sortedNodeIDs, ","))
+		challengeHash := sha256.Sum256([]byte(challengeRaw))
+		expectedChallenge := base64.RawURLEncoding.EncodeToString(challengeHash[:])
+
+		if err := s.verifyAdminPasskey(ctx, req.AdminAuth, expectedChallenge, ""); err != nil {
+			log.Warn().Err(err).Msg("Admin passkey verification failed for DKG")
+			return &pb.StartDKGResponse{
+				Started: false,
+				Message: fmt.Sprintf("Admin verification failed: %v", err),
+			}, nil
+		}
+		log.Info().Str("admin_user_id", req.AdminAuth.UserId).Msg("Admin auth token verified for DKG")
+	} else {
+		log.Warn().Msg("Missing admin auth token for DKG")
+		// 严格模式下返回错误
+	}
 
 	// 使用sync.Once确保每个sessionID只启动一次DKG协议
 	// 防止StartDKG RPC和自动启动机制同时启动DKG
@@ -615,6 +646,33 @@ func (s *GRPCServer) StartResharing(ctx context.Context, req *pb.StartResharingR
 		Str("session_id", req.SessionId).
 		Str("this_node_id", s.nodeID).
 		Msg("StartResharing RPC received")
+
+	// 验证 Admin 权限 (TODO: 实现 verifyAdminPasskey)
+	if req.AdminAuth != nil {
+		sortedOld := make([]string, len(req.OldNodeIds))
+		copy(sortedOld, req.OldNodeIds)
+		sort.Strings(sortedOld)
+		sortedNew := make([]string, len(req.NewNodeIds))
+		copy(sortedNew, req.NewNodeIds)
+		sort.Strings(sortedNew)
+
+		challengeRaw := fmt.Sprintf("%s|%s|%d|%d|%s|%s",
+			req.KeyId, req.SessionId, req.OldThreshold, req.NewThreshold,
+			strings.Join(sortedOld, ","), strings.Join(sortedNew, ","))
+		challengeHash := sha256.Sum256([]byte(challengeRaw))
+		expectedChallenge := base64.RawURLEncoding.EncodeToString(challengeHash[:])
+
+		if err := s.verifyAdminPasskey(ctx, req.AdminAuth, expectedChallenge, ""); err != nil {
+			log.Warn().Err(err).Msg("Admin passkey verification failed for Resharing")
+			return &pb.StartResharingResponse{
+				Started: false,
+				Message: fmt.Sprintf("Admin verification failed: %v", err),
+			}, nil
+		}
+		log.Info().Str("admin_user_id", req.AdminAuth.UserId).Msg("Admin auth token verified for Resharing")
+	} else {
+		log.Warn().Msg("Missing admin auth token for Resharing")
+	}
 
 	sessionID := req.SessionId
 	if sessionID == "" {
@@ -1152,6 +1210,65 @@ func (s *GRPCServer) Stop() error {
 
 	if s.listener != nil {
 		s.listener.Close()
+	}
+
+	return nil
+}
+
+func (s *GRPCServer) checkGuardianPolicy(ctx context.Context, req *pb.StartSignRequest) error {
+	// 获取签名策略
+	policy, err := s.metadataStore.GetSigningPolicy(ctx, req.KeyId)
+	if err != nil {
+		// 如果没有策略，默认允许（或者默认拒绝，取决于安全需求）
+		// 这里为了兼容性，如果没有找到策略，记录日志并放行
+		log.Warn().Str("key_id", req.KeyId).Msg("No signing policy found, using default (allow)")
+		return nil
+	}
+
+	// 验证 AuthTokens
+	// 如果是 Passkey 模式，我们需要验证 Passkey 签名
+	validSignatures := 0
+
+	// Normalize message for challenge verification
+	msg := req.Message
+	if len(msg) == 0 && req.MessageHex != "" {
+		decoded, err := hex.DecodeString(req.MessageHex)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to decode message hex in policy check")
+			return err
+		}
+		msg = decoded
+	}
+	expectedChallenge := base64.RawURLEncoding.EncodeToString(msg)
+
+	for _, token := range req.AuthTokens {
+		// 1. 获取用户存储的 Passkey 公钥
+		userPasskey, err := s.metadataStore.GetUserPasskey(ctx, token.UserId, token.CredentialId)
+		if err != nil {
+			log.Warn().Str("user_id", token.UserId).Str("credential_id", token.CredentialId).Msg("Passkey not found for user")
+			continue
+		}
+
+		// 2. 验证 Passkey 签名
+		if len(token.PasskeySignature) > 0 {
+			if err := auth.VerifyPasskeySignature(
+				userPasskey.PublicKey,
+				token.PasskeySignature,
+				token.AuthenticatorData,
+				token.ClientDataJson,
+				expectedChallenge,
+			); err != nil {
+				log.Warn().Err(err).Str("user_id", token.UserId).Msg("Passkey signature verification failed")
+				continue
+			}
+
+			// 验证通过
+			validSignatures++
+		}
+	}
+
+	if validSignatures < policy.MinSignatures {
+		return fmt.Errorf("insufficient valid passkey signatures: got %d, need %d", validSignatures, policy.MinSignatures)
 	}
 
 	return nil

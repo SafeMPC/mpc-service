@@ -64,14 +64,12 @@ type SigningPolicy struct {
 	UpdatedAt     time.Time
 }
 
-// UserAuthKey 用户鉴权公钥
-type UserAuthKey struct {
-	ID           string
-	WalletID     string
-	PublicKeyHex string
-	KeyType      string
-	MemberName   string
-	Role         string
+// UserPasskey 用户 Passkey 公钥
+type UserPasskey struct {
+	UserID       string
+	CredentialID string
+	PublicKey    string // COSE Key Format (Hex or Base64)
+	DeviceName   string
 	CreatedAt    time.Time
 }
 
@@ -100,9 +98,10 @@ type MetadataStore interface {
 	GetSigningPolicy(ctx context.Context, keyID string) (*SigningPolicy, error)
 	SaveSigningPolicy(ctx context.Context, policy *SigningPolicy) error
 
-	ListUserAuthKeys(ctx context.Context, keyID string) ([]*UserAuthKey, error)
-	SaveUserAuthKey(ctx context.Context, authKey *UserAuthKey) error
-	DeleteUserAuthKey(ctx context.Context, walletID string, publicKeyHex string) error
+	// Passkey 操作
+	SaveUserPasskey(ctx context.Context, passkey *UserPasskey) error
+	GetUserPasskey(ctx context.Context, userID, credentialID string) (*UserPasskey, error)
+	ListUserPasskeys(ctx context.Context, userID string) ([]*UserPasskey, error)
 
 	// 备份分片下发记录操作
 	SaveBackupShareDelivery(ctx context.Context, delivery *BackupShareDelivery) error
