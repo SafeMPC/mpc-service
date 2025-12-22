@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package mpc.v1;
 
-option go_package = "github.com/kashguard/go-mpc-infra/pb/mpc/v1/v1;mpc";
+option go_package = "github.com/kashguard/go-mpc-infra/pb/mpc/v1;mpc";
 
 // MPC核心服务定义
 service MPCNode {
@@ -41,7 +41,11 @@ service MPCManagement {
   rpc GetSigningPolicy(GetSigningPolicyRequest) returns (GetSigningPolicyResponse);
 
   // 添加用户 Passkey 公钥
-  rpc AddUserPasskey(AddUserPasskeyRequest) returns (AddUserPasskeyResponse);
+  rpc AddPasskey(AddPasskeyRequest) returns (AddPasskeyResponse);
+
+  // 钱包成员管理
+  rpc AddWalletMember(AddWalletMemberRequest) returns (AddWalletMemberResponse);
+  rpc RemoveWalletMember(RemoveWalletMemberRequest) returns (RemoveWalletMemberResponse);
 }
 
 // 基础消息类型
@@ -49,11 +53,10 @@ service MPCManagement {
 // 通用的 Admin 鉴权 Token
 message AdminAuthToken {
   string req_id = 1;               // 请求ID (防重放)
-  string user_id = 2;              // Admin 用户ID
-  bytes passkey_signature = 3;     // assertion signature
-  bytes authenticator_data = 4;    // authData
-  bytes client_data_json = 5;      // clientDataJSON
-  string credential_id = 6;        // credential ID
+  bytes passkey_signature = 2;     // assertion signature
+  bytes authenticator_data = 3;    // authData
+  bytes client_data_json = 4;      // clientDataJSON
+  string credential_id = 5;        // credential ID
 }
 
 // 管理相关消息
@@ -61,33 +64,57 @@ message SetSigningPolicyRequest {
   string key_id = 1;
   string policy_type = 2; // "single", "team"
   int32 min_signatures = 3;
-  AdminAuthToken admin_auth = 4; // Admin 鉴权
+  repeated AdminAuthToken admin_auths = 4; // 支持多管理员签名
+  repeated string members = 5; // 允许签名的 Credential IDs
 }
 
 message SetSigningPolicyResponse {
+	bool success = 1;
+	string message = 2;
+}
+
+message GetSigningPolicyRequest {
+	string key_id = 1;
+}
+
+message GetSigningPolicyResponse {
+	string key_id = 1;
+	string policy_type = 2;
+	int32 min_signatures = 3;
+	repeated string members = 4; // 允许签名的 Credential IDs
+}
+
+message AddPasskeyRequest {
+  string credential_id = 1;      // WebAuthn Credential ID
+  string public_key = 2;         // COSE Key Format (Hex or Base64)
+  string device_name = 3;        // 设备名称
+  AdminAuthToken admin_auth = 4; // Admin 鉴权 (或用户自签名)
+}
+
+message AddPasskeyResponse {
   bool success = 1;
   string message = 2;
 }
 
-message GetSigningPolicyRequest {
-  string key_id = 1;
+message AddWalletMemberRequest {
+  string wallet_id = 1;
+  string credential_id = 2;
+  string role = 3; // "admin", "member"
+  repeated AdminAuthToken admin_auths = 4; // 支持多管理员签名
 }
 
-message GetSigningPolicyResponse {
-  string key_id = 1;
-  string policy_type = 2;
-  int32 min_signatures = 3;
+message AddWalletMemberResponse {
+  bool success = 1;
+  string message = 2;
 }
 
-message AddUserPasskeyRequest {
-  string credential_id = 1;      // WebAuthn Credential ID
-  string public_key = 2;         // COSE Key Format (Hex or Base64)
-  string user_id = 3;            // 关联的用户ID
-  string device_name = 4;        // 设备名称
-  AdminAuthToken admin_auth = 5; // Admin 鉴权 (或用户自签名)
+message RemoveWalletMemberRequest {
+  string wallet_id = 1;
+  string credential_id = 2;
+  repeated AdminAuthToken admin_auths = 3; // 支持多管理员签名
 }
 
-message AddUserPasskeyResponse {
+message RemoveWalletMemberResponse {
   bool success = 1;
   string message = 2;
 }
@@ -175,15 +202,10 @@ message StartSignRequest {
   
   // 鉴权令牌列表
   message AuthToken {
-    string user_id = 1;              // 签名者用户ID
-    bytes passkey_signature = 2;     // WebAuthn Assertion Signature
-    bytes authenticator_data = 3;    // WebAuthn AuthData
-    bytes client_data_json = 4;      // WebAuthn ClientDataJSON
-    string credential_id = 5;        // WebAuthn Credential ID
-    // 兼容字段 (可保留或废弃)
-    string public_key = 6; 
-    bytes signature = 7;
-    string member_id = 8;
+    bytes passkey_signature = 1;     // WebAuthn Assertion Signature
+    bytes authenticator_data = 2;    // WebAuthn AuthData
+    bytes client_data_json = 3;      // WebAuthn ClientDataJSON
+    string credential_id = 4;        // WebAuthn Credential ID
   }
   repeated AuthToken auth_tokens = 11;
 }

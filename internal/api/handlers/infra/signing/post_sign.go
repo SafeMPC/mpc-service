@@ -39,13 +39,14 @@ func postSignHandler(s *api.Server) echo.HandlerFunc {
 		// 提取鉴权令牌
 		authTokens := make([]signing.AuthToken, 0, len(body.AuthTokens))
 		for _, token := range body.AuthTokens {
-			if token == nil || token.PublicKey == nil || token.Signature == nil {
+			if token == nil {
 				continue
 			}
 			authTokens = append(authTokens, signing.AuthToken{
-				PublicKey: *token.PublicKey,
-				Signature: []byte(*token.Signature),
-				MemberID:  token.MemberID,
+				PasskeySignature:  []byte(token.PasskeySignature),
+				AuthenticatorData: []byte(token.AuthenticatorData),
+				ClientDataJSON:    []byte(token.ClientDataJSON),
+				CredentialID:      token.CredentialID,
 			})
 		}
 

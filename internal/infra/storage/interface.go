@@ -64,9 +64,8 @@ type SigningPolicy struct {
 	UpdatedAt     time.Time
 }
 
-// UserPasskey 用户 Passkey 公钥
-type UserPasskey struct {
-	UserID       string
+// Passkey 用户 Passkey 公钥
+type Passkey struct {
 	CredentialID string
 	PublicKey    string // COSE Key Format (Hex or Base64)
 	DeviceName   string
@@ -99,14 +98,19 @@ type MetadataStore interface {
 	SaveSigningPolicy(ctx context.Context, policy *SigningPolicy) error
 
 	// Passkey 操作
-	SaveUserPasskey(ctx context.Context, passkey *UserPasskey) error
-	GetUserPasskey(ctx context.Context, userID, credentialID string) (*UserPasskey, error)
-	ListUserPasskeys(ctx context.Context, userID string) ([]*UserPasskey, error)
+	SavePasskey(ctx context.Context, passkey *Passkey) error
+	GetPasskey(ctx context.Context, credentialID string) (*Passkey, error)
+
+	// 团队成员操作
+	AddWalletMember(ctx context.Context, walletID, credentialID, role string) error
+	RemoveWalletMember(ctx context.Context, walletID, credentialID string) error
+	IsWalletMember(ctx context.Context, walletID, credentialID string) (bool, string, error) // returns (isMember, role, error)
+	ListWalletMembers(ctx context.Context, walletID string) ([]string, error)                // returns credentialIDs
 
 	// 备份分片下发记录操作
 	SaveBackupShareDelivery(ctx context.Context, delivery *BackupShareDelivery) error
-	GetBackupShareDelivery(ctx context.Context, keyID, userID, nodeID string, shareIndex int) (*BackupShareDelivery, error)
-	UpdateBackupShareDeliveryStatus(ctx context.Context, keyID, userID, nodeID string, shareIndex int, status string, reason string) error
+	GetBackupShareDelivery(ctx context.Context, keyID, nodeID string, shareIndex int) (*BackupShareDelivery, error)
+	UpdateBackupShareDeliveryStatus(ctx context.Context, keyID, nodeID string, shareIndex int, status string, reason string) error
 	ListBackupShareDeliveries(ctx context.Context, keyID, nodeID string) ([]*BackupShareDelivery, error)
 }
 
@@ -205,7 +209,6 @@ type BackupShareInfo struct {
 // BackupShareDelivery 备份分片下发记录
 type BackupShareDelivery struct {
 	KeyID         string
-	UserID        string // 接收分片的客户端用户ID
 	NodeID        string // 对应的MPC分片ID
 	ShareIndex    int    // SSS分片索引
 	Status        string // pending, delivered, confirmed, failed

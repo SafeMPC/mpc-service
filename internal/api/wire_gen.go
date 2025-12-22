@@ -8,14 +8,15 @@ package api
 
 import (
 	"database/sql"
-	"testing"
-
 	"github.com/google/wire"
 	"github.com/kashguard/go-mpc-infra/internal/auth"
 	"github.com/kashguard/go-mpc-infra/internal/config"
 	"github.com/kashguard/go-mpc-infra/internal/data/local"
 	"github.com/kashguard/go-mpc-infra/internal/metrics"
+	"testing"
+)
 
+import (
 	_ "github.com/lib/pq"
 )
 

@@ -10,7 +10,7 @@ import (
 func main() {
 	secretKey := []byte("change-me-in-production")
 	issuer := "mpc-infra"
-	
+
 	claims := struct {
 		jwt.RegisteredClaims
 		TenantID    string   `json:"tenant_id,omitempty"`

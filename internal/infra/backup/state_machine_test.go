@@ -35,16 +35,16 @@ func (m *MockStore) SaveBackupShareDelivery(ctx context.Context, delivery *stora
 	return args.Error(0)
 }
 
-func (m *MockStore) GetBackupShareDelivery(ctx context.Context, keyID, userID, nodeID string, shareIndex int) (*storage.BackupShareDelivery, error) {
-	args := m.Called(ctx, keyID, userID, nodeID, shareIndex)
+func (m *MockStore) GetBackupShareDelivery(ctx context.Context, keyID, nodeID string, shareIndex int) (*storage.BackupShareDelivery, error) {
+	args := m.Called(ctx, keyID, nodeID, shareIndex)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*storage.BackupShareDelivery), args.Error(1)
 }
 
-func (m *MockStore) UpdateBackupShareDeliveryStatus(ctx context.Context, keyID, userID, nodeID string, shareIndex int, status string, reason string) error {
-	args := m.Called(ctx, keyID, userID, nodeID, shareIndex, status, reason)
+func (m *MockStore) UpdateBackupShareDeliveryStatus(ctx context.Context, keyID, nodeID string, shareIndex int, status string, reason string) error {
+	args := m.Called(ctx, keyID, nodeID, shareIndex, status, reason)
 	return args.Error(0)
 }
 
@@ -59,15 +59,14 @@ func TestStateMachine_StartDelivery(t *testing.T) {
 	ctx := context.Background()
 
 	keyID := "key1"
-	userID := "user1"
 	nodeID := "node1"
 	index := 1
 
 	// Case 1: New delivery
-	mockStore.On("GetBackupShareDelivery", ctx, keyID, userID, nodeID, index).Return(nil, nil).Once()
+	mockStore.On("GetBackupShareDelivery", ctx, keyID, nodeID, index).Return(nil, nil).Once()
 	mockStore.On("SaveBackupShareDelivery", ctx, mock.AnythingOfType("*storage.BackupShareDelivery")).Return(nil).Once()
 
-	delivery, err := sm.StartDelivery(ctx, keyID, nodeID, userID, index)
+	delivery, err := sm.StartDelivery(ctx, keyID, nodeID, index)
 	assert.NoError(t, err)
 	assert.Equal(t, DeliveryStatusPending, delivery.Status)
 	mockStore.AssertExpectations(t)
@@ -78,9 +77,9 @@ func TestStateMachine_StartDelivery(t *testing.T) {
 		Status:    DeliveryStatusPending,
 		CreatedAt: time.Now(),
 	}
-	mockStore.On("GetBackupShareDelivery", ctx, keyID, userID, nodeID, index).Return(existing, nil)
+	mockStore.On("GetBackupShareDelivery", ctx, keyID, nodeID, index).Return(existing, nil)
 
-	delivery2, err := sm.StartDelivery(ctx, keyID, nodeID, userID, index)
+	delivery2, err := sm.StartDelivery(ctx, keyID, nodeID, index)
 	assert.NoError(t, err)
 	assert.Equal(t, existing, delivery2)
 }
@@ -91,39 +90,37 @@ func TestStateMachine_Transitions(t *testing.T) {
 	ctx := context.Background()
 
 	keyID := "key1"
-	userID := "user1"
 	nodeID := "node1"
 	index := 1
 
 	// Setup initial state
 	delivery := &storage.BackupShareDelivery{
 		KeyID:      keyID,
-		UserID:     userID,
 		NodeID:     nodeID,
 		ShareIndex: index,
 		Status:     DeliveryStatusPending,
 	}
 
 	// Pending -> Delivered
-	mockStore.On("GetBackupShareDelivery", ctx, keyID, userID, nodeID, index).Return(delivery, nil).Once()
-	mockStore.On("UpdateBackupShareDeliveryStatus", ctx, keyID, userID, nodeID, index, DeliveryStatusDelivered, "").Return(nil).Once()
+	mockStore.On("GetBackupShareDelivery", ctx, keyID, nodeID, index).Return(delivery, nil).Once()
+	mockStore.On("UpdateBackupShareDeliveryStatus", ctx, keyID, nodeID, index, DeliveryStatusDelivered, "").Return(nil).Once()
 
-	err := sm.TransitionToDelivered(ctx, keyID, userID, nodeID, index)
+	err := sm.TransitionToDelivered(ctx, keyID, nodeID, index)
 	assert.NoError(t, err)
 	delivery.Status = DeliveryStatusDelivered // Simulate update
 
 	// Delivered -> Confirmed
-	mockStore.On("GetBackupShareDelivery", ctx, keyID, userID, nodeID, index).Return(delivery, nil).Once()
-	mockStore.On("UpdateBackupShareDeliveryStatus", ctx, keyID, userID, nodeID, index, DeliveryStatusConfirmed, "").Return(nil).Once()
+	mockStore.On("GetBackupShareDelivery", ctx, keyID, nodeID, index).Return(delivery, nil).Once()
+	mockStore.On("UpdateBackupShareDeliveryStatus", ctx, keyID, nodeID, index, DeliveryStatusConfirmed, "").Return(nil).Once()
 
-	err = sm.TransitionToConfirmed(ctx, keyID, userID, nodeID, index)
+	err = sm.TransitionToConfirmed(ctx, keyID, nodeID, index)
 	assert.NoError(t, err)
 	delivery.Status = DeliveryStatusConfirmed // Simulate update
 
 	// Confirmed -> Failed (Should fail)
-	mockStore.On("GetBackupShareDelivery", ctx, keyID, userID, nodeID, index).Return(delivery, nil).Once()
+	mockStore.On("GetBackupShareDelivery", ctx, keyID, nodeID, index).Return(delivery, nil).Once()
 
-	err = sm.TransitionToFailed(ctx, keyID, userID, nodeID, index, "error")
+	err = sm.TransitionToFailed(ctx, keyID, nodeID, index, "error")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid state transition")
 }

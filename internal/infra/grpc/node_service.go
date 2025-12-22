@@ -3,8 +3,8 @@ package grpc
 import (
 	"context"
 
-	pb "github.com/kashguard/go-mpc-infra/pb/infra/v1"
 	"github.com/kashguard/go-mpc-infra/internal/util"
+	pb "github.com/kashguard/go-mpc-infra/pb/infra/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"

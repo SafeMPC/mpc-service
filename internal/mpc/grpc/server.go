@@ -19,8 +19,8 @@ import (
 	"github.com/kashguard/go-mpc-infra/internal/infra/session"
 	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
 	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
-	pb "github.com/kashguard/go-mpc-infra/pb/mpc/v1"
 	"github.com/kashguard/go-mpc-infra/internal/util/cert"
+	pb "github.com/kashguard/go-mpc-infra/pb/mpc/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -211,7 +211,40 @@ func (s *GRPCServer) StartDKG(ctx context.Context, req *pb.StartDKGRequest) (*pb
 				Message: fmt.Sprintf("Admin verification failed: %v", err),
 			}, nil
 		}
-		log.Info().Str("admin_user_id", req.AdminAuth.UserId).Msg("Admin auth token verified for DKG")
+		log.Info().Str("admin_cred_id", req.AdminAuth.CredentialId).Msg("Admin auth token verified for DKG")
+
+		// 自动绑定首任管理员逻辑 (Bootstrapping)
+		if s.metadataStore != nil {
+			// 检查该钱包是否已有成员
+			members, err := s.metadataStore.ListWalletMembers(ctx, req.KeyId)
+			if err != nil {
+				// 仅记录警告，不阻塞 DKG (防止 DB 临时故障导致无法创建)
+				log.Warn().Err(err).Str("key_id", req.KeyId).Msg("Failed to list wallet members during DKG bootstrapping")
+			} else if len(members) == 0 {
+				// 钱包无成员，自动将当前发起者绑定为管理员
+				log.Info().Str("key_id", req.KeyId).Str("admin_cred_id", req.AdminAuth.CredentialId).Msg("No members found for wallet, bootstrapping admin member")
+				if err := s.metadataStore.AddWalletMember(ctx, req.KeyId, req.AdminAuth.CredentialId, "admin"); err != nil {
+					log.Error().Err(err).Str("key_id", req.KeyId).Msg("Failed to bootstrap wallet admin member")
+					// 绑定失败应视为严重错误，防止创建无主钱包
+					return &pb.StartDKGResponse{
+						Started: false,
+						Message: fmt.Sprintf("Failed to bootstrap wallet admin: %v", err),
+					}, nil
+				}
+				log.Info().Str("key_id", req.KeyId).Str("admin_cred_id", req.AdminAuth.CredentialId).Msg("Successfully bootstrapped wallet admin")
+			} else {
+				// 钱包已有成员，必须验证发起者是否为 Admin
+				isMember, role, err := s.metadataStore.IsWalletMember(ctx, req.KeyId, req.AdminAuth.CredentialId)
+				if err != nil {
+					log.Error().Err(err).Msg("Failed to check requester membership role for StartDKG")
+					return &pb.StartDKGResponse{Started: false, Message: "Authorization check failed"}, nil
+				}
+				if !isMember || role != "admin" {
+					log.Warn().Str("cred_id", req.AdminAuth.CredentialId).Msg("Permission denied for StartDKG: not an admin")
+					return &pb.StartDKGResponse{Started: false, Message: "Permission denied: requester is not an admin"}, nil
+				}
+			}
+		}
 	} else {
 		log.Warn().Msg("Missing admin auth token for DKG")
 		// 严格模式下返回错误
@@ -669,7 +702,20 @@ func (s *GRPCServer) StartResharing(ctx context.Context, req *pb.StartResharingR
 				Message: fmt.Sprintf("Admin verification failed: %v", err),
 			}, nil
 		}
-		log.Info().Str("admin_user_id", req.AdminAuth.UserId).Msg("Admin auth token verified for Resharing")
+		log.Info().Str("admin_cred_id", req.AdminAuth.CredentialId).Msg("Admin auth token verified for Resharing")
+
+		// 验证是否有管理权限 (Authorization)
+		if s.metadataStore != nil {
+			isMember, role, err := s.metadataStore.IsWalletMember(ctx, req.KeyId, req.AdminAuth.CredentialId)
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to check requester membership role for StartResharing")
+				return &pb.StartResharingResponse{Started: false, Message: "Authorization check failed"}, nil
+			}
+			if !isMember || role != "admin" {
+				log.Warn().Str("cred_id", req.AdminAuth.CredentialId).Msg("Permission denied for StartResharing: not an admin")
+				return &pb.StartResharingResponse{Started: false, Message: "Permission denied: requester is not an admin"}, nil
+			}
+		}
 	} else {
 		log.Warn().Msg("Missing admin auth token for Resharing")
 	}
@@ -1219,10 +1265,7 @@ func (s *GRPCServer) checkGuardianPolicy(ctx context.Context, req *pb.StartSignR
 	// 获取签名策略
 	policy, err := s.metadataStore.GetSigningPolicy(ctx, req.KeyId)
 	if err != nil {
-		// 如果没有策略，默认允许（或者默认拒绝，取决于安全需求）
-		// 这里为了兼容性，如果没有找到策略，记录日志并放行
-		log.Warn().Str("key_id", req.KeyId).Msg("No signing policy found, using default (allow)")
-		return nil
+		return fmt.Errorf("no signing policy found for key_id: %s", req.KeyId)
 	}
 
 	// 验证 AuthTokens
@@ -1241,11 +1284,27 @@ func (s *GRPCServer) checkGuardianPolicy(ctx context.Context, req *pb.StartSignR
 	}
 	expectedChallenge := base64.RawURLEncoding.EncodeToString(msg)
 
+	// 使用 map 记录已验证的 credential_id，防止重复计数
+	verifiedCredentials := make(map[string]bool)
+
 	for _, token := range req.AuthTokens {
+		// 0. 检查是否为团队成员 (强制归属校验)
+		if policy.PolicyType == "team" {
+			isMember, _, err := s.metadataStore.IsWalletMember(ctx, req.KeyId, token.CredentialId)
+			if err != nil {
+				log.Error().Err(err).Str("credential_id", token.CredentialId).Msg("Failed to check wallet membership")
+				continue
+			}
+			if !isMember {
+				log.Warn().Str("credential_id", token.CredentialId).Str("key_id", req.KeyId).Msg("Credential is not a member of this wallet")
+				continue
+			}
+		}
+
 		// 1. 获取用户存储的 Passkey 公钥
-		userPasskey, err := s.metadataStore.GetUserPasskey(ctx, token.UserId, token.CredentialId)
+		userPasskey, err := s.metadataStore.GetPasskey(ctx, token.CredentialId)
 		if err != nil {
-			log.Warn().Str("user_id", token.UserId).Str("credential_id", token.CredentialId).Msg("Passkey not found for user")
+			log.Warn().Str("credential_id", token.CredentialId).Msg("Passkey not found for user")
 			continue
 		}
 
@@ -1258,12 +1317,15 @@ func (s *GRPCServer) checkGuardianPolicy(ctx context.Context, req *pb.StartSignR
 				token.ClientDataJson,
 				expectedChallenge,
 			); err != nil {
-				log.Warn().Err(err).Str("user_id", token.UserId).Msg("Passkey signature verification failed")
+				log.Warn().Err(err).Str("credential_id", token.CredentialId).Msg("Passkey signature verification failed")
 				continue
 			}
 
-			// 验证通过
-			validSignatures++
+			// 验证通过，记录唯一凭证
+			if !verifiedCredentials[token.CredentialId] {
+				verifiedCredentials[token.CredentialId] = true
+				validSignatures++
+			}
 		}
 	}
 

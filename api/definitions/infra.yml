@@ -274,6 +274,118 @@ definitions:
         items:
           $ref: "#/definitions/AuthToken"
 
+  PostAddPasskeyPayload:
+    type: object
+    required: [credential_id, public_key]
+    properties:
+      credential_id:
+        type: string
+        example: "cred-xyz"
+      public_key:
+        type: string
+        example: "pub-key-hex"
+      device_name:
+        type: string
+        example: "MacBook Pro"
+
+  AddPasskeyResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      message:
+        type: string
+
+  AdminAuthToken:
+    type: object
+    required: [credential_id, passkey_signature, authenticator_data, client_data_json]
+    properties:
+      credential_id:
+        type: string
+        example: "cred-xyz"
+      passkey_signature:
+        type: string
+        format: byte
+        example: "SGVsbG8gV29ybGQ="
+      authenticator_data:
+        type: string
+        format: byte
+        example: "SGVsbG8gV29ybGQ="
+      client_data_json:
+        type: string
+        format: byte
+        example: "SGVsbG8gV29ybGQ="
+      req_id:
+        type: string
+        example: "req-123"
+
+  AddWalletMemberPayload:
+    type: object
+    required: [credential_id, role, admin_auths]
+    properties:
+      credential_id:
+        type: string
+        example: "cred-new-member"
+      role:
+        type: string
+        enum: [admin, member]
+        example: "member"
+      admin_auths:
+        type: array
+        items:
+          $ref: "#/definitions/AdminAuthToken"
+
+  RemoveWalletMemberPayload:
+    type: object
+    required: [credential_id, admin_auths]
+    properties:
+      credential_id:
+        type: string
+        example: "cred-to-remove"
+      admin_auths:
+        type: array
+        items:
+          $ref: "#/definitions/AdminAuthToken"
+
+  WalletMemberResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      message:
+        type: string
+
+  SetSigningPolicyPayload:
+    type: object
+    required: [policy_type, min_signatures, admin_auths]
+    properties:
+      policy_type:
+        type: string
+        enum: [single, team]
+        example: "team"
+      min_signatures:
+        type: integer
+        minimum: 1
+        example: 2
+      admin_auths:
+        type: array
+        items:
+          $ref: "#/definitions/AdminAuthToken"
+
+  SigningPolicyResponse:
+    type: object
+    properties:
+      success:
+        type: boolean
+      message:
+        type: string
+      key_id:
+        type: string
+      policy_type:
+        type: string
+      min_signatures:
+        type: integer
+
   AuthToken:
     type: object
     required: [public_key, signature]
@@ -288,6 +400,21 @@ definitions:
       member_id:
         type: string
         example: "user-123"
+      passkey_signature:
+        type: string
+        format: byte
+        example: "SGVsbG8gV29ybGQ="
+      authenticator_data:
+        type: string
+        format: byte
+        example: "SGVsbG8gV29ybGQ="
+      client_data_json:
+        type: string
+        format: byte
+        example: "SGVsbG8gV29ybGQ="
+      credential_id:
+        type: string
+        example: "cred-xyz"
 
   SignResponse:
     type: object

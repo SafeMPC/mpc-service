@@ -100,6 +100,10 @@ definitions:
     $ref: "../definitions/infra.yml#/definitions/BackupShares"
   backupShare:
     $ref: "../definitions/infra.yml#/definitions/BackupShare"
+  postAddPasskeyPayload:
+    $ref: "../definitions/infra.yml#/definitions/PostAddPasskeyPayload"
+  addPasskeyResponse:
+    $ref: "../definitions/infra.yml#/definitions/AddPasskeyResponse"
 
 responses:
   errorResponse:

@@ -23,6 +23,7 @@ type GRPCClient struct {
 	mu            sync.RWMutex
 	conns         map[string]*grpc.ClientConn
 	clients       map[string]pb.MPCNodeClient
+	mgmtClients   map[string]pb.MPCManagementClient
 	cfg           *ClientConfig
 	nodeManager   *node.Manager
 	nodeDiscovery *node.Discovery // 用于从 Consul 发现节点信息
@@ -57,6 +58,7 @@ func NewGRPCClient(cfg config.Server, nodeManager *node.Manager) (*GRPCClient, e
 	return &GRPCClient{
 		conns:         make(map[string]*grpc.ClientConn),
 		clients:       make(map[string]pb.MPCNodeClient),
+		mgmtClients:   make(map[string]pb.MPCManagementClient),
 		cfg:           clientCfg,
 		nodeManager:   nodeManager,
 		nodeDiscovery: nil, // 稍后通过 SetNodeDiscovery 设置
@@ -163,12 +165,73 @@ func (c *GRPCClient) getOrCreateConnection(ctx context.Context, nodeID string) (
 
 	// 创建客户端
 	client = pb.NewMPCNodeClient(conn)
+	mgmtClient := pb.NewMPCManagementClient(conn)
 
 	// 保存连接和客户端
 	c.conns[nodeID] = conn
 	c.clients[nodeID] = client
+	c.mgmtClients[nodeID] = mgmtClient
 
 	return client, nil
+}
+
+// getOrCreateMgmtConnection 获取或创建到指定节点的 Management Client 连接
+func (c *GRPCClient) getOrCreateMgmtConnection(ctx context.Context, nodeID string) (pb.MPCManagementClient, error) {
+	c.mu.RLock()
+	client, ok := c.mgmtClients[nodeID]
+	c.mu.RUnlock()
+
+	if ok {
+		return client, nil
+	}
+
+	// 复用连接创建逻辑 (getOrCreateConnection 会初始化两个 Client)
+	_, err := c.getOrCreateConnection(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+
+	c.mu.RLock()
+	client = c.mgmtClients[nodeID]
+	c.mu.RUnlock()
+
+	return client, nil
+}
+
+// AddWalletMember 调用管理服务的 AddWalletMember RPC
+func (c *GRPCClient) AddWalletMember(ctx context.Context, nodeID string, req *pb.AddWalletMemberRequest) (*pb.AddWalletMemberResponse, error) {
+	client, err := c.getOrCreateMgmtConnection(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	return client.AddWalletMember(ctx, req)
+}
+
+// RemoveWalletMember 调用管理服务的 RemoveWalletMember RPC
+func (c *GRPCClient) RemoveWalletMember(ctx context.Context, nodeID string, req *pb.RemoveWalletMemberRequest) (*pb.RemoveWalletMemberResponse, error) {
+	client, err := c.getOrCreateMgmtConnection(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	return client.RemoveWalletMember(ctx, req)
+}
+
+// SetSigningPolicy 调用管理服务的 SetSigningPolicy RPC
+func (c *GRPCClient) SetSigningPolicy(ctx context.Context, nodeID string, req *pb.SetSigningPolicyRequest) (*pb.SetSigningPolicyResponse, error) {
+	client, err := c.getOrCreateMgmtConnection(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	return client.SetSigningPolicy(ctx, req)
+}
+
+// GetSigningPolicy 调用管理服务的 GetSigningPolicy RPC
+func (c *GRPCClient) GetSigningPolicy(ctx context.Context, nodeID string, req *pb.GetSigningPolicyRequest) (*pb.GetSigningPolicyResponse, error) {
+	client, err := c.getOrCreateMgmtConnection(ctx, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetSigningPolicy(ctx, req)
 }
 
 // SendStartDKG 调用参与者的 StartDKG RPC
@@ -431,6 +494,7 @@ func (c *GRPCClient) CloseConnection(nodeID string) error {
 		}
 		delete(c.conns, nodeID)
 		delete(c.clients, nodeID)
+		delete(c.mgmtClients, nodeID)
 	}
 
 	return nil
@@ -484,6 +548,7 @@ func (c *GRPCClient) Close() error {
 
 	c.conns = make(map[string]*grpc.ClientConn)
 	c.clients = make(map[string]pb.MPCNodeClient)
+	c.mgmtClients = make(map[string]pb.MPCManagementClient)
 
 	if len(errs) > 0 {
 		return errors.Errorf("errors closing connections: %v", errs)

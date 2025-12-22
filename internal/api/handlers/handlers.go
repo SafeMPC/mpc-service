@@ -7,7 +7,10 @@ import (
 	"github.com/kashguard/go-mpc-infra/internal/api/handlers/common"
 	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/backup"
 	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/keys"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/members"
 	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/nodes"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/passkeys"
+	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/policy"
 	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/sessions"
 	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/signing"
 	"github.com/kashguard/go-mpc-infra/internal/api/handlers/push"
@@ -43,8 +46,13 @@ func AttachAllRoutes(s *api.Server) {
 		keys.PostCreateKeyRoute(s),
 		keys.PostDeriveKeyRoute(s),
 		keys.PostGenerateAddressRoute(s),
+		members.PostAddWalletMemberRoute(s),
+		members.DeleteWalletMemberRoute(s),
+		policy.PutSigningPolicyRoute(s),
+		policy.GetSigningPolicyRoute(s),
 		nodes.PostHeartbeatRoute(s),
 		nodes.PostRegisterNodeRoute(s),
+		passkeys.PostAddPasskeyRoute(s),
 		sessions.GetSessionRoute(s),
 		sessions.PostCancelSessionRoute(s),
 		sessions.PostCreateSessionRoute(s),

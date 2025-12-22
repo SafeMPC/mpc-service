@@ -634,6 +634,22 @@ func (s *Service) DeriveWalletKey(ctx context.Context, req *DeriveWalletKeyReque
 	return walletMetadata, nil
 }
 
+// AddPasskey 添加用户 Passkey
+func (s *Service) AddPasskey(ctx context.Context, credentialID, publicKey, deviceName string) error {
+	passkey := &storage.Passkey{
+		CredentialID: credentialID,
+		PublicKey:    publicKey,
+		DeviceName:   deviceName,
+		CreatedAt:    time.Now(),
+	}
+
+	if err := s.metadataStore.SavePasskey(ctx, passkey); err != nil {
+		return errors.Wrap(err, "failed to save user passkey")
+	}
+
+	return nil
+}
+
 // RestoreKeyShare 恢复密钥分片（用于灾难恢复）
 func (s *Service) RestoreKeyShare(ctx context.Context, keyID, nodeID string, share []byte) error {
 	return s.keyShareStorage.StoreKeyShare(ctx, keyID, nodeID, share)

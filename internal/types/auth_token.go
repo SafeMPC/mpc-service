@@ -19,9 +19,28 @@ import (
 // swagger:model authToken
 type AuthToken struct {
 
+	// authenticator data
+	// Example: SGVsbG8gV29ybGQ=
+	// Format: byte
+	AuthenticatorData strfmt.Base64 `json:"authenticator_data,omitempty"`
+
+	// client data json
+	// Example: SGVsbG8gV29ybGQ=
+	// Format: byte
+	ClientDataJSON strfmt.Base64 `json:"client_data_json,omitempty"`
+
+	// credential id
+	// Example: cred-xyz
+	CredentialID string `json:"credential_id,omitempty"`
+
 	// member id
 	// Example: user-123
 	MemberID string `json:"member_id,omitempty"`
+
+	// passkey signature
+	// Example: SGVsbG8gV29ybGQ=
+	// Format: byte
+	PasskeySignature strfmt.Base64 `json:"passkey_signature,omitempty"`
 
 	// public key
 	// Example: pub-0x1234567890abcdef...

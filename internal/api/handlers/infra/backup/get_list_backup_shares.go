@@ -5,10 +5,10 @@ import (
 
 	"github.com/kashguard/go-mpc-infra/internal/api"
 	"github.com/kashguard/go-mpc-infra/internal/api/httperrors"
-	pb "github.com/kashguard/go-mpc-infra/pb/infra/v1"
 	"github.com/kashguard/go-mpc-infra/internal/types"
 	backupTypes "github.com/kashguard/go-mpc-infra/internal/types/backup"
 	"github.com/kashguard/go-mpc-infra/internal/util"
+	pb "github.com/kashguard/go-mpc-infra/pb/infra/v1"
 	"github.com/labstack/echo/v4"
 )
 

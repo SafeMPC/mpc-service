@@ -23,16 +23,16 @@ func NewStateMachine(store Store) *StateMachine {
 }
 
 // StartDelivery initiates a new delivery process
-func (sm *StateMachine) StartDelivery(ctx context.Context, keyID, nodeID, userID string, shareIndex int) (*storage.BackupShareDelivery, error) {
+func (sm *StateMachine) StartDelivery(ctx context.Context, keyID, nodeID string, shareIndex int) (*storage.BackupShareDelivery, error) {
 	// Check if already exists
-	existing, err := sm.store.GetBackupShareDelivery(ctx, keyID, userID, nodeID, shareIndex)
+	existing, err := sm.store.GetBackupShareDelivery(ctx, keyID, nodeID, shareIndex)
 	if err == nil && existing != nil {
 		// If exists and not failed, return it.
 		if existing.Status != DeliveryStatusFailed {
 			return existing, nil
 		}
 		// If failed, reset to pending
-		err = sm.store.UpdateBackupShareDeliveryStatus(ctx, keyID, userID, nodeID, shareIndex, DeliveryStatusPending, "")
+		err = sm.store.UpdateBackupShareDeliveryStatus(ctx, keyID, nodeID, shareIndex, DeliveryStatusPending, "")
 		if err != nil {
 			return nil, err
 		}
@@ -43,7 +43,6 @@ func (sm *StateMachine) StartDelivery(ctx context.Context, keyID, nodeID, userID
 	delivery := &storage.BackupShareDelivery{
 		KeyID:      keyID,
 		NodeID:     nodeID,
-		UserID:     userID,
 		ShareIndex: shareIndex,
 		Status:     DeliveryStatusPending,
 		CreatedAt:  time.Now(),
@@ -57,8 +56,8 @@ func (sm *StateMachine) StartDelivery(ctx context.Context, keyID, nodeID, userID
 	return delivery, nil
 }
 
-func (sm *StateMachine) TransitionToDelivered(ctx context.Context, keyID, userID, nodeID string, shareIndex int) error {
-	delivery, err := sm.store.GetBackupShareDelivery(ctx, keyID, userID, nodeID, shareIndex)
+func (sm *StateMachine) TransitionToDelivered(ctx context.Context, keyID, nodeID string, shareIndex int) error {
+	delivery, err := sm.store.GetBackupShareDelivery(ctx, keyID, nodeID, shareIndex)
 	if err != nil {
 		return err
 	}
@@ -70,11 +69,11 @@ func (sm *StateMachine) TransitionToDelivered(ctx context.Context, keyID, userID
 		return fmt.Errorf("%w: from %s to %s", ErrInvalidTransition, delivery.Status, DeliveryStatusDelivered)
 	}
 
-	return sm.store.UpdateBackupShareDeliveryStatus(ctx, keyID, userID, nodeID, shareIndex, DeliveryStatusDelivered, "")
+	return sm.store.UpdateBackupShareDeliveryStatus(ctx, keyID, nodeID, shareIndex, DeliveryStatusDelivered, "")
 }
 
-func (sm *StateMachine) TransitionToConfirmed(ctx context.Context, keyID, userID, nodeID string, shareIndex int) error {
-	delivery, err := sm.store.GetBackupShareDelivery(ctx, keyID, userID, nodeID, shareIndex)
+func (sm *StateMachine) TransitionToConfirmed(ctx context.Context, keyID, nodeID string, shareIndex int) error {
+	delivery, err := sm.store.GetBackupShareDelivery(ctx, keyID, nodeID, shareIndex)
 	if err != nil {
 		return err
 	}
@@ -86,11 +85,11 @@ func (sm *StateMachine) TransitionToConfirmed(ctx context.Context, keyID, userID
 		return fmt.Errorf("%w: from %s to %s", ErrInvalidTransition, delivery.Status, DeliveryStatusConfirmed)
 	}
 
-	return sm.store.UpdateBackupShareDeliveryStatus(ctx, keyID, userID, nodeID, shareIndex, DeliveryStatusConfirmed, "")
+	return sm.store.UpdateBackupShareDeliveryStatus(ctx, keyID, nodeID, shareIndex, DeliveryStatusConfirmed, "")
 }
 
-func (sm *StateMachine) TransitionToFailed(ctx context.Context, keyID, userID, nodeID string, shareIndex int, reason string) error {
-	delivery, err := sm.store.GetBackupShareDelivery(ctx, keyID, userID, nodeID, shareIndex)
+func (sm *StateMachine) TransitionToFailed(ctx context.Context, keyID, nodeID string, shareIndex int, reason string) error {
+	delivery, err := sm.store.GetBackupShareDelivery(ctx, keyID, nodeID, shareIndex)
 	if err != nil {
 		return err
 	}
@@ -102,7 +101,7 @@ func (sm *StateMachine) TransitionToFailed(ctx context.Context, keyID, userID, n
 		return fmt.Errorf("%w: cannot fail a confirmed delivery", ErrInvalidTransition)
 	}
 
-	return sm.store.UpdateBackupShareDeliveryStatus(ctx, keyID, userID, nodeID, shareIndex, DeliveryStatusFailed, reason)
+	return sm.store.UpdateBackupShareDeliveryStatus(ctx, keyID, nodeID, shareIndex, DeliveryStatusFailed, reason)
 }
 
 func canTransition(current, next string) bool {

@@ -58,12 +58,11 @@ func main() {
 	// Note: These calls do NOT require a signature in the current implementation.
 	// Access control should be handled via mTLS or network restrictions.
 
-	// 1. Add User Passkey
-	fmt.Println("\n[Management] Adding User Passkey...")
-	addKeyResp, err := mgmtClient.AddUserPasskey(ctx, &pb.AddUserPasskeyRequest{
+	// 1. Add Passkey
+	fmt.Println("\n[Management] Adding Passkey...")
+	addKeyResp, err := mgmtClient.AddPasskey(ctx, &pb.AddPasskeyRequest{
 		CredentialId: "cred-" + keyID,
 		PublicKey:    pubKeyHex,
-		UserId:       "AdminUser",
 		DeviceName:   "Demo Device",
 		AdminAuth:    nil,
 	})
@@ -111,8 +110,10 @@ func main() {
 		MessageHex: msgHex, // The message to be signed by MPC
 		AuthTokens: []*pb.StartSignRequest_AuthToken{
 			{
-				PublicKey: pubKeyHex, // Who is signing
-				Signature: signature, // The proof
+				PasskeySignature:  signature,
+				AuthenticatorData: []byte{},
+				ClientDataJson:    []byte{},
+				CredentialId:      "cred-" + keyID,
 			},
 		},
 	})

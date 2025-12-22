@@ -471,9 +471,11 @@ var MPCCoordinator_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	MPCManagement_SetSigningPolicy_FullMethodName = "/mpc.v1.MPCManagement/SetSigningPolicy"
-	MPCManagement_GetSigningPolicy_FullMethodName = "/mpc.v1.MPCManagement/GetSigningPolicy"
-	MPCManagement_AddUserPasskey_FullMethodName   = "/mpc.v1.MPCManagement/AddUserPasskey"
+	MPCManagement_SetSigningPolicy_FullMethodName   = "/mpc.v1.MPCManagement/SetSigningPolicy"
+	MPCManagement_GetSigningPolicy_FullMethodName   = "/mpc.v1.MPCManagement/GetSigningPolicy"
+	MPCManagement_AddPasskey_FullMethodName         = "/mpc.v1.MPCManagement/AddPasskey"
+	MPCManagement_AddWalletMember_FullMethodName    = "/mpc.v1.MPCManagement/AddWalletMember"
+	MPCManagement_RemoveWalletMember_FullMethodName = "/mpc.v1.MPCManagement/RemoveWalletMember"
 )
 
 // MPCManagementClient is the client API for MPCManagement service.
@@ -487,7 +489,10 @@ type MPCManagementClient interface {
 	// 获取签名策略
 	GetSigningPolicy(ctx context.Context, in *GetSigningPolicyRequest, opts ...grpc.CallOption) (*GetSigningPolicyResponse, error)
 	// 添加用户 Passkey 公钥
-	AddUserPasskey(ctx context.Context, in *AddUserPasskeyRequest, opts ...grpc.CallOption) (*AddUserPasskeyResponse, error)
+	AddPasskey(ctx context.Context, in *AddPasskeyRequest, opts ...grpc.CallOption) (*AddPasskeyResponse, error)
+	// 钱包成员管理
+	AddWalletMember(ctx context.Context, in *AddWalletMemberRequest, opts ...grpc.CallOption) (*AddWalletMemberResponse, error)
+	RemoveWalletMember(ctx context.Context, in *RemoveWalletMemberRequest, opts ...grpc.CallOption) (*RemoveWalletMemberResponse, error)
 }
 
 type mPCManagementClient struct {
@@ -518,10 +523,30 @@ func (c *mPCManagementClient) GetSigningPolicy(ctx context.Context, in *GetSigni
 	return out, nil
 }
 
-func (c *mPCManagementClient) AddUserPasskey(ctx context.Context, in *AddUserPasskeyRequest, opts ...grpc.CallOption) (*AddUserPasskeyResponse, error) {
+func (c *mPCManagementClient) AddPasskey(ctx context.Context, in *AddPasskeyRequest, opts ...grpc.CallOption) (*AddPasskeyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AddUserPasskeyResponse)
-	err := c.cc.Invoke(ctx, MPCManagement_AddUserPasskey_FullMethodName, in, out, cOpts...)
+	out := new(AddPasskeyResponse)
+	err := c.cc.Invoke(ctx, MPCManagement_AddPasskey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *mPCManagementClient) AddWalletMember(ctx context.Context, in *AddWalletMemberRequest, opts ...grpc.CallOption) (*AddWalletMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddWalletMemberResponse)
+	err := c.cc.Invoke(ctx, MPCManagement_AddWalletMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *mPCManagementClient) RemoveWalletMember(ctx context.Context, in *RemoveWalletMemberRequest, opts ...grpc.CallOption) (*RemoveWalletMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveWalletMemberResponse)
+	err := c.cc.Invoke(ctx, MPCManagement_RemoveWalletMember_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -539,7 +564,10 @@ type MPCManagementServer interface {
 	// 获取签名策略
 	GetSigningPolicy(context.Context, *GetSigningPolicyRequest) (*GetSigningPolicyResponse, error)
 	// 添加用户 Passkey 公钥
-	AddUserPasskey(context.Context, *AddUserPasskeyRequest) (*AddUserPasskeyResponse, error)
+	AddPasskey(context.Context, *AddPasskeyRequest) (*AddPasskeyResponse, error)
+	// 钱包成员管理
+	AddWalletMember(context.Context, *AddWalletMemberRequest) (*AddWalletMemberResponse, error)
+	RemoveWalletMember(context.Context, *RemoveWalletMemberRequest) (*RemoveWalletMemberResponse, error)
 	mustEmbedUnimplementedMPCManagementServer()
 }
 
@@ -556,8 +584,14 @@ func (UnimplementedMPCManagementServer) SetSigningPolicy(context.Context, *SetSi
 func (UnimplementedMPCManagementServer) GetSigningPolicy(context.Context, *GetSigningPolicyRequest) (*GetSigningPolicyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSigningPolicy not implemented")
 }
-func (UnimplementedMPCManagementServer) AddUserPasskey(context.Context, *AddUserPasskeyRequest) (*AddUserPasskeyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method AddUserPasskey not implemented")
+func (UnimplementedMPCManagementServer) AddPasskey(context.Context, *AddPasskeyRequest) (*AddPasskeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddPasskey not implemented")
+}
+func (UnimplementedMPCManagementServer) AddWalletMember(context.Context, *AddWalletMemberRequest) (*AddWalletMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddWalletMember not implemented")
+}
+func (UnimplementedMPCManagementServer) RemoveWalletMember(context.Context, *RemoveWalletMemberRequest) (*RemoveWalletMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveWalletMember not implemented")
 }
 func (UnimplementedMPCManagementServer) mustEmbedUnimplementedMPCManagementServer() {}
 func (UnimplementedMPCManagementServer) testEmbeddedByValue()                       {}
@@ -616,20 +650,56 @@ func _MPCManagement_GetSigningPolicy_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MPCManagement_AddUserPasskey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddUserPasskeyRequest)
+func _MPCManagement_AddPasskey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddPasskeyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MPCManagementServer).AddUserPasskey(ctx, in)
+		return srv.(MPCManagementServer).AddPasskey(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: MPCManagement_AddUserPasskey_FullMethodName,
+		FullMethod: MPCManagement_AddPasskey_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MPCManagementServer).AddUserPasskey(ctx, req.(*AddUserPasskeyRequest))
+		return srv.(MPCManagementServer).AddPasskey(ctx, req.(*AddPasskeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MPCManagement_AddWalletMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddWalletMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MPCManagementServer).AddWalletMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MPCManagement_AddWalletMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MPCManagementServer).AddWalletMember(ctx, req.(*AddWalletMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MPCManagement_RemoveWalletMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveWalletMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MPCManagementServer).RemoveWalletMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MPCManagement_RemoveWalletMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MPCManagementServer).RemoveWalletMember(ctx, req.(*RemoveWalletMemberRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -650,8 +720,16 @@ var MPCManagement_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _MPCManagement_GetSigningPolicy_Handler,
 		},
 		{
-			MethodName: "AddUserPasskey",
-			Handler:    _MPCManagement_AddUserPasskey_Handler,
+			MethodName: "AddPasskey",
+			Handler:    _MPCManagement_AddPasskey_Handler,
+		},
+		{
+			MethodName: "AddWalletMember",
+			Handler:    _MPCManagement_AddWalletMember_Handler,
+		},
+		{
+			MethodName: "RemoveWalletMember",
+			Handler:    _MPCManagement_RemoveWalletMember_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

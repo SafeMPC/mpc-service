@@ -2,9 +2,10 @@ package signing
 
 // AuthToken 鉴权令牌
 type AuthToken struct {
-	PublicKey string
-	Signature []byte
-	MemberID  string
+	PasskeySignature  []byte
+	AuthenticatorData []byte
+	ClientDataJSON    []byte
+	CredentialID      string
 }
 
 // SignRequest 签名请求

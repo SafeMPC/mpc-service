@@ -20,12 +20,12 @@ func TestParent(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokens)
 	t.Run("Keys", testKeys)
 	t.Run("Nodes", testNodes)
+	t.Run("Passkeys", testPasskeys)
 	t.Run("PasswordResetTokens", testPasswordResetTokens)
 	t.Run("PushTokens", testPushTokens)
 	t.Run("RefreshTokens", testRefreshTokens)
 	t.Run("SigningPolicies", testSigningPolicies)
 	t.Run("SigningSessions", testSigningSessions)
-	t.Run("UserAuthKeys", testUserAuthKeys)
 	t.Run("Users", testUsers)
 }
 
@@ -38,12 +38,12 @@ func TestDelete(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensDelete)
 	t.Run("Keys", testKeysDelete)
 	t.Run("Nodes", testNodesDelete)
+	t.Run("Passkeys", testPasskeysDelete)
 	t.Run("PasswordResetTokens", testPasswordResetTokensDelete)
 	t.Run("PushTokens", testPushTokensDelete)
 	t.Run("RefreshTokens", testRefreshTokensDelete)
 	t.Run("SigningPolicies", testSigningPoliciesDelete)
 	t.Run("SigningSessions", testSigningSessionsDelete)
-	t.Run("UserAuthKeys", testUserAuthKeysDelete)
 	t.Run("Users", testUsersDelete)
 }
 
@@ -56,12 +56,12 @@ func TestQueryDeleteAll(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensQueryDeleteAll)
 	t.Run("Keys", testKeysQueryDeleteAll)
 	t.Run("Nodes", testNodesQueryDeleteAll)
+	t.Run("Passkeys", testPasskeysQueryDeleteAll)
 	t.Run("PasswordResetTokens", testPasswordResetTokensQueryDeleteAll)
 	t.Run("PushTokens", testPushTokensQueryDeleteAll)
 	t.Run("RefreshTokens", testRefreshTokensQueryDeleteAll)
 	t.Run("SigningPolicies", testSigningPoliciesQueryDeleteAll)
 	t.Run("SigningSessions", testSigningSessionsQueryDeleteAll)
-	t.Run("UserAuthKeys", testUserAuthKeysQueryDeleteAll)
 	t.Run("Users", testUsersQueryDeleteAll)
 }
 
@@ -74,12 +74,12 @@ func TestSliceDeleteAll(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensSliceDeleteAll)
 	t.Run("Keys", testKeysSliceDeleteAll)
 	t.Run("Nodes", testNodesSliceDeleteAll)
+	t.Run("Passkeys", testPasskeysSliceDeleteAll)
 	t.Run("PasswordResetTokens", testPasswordResetTokensSliceDeleteAll)
 	t.Run("PushTokens", testPushTokensSliceDeleteAll)
 	t.Run("RefreshTokens", testRefreshTokensSliceDeleteAll)
 	t.Run("SigningPolicies", testSigningPoliciesSliceDeleteAll)
 	t.Run("SigningSessions", testSigningSessionsSliceDeleteAll)
-	t.Run("UserAuthKeys", testUserAuthKeysSliceDeleteAll)
 	t.Run("Users", testUsersSliceDeleteAll)
 }
 
@@ -92,12 +92,12 @@ func TestExists(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensExists)
 	t.Run("Keys", testKeysExists)
 	t.Run("Nodes", testNodesExists)
+	t.Run("Passkeys", testPasskeysExists)
 	t.Run("PasswordResetTokens", testPasswordResetTokensExists)
 	t.Run("PushTokens", testPushTokensExists)
 	t.Run("RefreshTokens", testRefreshTokensExists)
 	t.Run("SigningPolicies", testSigningPoliciesExists)
 	t.Run("SigningSessions", testSigningSessionsExists)
-	t.Run("UserAuthKeys", testUserAuthKeysExists)
 	t.Run("Users", testUsersExists)
 }
 
@@ -110,12 +110,12 @@ func TestFind(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensFind)
 	t.Run("Keys", testKeysFind)
 	t.Run("Nodes", testNodesFind)
+	t.Run("Passkeys", testPasskeysFind)
 	t.Run("PasswordResetTokens", testPasswordResetTokensFind)
 	t.Run("PushTokens", testPushTokensFind)
 	t.Run("RefreshTokens", testRefreshTokensFind)
 	t.Run("SigningPolicies", testSigningPoliciesFind)
 	t.Run("SigningSessions", testSigningSessionsFind)
-	t.Run("UserAuthKeys", testUserAuthKeysFind)
 	t.Run("Users", testUsersFind)
 }
 
@@ -128,12 +128,12 @@ func TestBind(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensBind)
 	t.Run("Keys", testKeysBind)
 	t.Run("Nodes", testNodesBind)
+	t.Run("Passkeys", testPasskeysBind)
 	t.Run("PasswordResetTokens", testPasswordResetTokensBind)
 	t.Run("PushTokens", testPushTokensBind)
 	t.Run("RefreshTokens", testRefreshTokensBind)
 	t.Run("SigningPolicies", testSigningPoliciesBind)
 	t.Run("SigningSessions", testSigningSessionsBind)
-	t.Run("UserAuthKeys", testUserAuthKeysBind)
 	t.Run("Users", testUsersBind)
 }
 
@@ -146,12 +146,12 @@ func TestOne(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensOne)
 	t.Run("Keys", testKeysOne)
 	t.Run("Nodes", testNodesOne)
+	t.Run("Passkeys", testPasskeysOne)
 	t.Run("PasswordResetTokens", testPasswordResetTokensOne)
 	t.Run("PushTokens", testPushTokensOne)
 	t.Run("RefreshTokens", testRefreshTokensOne)
 	t.Run("SigningPolicies", testSigningPoliciesOne)
 	t.Run("SigningSessions", testSigningSessionsOne)
-	t.Run("UserAuthKeys", testUserAuthKeysOne)
 	t.Run("Users", testUsersOne)
 }
 
@@ -164,12 +164,12 @@ func TestAll(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensAll)
 	t.Run("Keys", testKeysAll)
 	t.Run("Nodes", testNodesAll)
+	t.Run("Passkeys", testPasskeysAll)
 	t.Run("PasswordResetTokens", testPasswordResetTokensAll)
 	t.Run("PushTokens", testPushTokensAll)
 	t.Run("RefreshTokens", testRefreshTokensAll)
 	t.Run("SigningPolicies", testSigningPoliciesAll)
 	t.Run("SigningSessions", testSigningSessionsAll)
-	t.Run("UserAuthKeys", testUserAuthKeysAll)
 	t.Run("Users", testUsersAll)
 }
 
@@ -182,12 +182,12 @@ func TestCount(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensCount)
 	t.Run("Keys", testKeysCount)
 	t.Run("Nodes", testNodesCount)
+	t.Run("Passkeys", testPasskeysCount)
 	t.Run("PasswordResetTokens", testPasswordResetTokensCount)
 	t.Run("PushTokens", testPushTokensCount)
 	t.Run("RefreshTokens", testRefreshTokensCount)
 	t.Run("SigningPolicies", testSigningPoliciesCount)
 	t.Run("SigningSessions", testSigningSessionsCount)
-	t.Run("UserAuthKeys", testUserAuthKeysCount)
 	t.Run("Users", testUsersCount)
 }
 
@@ -208,6 +208,8 @@ func TestInsert(t *testing.T) {
 	t.Run("Keys", testKeysInsertWhitelist)
 	t.Run("Nodes", testNodesInsert)
 	t.Run("Nodes", testNodesInsertWhitelist)
+	t.Run("Passkeys", testPasskeysInsert)
+	t.Run("Passkeys", testPasskeysInsertWhitelist)
 	t.Run("PasswordResetTokens", testPasswordResetTokensInsert)
 	t.Run("PasswordResetTokens", testPasswordResetTokensInsertWhitelist)
 	t.Run("PushTokens", testPushTokensInsert)
@@ -218,8 +220,6 @@ func TestInsert(t *testing.T) {
 	t.Run("SigningPolicies", testSigningPoliciesInsertWhitelist)
 	t.Run("SigningSessions", testSigningSessionsInsert)
 	t.Run("SigningSessions", testSigningSessionsInsertWhitelist)
-	t.Run("UserAuthKeys", testUserAuthKeysInsert)
-	t.Run("UserAuthKeys", testUserAuthKeysInsertWhitelist)
 	t.Run("Users", testUsersInsert)
 	t.Run("Users", testUsersInsertWhitelist)
 }
@@ -233,12 +233,12 @@ func TestReload(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensReload)
 	t.Run("Keys", testKeysReload)
 	t.Run("Nodes", testNodesReload)
+	t.Run("Passkeys", testPasskeysReload)
 	t.Run("PasswordResetTokens", testPasswordResetTokensReload)
 	t.Run("PushTokens", testPushTokensReload)
 	t.Run("RefreshTokens", testRefreshTokensReload)
 	t.Run("SigningPolicies", testSigningPoliciesReload)
 	t.Run("SigningSessions", testSigningSessionsReload)
-	t.Run("UserAuthKeys", testUserAuthKeysReload)
 	t.Run("Users", testUsersReload)
 }
 
@@ -251,12 +251,12 @@ func TestReloadAll(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensReloadAll)
 	t.Run("Keys", testKeysReloadAll)
 	t.Run("Nodes", testNodesReloadAll)
+	t.Run("Passkeys", testPasskeysReloadAll)
 	t.Run("PasswordResetTokens", testPasswordResetTokensReloadAll)
 	t.Run("PushTokens", testPushTokensReloadAll)
 	t.Run("RefreshTokens", testRefreshTokensReloadAll)
 	t.Run("SigningPolicies", testSigningPoliciesReloadAll)
 	t.Run("SigningSessions", testSigningSessionsReloadAll)
-	t.Run("UserAuthKeys", testUserAuthKeysReloadAll)
 	t.Run("Users", testUsersReloadAll)
 }
 
@@ -269,12 +269,12 @@ func TestSelect(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensSelect)
 	t.Run("Keys", testKeysSelect)
 	t.Run("Nodes", testNodesSelect)
+	t.Run("Passkeys", testPasskeysSelect)
 	t.Run("PasswordResetTokens", testPasswordResetTokensSelect)
 	t.Run("PushTokens", testPushTokensSelect)
 	t.Run("RefreshTokens", testRefreshTokensSelect)
 	t.Run("SigningPolicies", testSigningPoliciesSelect)
 	t.Run("SigningSessions", testSigningSessionsSelect)
-	t.Run("UserAuthKeys", testUserAuthKeysSelect)
 	t.Run("Users", testUsersSelect)
 }
 
@@ -287,12 +287,12 @@ func TestUpdate(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensUpdate)
 	t.Run("Keys", testKeysUpdate)
 	t.Run("Nodes", testNodesUpdate)
+	t.Run("Passkeys", testPasskeysUpdate)
 	t.Run("PasswordResetTokens", testPasswordResetTokensUpdate)
 	t.Run("PushTokens", testPushTokensUpdate)
 	t.Run("RefreshTokens", testRefreshTokensUpdate)
 	t.Run("SigningPolicies", testSigningPoliciesUpdate)
 	t.Run("SigningSessions", testSigningSessionsUpdate)
-	t.Run("UserAuthKeys", testUserAuthKeysUpdate)
 	t.Run("Users", testUsersUpdate)
 }
 
@@ -305,11 +305,11 @@ func TestSliceUpdateAll(t *testing.T) {
 	t.Run("ConfirmationTokens", testConfirmationTokensSliceUpdateAll)
 	t.Run("Keys", testKeysSliceUpdateAll)
 	t.Run("Nodes", testNodesSliceUpdateAll)
+	t.Run("Passkeys", testPasskeysSliceUpdateAll)
 	t.Run("PasswordResetTokens", testPasswordResetTokensSliceUpdateAll)
 	t.Run("PushTokens", testPushTokensSliceUpdateAll)
 	t.Run("RefreshTokens", testRefreshTokensSliceUpdateAll)
 	t.Run("SigningPolicies", testSigningPoliciesSliceUpdateAll)
 	t.Run("SigningSessions", testSigningSessionsSliceUpdateAll)
-	t.Run("UserAuthKeys", testUserAuthKeysSliceUpdateAll)
 	t.Run("Users", testUsersSliceUpdateAll)
 }

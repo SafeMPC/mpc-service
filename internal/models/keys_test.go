@@ -887,7 +887,7 @@ func testKeysSelect(t *testing.T) {
 }
 
 var (
-	keyDBTypes = map[string]string{`KeyID`: `character varying`, `PublicKey`: `text`, `Algorithm`: `character varying`, `Curve`: `character varying`, `Threshold`: `integer`, `TotalNodes`: `integer`, `ChainType`: `character varying`, `Address`: `text`, `Status`: `character varying`, `Description`: `text`, `Tags`: `jsonb`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`, `DeletionDate`: `timestamp with time zone`}
+	keyDBTypes = map[string]string{`KeyID`: `character varying`, `PublicKey`: `text`, `Algorithm`: `character varying`, `Curve`: `character varying`, `Threshold`: `integer`, `TotalNodes`: `integer`, `ChainType`: `character varying`, `Address`: `text`, `Status`: `character varying`, `Description`: `text`, `Tags`: `jsonb`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`, `DeletionDate`: `timestamp with time zone`, `ChainCode`: `character varying`}
 	_          = bytes.MinRead
 )
 

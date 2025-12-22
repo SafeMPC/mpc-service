@@ -27,7 +27,6 @@ type BackupShareDelivery struct {
 	ID            int64       `boil:"id" json:"id" toml:"id" yaml:"id"`
 	KeyID         string      `boil:"key_id" json:"key_id" toml:"key_id" yaml:"key_id"`
 	NodeID        string      `boil:"node_id" json:"node_id" toml:"node_id" yaml:"node_id"`
-	UserID        string      `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
 	ShareIndex    int         `boil:"share_index" json:"share_index" toml:"share_index" yaml:"share_index"`
 	Status        string      `boil:"status" json:"status" toml:"status" yaml:"status"`
 	DeliveredAt   null.Time   `boil:"delivered_at" json:"delivered_at,omitempty" toml:"delivered_at" yaml:"delivered_at,omitempty"`
@@ -44,7 +43,6 @@ var BackupShareDeliveryColumns = struct {
 	ID            string
 	KeyID         string
 	NodeID        string
-	UserID        string
 	ShareIndex    string
 	Status        string
 	DeliveredAt   string
@@ -56,7 +54,6 @@ var BackupShareDeliveryColumns = struct {
 	ID:            "id",
 	KeyID:         "key_id",
 	NodeID:        "node_id",
-	UserID:        "user_id",
 	ShareIndex:    "share_index",
 	Status:        "status",
 	DeliveredAt:   "delivered_at",
@@ -70,7 +67,6 @@ var BackupShareDeliveryTableColumns = struct {
 	ID            string
 	KeyID         string
 	NodeID        string
-	UserID        string
 	ShareIndex    string
 	Status        string
 	DeliveredAt   string
@@ -82,7 +78,6 @@ var BackupShareDeliveryTableColumns = struct {
 	ID:            "backup_share_deliveries.id",
 	KeyID:         "backup_share_deliveries.key_id",
 	NodeID:        "backup_share_deliveries.node_id",
-	UserID:        "backup_share_deliveries.user_id",
 	ShareIndex:    "backup_share_deliveries.share_index",
 	Status:        "backup_share_deliveries.status",
 	DeliveredAt:   "backup_share_deliveries.delivered_at",
@@ -121,7 +116,6 @@ var BackupShareDeliveryWhere = struct {
 	ID            whereHelperint64
 	KeyID         whereHelperstring
 	NodeID        whereHelperstring
-	UserID        whereHelperstring
 	ShareIndex    whereHelperint
 	Status        whereHelperstring
 	DeliveredAt   whereHelpernull_Time
@@ -133,7 +127,6 @@ var BackupShareDeliveryWhere = struct {
 	ID:            whereHelperint64{field: "\"backup_share_deliveries\".\"id\""},
 	KeyID:         whereHelperstring{field: "\"backup_share_deliveries\".\"key_id\""},
 	NodeID:        whereHelperstring{field: "\"backup_share_deliveries\".\"node_id\""},
-	UserID:        whereHelperstring{field: "\"backup_share_deliveries\".\"user_id\""},
 	ShareIndex:    whereHelperint{field: "\"backup_share_deliveries\".\"share_index\""},
 	Status:        whereHelperstring{field: "\"backup_share_deliveries\".\"status\""},
 	DeliveredAt:   whereHelpernull_Time{field: "\"backup_share_deliveries\".\"delivered_at\""},
@@ -180,8 +173,8 @@ func (r *backupShareDeliveryR) GetKey() *Key {
 type backupShareDeliveryL struct{}
 
 var (
-	backupShareDeliveryAllColumns            = []string{"id", "key_id", "node_id", "user_id", "share_index", "status", "delivered_at", "confirmed_at", "failure_reason", "created_at", "updated_at"}
-	backupShareDeliveryColumnsWithoutDefault = []string{"key_id", "node_id", "user_id", "share_index", "status"}
+	backupShareDeliveryAllColumns            = []string{"id", "key_id", "node_id", "share_index", "status", "delivered_at", "confirmed_at", "failure_reason", "created_at", "updated_at"}
+	backupShareDeliveryColumnsWithoutDefault = []string{"key_id", "node_id", "share_index", "status"}
 	backupShareDeliveryColumnsWithDefault    = []string{"id", "delivered_at", "confirmed_at", "failure_reason", "created_at", "updated_at"}
 	backupShareDeliveryPrimaryKeyColumns     = []string{"id"}
 	backupShareDeliveryGeneratedColumns      = []string{}

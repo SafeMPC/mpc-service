@@ -63,6 +63,7 @@ func (o *SwaggerSpec) initHandlerCache() {
 	o.Handlers["GET"]["/api/v1/infra/nodes"] = true
 	o.Handlers["GET"]["/api/v1/infra/sessions/{sessionId}"] = true
 	o.Handlers["GET"]["/api/v1/infra/backup/shares"] = true
+	o.Handlers["POST"]["/api/v1/infra/passkeys"] = true
 	o.Handlers["POST"]["/api/v1/infra/sessions/{sessionId}/cancel"] = true
 	o.Handlers["POST"]["/api/v1/infra/keys"] = true
 	o.Handlers["POST"]["/api/v1/infra/sessions"] = true

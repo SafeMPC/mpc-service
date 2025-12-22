@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	pb "github.com/kashguard/go-mpc-infra/pb/infra/v1"
 	"github.com/kashguard/go-mpc-infra/internal/util"
+	pb "github.com/kashguard/go-mpc-infra/pb/infra/v1"
 	pkgbackup "github.com/kashguard/go-mpc-infra/pkg/backup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -39,12 +39,12 @@ func (s *InfrastructureServer) RequestShareDelivery(ctx context.Context, req *pb
 
 	// 4. Update state machine
 	// We use ClientId from request as UserID in storage
-	_, err = s.deliveryStateMachine.StartDelivery(ctx, req.KeyId, req.NodeId, req.ClientId, int(req.ShareIndex))
+	_, err = s.deliveryStateMachine.StartDelivery(ctx, req.KeyId, req.NodeId, int(req.ShareIndex))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to start delivery: %v", err)
 	}
 
-	if err := s.deliveryStateMachine.TransitionToDelivered(ctx, req.KeyId, req.ClientId, req.NodeId, int(req.ShareIndex)); err != nil {
+	if err := s.deliveryStateMachine.TransitionToDelivered(ctx, req.KeyId, req.NodeId, int(req.ShareIndex)); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update state to delivered: %v", err)
 	}
 
@@ -62,7 +62,7 @@ func (s *InfrastructureServer) ConfirmShareDelivery(ctx context.Context, req *pb
 	}
 
 	if req.ReceivedSuccessfully {
-		err := s.deliveryStateMachine.TransitionToConfirmed(ctx, req.KeyId, req.ClientId, req.NodeId, int(req.ShareIndex))
+		err := s.deliveryStateMachine.TransitionToConfirmed(ctx, req.KeyId, req.NodeId, int(req.ShareIndex))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to confirm delivery: %v", err)
 		}
@@ -71,7 +71,7 @@ func (s *InfrastructureServer) ConfirmShareDelivery(ctx context.Context, req *pb
 			Message:   "Delivery confirmed",
 		}, nil
 	} else {
-		err := s.deliveryStateMachine.TransitionToFailed(ctx, req.KeyId, req.ClientId, req.NodeId, int(req.ShareIndex), req.FailureReason)
+		err := s.deliveryStateMachine.TransitionToFailed(ctx, req.KeyId, req.NodeId, int(req.ShareIndex), req.FailureReason)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to report failure: %v", err)
 		}
@@ -89,7 +89,7 @@ func (s *InfrastructureServer) QueryShareStatus(ctx context.Context, req *pb.Sha
 		return nil, err
 	}
 
-	delivery, err := s.store.GetBackupShareDelivery(ctx, req.KeyId, req.ClientId, req.NodeId, int(req.ShareIndex))
+	delivery, err := s.store.GetBackupShareDelivery(ctx, req.KeyId, req.NodeId, int(req.ShareIndex))
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "delivery record not found: %v", err)
 	}

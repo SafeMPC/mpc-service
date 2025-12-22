@@ -1,4 +1,131 @@
 paths:
+  /api/v1/infra/wallets/{walletId}/members:
+    post:
+      operationId: postAddWalletMember
+      summary: 添加钱包成员
+      tags:
+        - Infrastructure
+      security:
+        - Bearer: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/AddWalletMemberPayload"
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: "#/definitions/WalletMemberResponse"
+        "400":
+          $ref: "#/responses/errorResponse"
+        "500":
+          $ref: "#/responses/errorResponse"
+    delete:
+      operationId: deleteWalletMember
+      summary: 移除钱包成员
+      tags:
+        - Infrastructure
+      security:
+        - Bearer: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/RemoveWalletMemberPayload"
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: "#/definitions/WalletMemberResponse"
+        "400":
+          $ref: "#/responses/errorResponse"
+        "500":
+          $ref: "#/responses/errorResponse"
+
+  /api/v1/infra/wallets/{walletId}/policy:
+    put:
+      operationId: putSigningPolicy
+      summary: 设置签名策略
+      tags:
+        - Infrastructure
+      security:
+        - Bearer: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/SetSigningPolicyPayload"
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: "#/definitions/SigningPolicyResponse"
+        "400":
+          $ref: "#/responses/errorResponse"
+        "500":
+          $ref: "#/responses/errorResponse"
+    get:
+      operationId: getSigningPolicy
+      summary: 获取签名策略
+      tags:
+        - Infrastructure
+      security:
+        - Bearer: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          type: string
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: "#/definitions/SigningPolicyResponse"
+        "404":
+          $ref: "#/responses/errorResponse"
+        "500":
+          $ref: "#/responses/errorResponse"
+
+  /api/v1/infra/passkeys:
+    post:
+      operationId: postAddPasskey
+      summary: 添加用户Passkey
+      tags:
+        - Infrastructure
+      security:
+        - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/postAddPasskeyPayload"
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: "#/definitions/addPasskeyResponse"
+        "400":
+          $ref: "#/responses/errorResponse"
+        "500":
+          $ref: "#/responses/errorResponse"
+
   /api/v1/infra/nodes/register:
     post:
       tags:

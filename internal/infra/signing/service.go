@@ -260,9 +260,10 @@ func (s *Service) ThresholdSign(ctx context.Context, req *SignRequest) (*SignRes
 		pbAuthTokens = make([]*pb.StartSignRequest_AuthToken, len(req.AuthTokens))
 		for i, token := range req.AuthTokens {
 			pbAuthTokens[i] = &pb.StartSignRequest_AuthToken{
-				PublicKey: token.PublicKey,
-				Signature: token.Signature,
-				MemberId:  token.MemberID,
+				PasskeySignature:  token.PasskeySignature,
+				AuthenticatorData: token.AuthenticatorData,
+				ClientDataJson:    token.ClientDataJSON,
+				CredentialId:      token.CredentialID,
 			}
 		}
 	}

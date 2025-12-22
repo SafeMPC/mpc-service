@@ -12,12 +12,12 @@ var TableNames = struct {
 	ConfirmationTokens    string
 	Keys                  string
 	Nodes                 string
+	Passkeys              string
 	PasswordResetTokens   string
 	PushTokens            string
 	RefreshTokens         string
 	SigningPolicies       string
 	SigningSessions       string
-	UserAuthKeys          string
 	Users                 string
 }{
 	AccessTokens:          "access_tokens",
@@ -28,11 +28,11 @@ var TableNames = struct {
 	ConfirmationTokens:    "confirmation_tokens",
 	Keys:                  "keys",
 	Nodes:                 "nodes",
+	Passkeys:              "passkeys",
 	PasswordResetTokens:   "password_reset_tokens",
 	PushTokens:            "push_tokens",
 	RefreshTokens:         "refresh_tokens",
 	SigningPolicies:       "signing_policies",
 	SigningSessions:       "signing_sessions",
-	UserAuthKeys:          "user_auth_keys",
 	Users:                 "users",
 }

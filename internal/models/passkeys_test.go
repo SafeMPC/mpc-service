@@ -21,24 +21,24 @@ var (
 	_ = queries.Equal
 )
 
-func testUserAuthKeys(t *testing.T) {
+func testPasskeys(t *testing.T) {
 	t.Parallel()
 
-	query := UserAuthKeys()
+	query := Passkeys()
 
 	if query.Query == nil {
 		t.Error("expected a query, got nothing")
 	}
 }
 
-func testUserAuthKeysDelete(t *testing.T) {
+func testPasskeysDelete(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -54,7 +54,7 @@ func testUserAuthKeysDelete(t *testing.T) {
 		t.Error("should only have deleted one row, but affected:", rowsAff)
 	}
 
-	count, err := UserAuthKeys().Count(ctx, tx)
+	count, err := Passkeys().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -64,14 +64,14 @@ func testUserAuthKeysDelete(t *testing.T) {
 	}
 }
 
-func testUserAuthKeysQueryDeleteAll(t *testing.T) {
+func testPasskeysQueryDeleteAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -81,13 +81,13 @@ func testUserAuthKeysQueryDeleteAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	if rowsAff, err := UserAuthKeys().DeleteAll(ctx, tx); err != nil {
+	if rowsAff, err := Passkeys().DeleteAll(ctx, tx); err != nil {
 		t.Error(err)
 	} else if rowsAff != 1 {
 		t.Error("should only have deleted one row, but affected:", rowsAff)
 	}
 
-	count, err := UserAuthKeys().Count(ctx, tx)
+	count, err := Passkeys().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -97,14 +97,14 @@ func testUserAuthKeysQueryDeleteAll(t *testing.T) {
 	}
 }
 
-func testUserAuthKeysSliceDeleteAll(t *testing.T) {
+func testPasskeysSliceDeleteAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -114,7 +114,7 @@ func testUserAuthKeysSliceDeleteAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	slice := UserAuthKeySlice{o}
+	slice := PasskeySlice{o}
 
 	if rowsAff, err := slice.DeleteAll(ctx, tx); err != nil {
 		t.Error(err)
@@ -122,7 +122,7 @@ func testUserAuthKeysSliceDeleteAll(t *testing.T) {
 		t.Error("should only have deleted one row, but affected:", rowsAff)
 	}
 
-	count, err := UserAuthKeys().Count(ctx, tx)
+	count, err := Passkeys().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -132,14 +132,14 @@ func testUserAuthKeysSliceDeleteAll(t *testing.T) {
 	}
 }
 
-func testUserAuthKeysExists(t *testing.T) {
+func testPasskeysExists(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -149,23 +149,23 @@ func testUserAuthKeysExists(t *testing.T) {
 		t.Error(err)
 	}
 
-	e, err := UserAuthKeyExists(ctx, tx, o.ID)
+	e, err := PasskeyExists(ctx, tx, o.CredentialID)
 	if err != nil {
-		t.Errorf("Unable to check if UserAuthKey exists: %s", err)
+		t.Errorf("Unable to check if Passkey exists: %s", err)
 	}
 	if !e {
-		t.Errorf("Expected UserAuthKeyExists to return true, but got false.")
+		t.Errorf("Expected PasskeyExists to return true, but got false.")
 	}
 }
 
-func testUserAuthKeysFind(t *testing.T) {
+func testPasskeysFind(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -175,24 +175,24 @@ func testUserAuthKeysFind(t *testing.T) {
 		t.Error(err)
 	}
 
-	userAuthKeyFound, err := FindUserAuthKey(ctx, tx, o.ID)
+	passkeyFound, err := FindPasskey(ctx, tx, o.CredentialID)
 	if err != nil {
 		t.Error(err)
 	}
 
-	if userAuthKeyFound == nil {
+	if passkeyFound == nil {
 		t.Error("want a record, got nil")
 	}
 }
 
-func testUserAuthKeysBind(t *testing.T) {
+func testPasskeysBind(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -202,19 +202,19 @@ func testUserAuthKeysBind(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err = UserAuthKeys().Bind(ctx, tx, o); err != nil {
+	if err = Passkeys().Bind(ctx, tx, o); err != nil {
 		t.Error(err)
 	}
 }
 
-func testUserAuthKeysOne(t *testing.T) {
+func testPasskeysOne(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -224,38 +224,38 @@ func testUserAuthKeysOne(t *testing.T) {
 		t.Error(err)
 	}
 
-	if x, err := UserAuthKeys().One(ctx, tx); err != nil {
+	if x, err := Passkeys().One(ctx, tx); err != nil {
 		t.Error(err)
 	} else if x == nil {
 		t.Error("expected to get a non nil record")
 	}
 }
 
-func testUserAuthKeysAll(t *testing.T) {
+func testPasskeysAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	userAuthKeyOne := &UserAuthKey{}
-	userAuthKeyTwo := &UserAuthKey{}
-	if err = randomize.Struct(seed, userAuthKeyOne, userAuthKeyDBTypes, false, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	passkeyOne := &Passkey{}
+	passkeyTwo := &Passkey{}
+	if err = randomize.Struct(seed, passkeyOne, passkeyDBTypes, false, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
-	if err = randomize.Struct(seed, userAuthKeyTwo, userAuthKeyDBTypes, false, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	if err = randomize.Struct(seed, passkeyTwo, passkeyDBTypes, false, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
-	if err = userAuthKeyOne.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = passkeyOne.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
-	if err = userAuthKeyTwo.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = passkeyTwo.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
 
-	slice, err := UserAuthKeys().All(ctx, tx)
+	slice, err := Passkeys().All(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -265,31 +265,31 @@ func testUserAuthKeysAll(t *testing.T) {
 	}
 }
 
-func testUserAuthKeysCount(t *testing.T) {
+func testPasskeysCount(t *testing.T) {
 	t.Parallel()
 
 	var err error
 	seed := randomize.NewSeed()
-	userAuthKeyOne := &UserAuthKey{}
-	userAuthKeyTwo := &UserAuthKey{}
-	if err = randomize.Struct(seed, userAuthKeyOne, userAuthKeyDBTypes, false, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	passkeyOne := &Passkey{}
+	passkeyTwo := &Passkey{}
+	if err = randomize.Struct(seed, passkeyOne, passkeyDBTypes, false, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
-	if err = randomize.Struct(seed, userAuthKeyTwo, userAuthKeyDBTypes, false, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	if err = randomize.Struct(seed, passkeyTwo, passkeyDBTypes, false, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
-	if err = userAuthKeyOne.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = passkeyOne.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
-	if err = userAuthKeyTwo.Insert(ctx, tx, boil.Infer()); err != nil {
+	if err = passkeyTwo.Insert(ctx, tx, boil.Infer()); err != nil {
 		t.Error(err)
 	}
 
-	count, err := UserAuthKeys().Count(ctx, tx)
+	count, err := Passkeys().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -299,14 +299,14 @@ func testUserAuthKeysCount(t *testing.T) {
 	}
 }
 
-func testUserAuthKeysInsert(t *testing.T) {
+func testPasskeysInsert(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -316,7 +316,7 @@ func testUserAuthKeysInsert(t *testing.T) {
 		t.Error(err)
 	}
 
-	count, err := UserAuthKeys().Count(ctx, tx)
+	count, err := Passkeys().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -326,24 +326,24 @@ func testUserAuthKeysInsert(t *testing.T) {
 	}
 }
 
-func testUserAuthKeysInsertWhitelist(t *testing.T) {
+func testPasskeysInsertWhitelist(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
-	if err = o.Insert(ctx, tx, boil.Whitelist(strmangle.SetMerge(userAuthKeyPrimaryKeyColumns, userAuthKeyColumnsWithoutDefault)...)); err != nil {
+	if err = o.Insert(ctx, tx, boil.Whitelist(strmangle.SetMerge(passkeyPrimaryKeyColumns, passkeyColumnsWithoutDefault)...)); err != nil {
 		t.Error(err)
 	}
 
-	count, err := UserAuthKeys().Count(ctx, tx)
+	count, err := Passkeys().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -353,14 +353,14 @@ func testUserAuthKeysInsertWhitelist(t *testing.T) {
 	}
 }
 
-func testUserAuthKeysReload(t *testing.T) {
+func testPasskeysReload(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -375,14 +375,14 @@ func testUserAuthKeysReload(t *testing.T) {
 	}
 }
 
-func testUserAuthKeysReloadAll(t *testing.T) {
+func testPasskeysReloadAll(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -392,21 +392,21 @@ func testUserAuthKeysReloadAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	slice := UserAuthKeySlice{o}
+	slice := PasskeySlice{o}
 
 	if err = slice.ReloadAll(ctx, tx); err != nil {
 		t.Error(err)
 	}
 }
 
-func testUserAuthKeysSelect(t *testing.T) {
+func testPasskeysSelect(t *testing.T) {
 	t.Parallel()
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -416,7 +416,7 @@ func testUserAuthKeysSelect(t *testing.T) {
 		t.Error(err)
 	}
 
-	slice, err := UserAuthKeys().All(ctx, tx)
+	slice, err := Passkeys().All(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -427,25 +427,25 @@ func testUserAuthKeysSelect(t *testing.T) {
 }
 
 var (
-	userAuthKeyDBTypes = map[string]string{`ID`: `uuid`, `WalletID`: `character varying`, `PublicKeyHex`: `character varying`, `KeyType`: `character varying`, `MemberName`: `character varying`, `Role`: `character varying`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`}
-	_                  = bytes.MinRead
+	passkeyDBTypes = map[string]string{`CredentialID`: `character varying`, `PublicKey`: `text`, `DeviceName`: `character varying`, `CreatedAt`: `timestamp with time zone`}
+	_              = bytes.MinRead
 )
 
-func testUserAuthKeysUpdate(t *testing.T) {
+func testPasskeysUpdate(t *testing.T) {
 	t.Parallel()
 
-	if 0 == len(userAuthKeyPrimaryKeyColumns) {
+	if 0 == len(passkeyPrimaryKeyColumns) {
 		t.Skip("Skipping table with no primary key columns")
 	}
-	if len(userAuthKeyAllColumns) == len(userAuthKeyPrimaryKeyColumns) {
+	if len(passkeyAllColumns) == len(passkeyPrimaryKeyColumns) {
 		t.Skip("Skipping table with only primary key columns")
 	}
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -455,7 +455,7 @@ func testUserAuthKeysUpdate(t *testing.T) {
 		t.Error(err)
 	}
 
-	count, err := UserAuthKeys().Count(ctx, tx)
+	count, err := Passkeys().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -464,8 +464,8 @@ func testUserAuthKeysUpdate(t *testing.T) {
 		t.Error("want one record, got:", count)
 	}
 
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyPrimaryKeyColumns...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyPrimaryKeyColumns...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	if rowsAff, err := o.Update(ctx, tx, boil.Infer()); err != nil {
@@ -475,18 +475,18 @@ func testUserAuthKeysUpdate(t *testing.T) {
 	}
 }
 
-func testUserAuthKeysSliceUpdateAll(t *testing.T) {
+func testPasskeysSliceUpdateAll(t *testing.T) {
 	t.Parallel()
 
-	if len(userAuthKeyAllColumns) == len(userAuthKeyPrimaryKeyColumns) {
+	if len(passkeyAllColumns) == len(passkeyPrimaryKeyColumns) {
 		t.Skip("Skipping table with only primary key columns")
 	}
 
 	seed := randomize.NewSeed()
 	var err error
-	o := &UserAuthKey{}
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyColumnsWithDefault...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := &Passkey{}
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
@@ -496,7 +496,7 @@ func testUserAuthKeysSliceUpdateAll(t *testing.T) {
 		t.Error(err)
 	}
 
-	count, err := UserAuthKeys().Count(ctx, tx)
+	count, err := Passkeys().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -505,18 +505,18 @@ func testUserAuthKeysSliceUpdateAll(t *testing.T) {
 		t.Error("want one record, got:", count)
 	}
 
-	if err = randomize.Struct(seed, o, userAuthKeyDBTypes, true, userAuthKeyPrimaryKeyColumns...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	if err = randomize.Struct(seed, o, passkeyDBTypes, true, passkeyPrimaryKeyColumns...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	// Remove Primary keys and unique columns from what we plan to update
 	var fields []string
-	if strmangle.StringSliceMatch(userAuthKeyAllColumns, userAuthKeyPrimaryKeyColumns) {
-		fields = userAuthKeyAllColumns
+	if strmangle.StringSliceMatch(passkeyAllColumns, passkeyPrimaryKeyColumns) {
+		fields = passkeyAllColumns
 	} else {
 		fields = strmangle.SetComplement(
-			userAuthKeyAllColumns,
-			userAuthKeyPrimaryKeyColumns,
+			passkeyAllColumns,
+			passkeyPrimaryKeyColumns,
 		)
 	}
 
@@ -534,7 +534,7 @@ func testUserAuthKeysSliceUpdateAll(t *testing.T) {
 		}
 	}
 
-	slice := UserAuthKeySlice{o}
+	slice := PasskeySlice{o}
 	if rowsAff, err := slice.UpdateAll(ctx, tx, updateMap); err != nil {
 		t.Error(err)
 	} else if rowsAff != 1 {
@@ -542,29 +542,29 @@ func testUserAuthKeysSliceUpdateAll(t *testing.T) {
 	}
 }
 
-func testUserAuthKeysUpsert(t *testing.T) {
+func testPasskeysUpsert(t *testing.T) {
 	t.Parallel()
 
-	if len(userAuthKeyAllColumns) == len(userAuthKeyPrimaryKeyColumns) {
+	if len(passkeyAllColumns) == len(passkeyPrimaryKeyColumns) {
 		t.Skip("Skipping table with only primary key columns")
 	}
 
 	seed := randomize.NewSeed()
 	var err error
 	// Attempt the INSERT side of an UPSERT
-	o := UserAuthKey{}
-	if err = randomize.Struct(seed, &o, userAuthKeyDBTypes, true); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	o := Passkey{}
+	if err = randomize.Struct(seed, &o, passkeyDBTypes, true); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	ctx := context.Background()
 	tx := MustTx(boil.BeginTx(ctx, nil))
 	defer func() { _ = tx.Rollback() }()
 	if err = o.Upsert(ctx, tx, false, nil, boil.Infer(), boil.Infer()); err != nil {
-		t.Errorf("Unable to upsert UserAuthKey: %s", err)
+		t.Errorf("Unable to upsert Passkey: %s", err)
 	}
 
-	count, err := UserAuthKeys().Count(ctx, tx)
+	count, err := Passkeys().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}
@@ -573,15 +573,15 @@ func testUserAuthKeysUpsert(t *testing.T) {
 	}
 
 	// Attempt the UPDATE side of an UPSERT
-	if err = randomize.Struct(seed, &o, userAuthKeyDBTypes, false, userAuthKeyPrimaryKeyColumns...); err != nil {
-		t.Errorf("Unable to randomize UserAuthKey struct: %s", err)
+	if err = randomize.Struct(seed, &o, passkeyDBTypes, false, passkeyPrimaryKeyColumns...); err != nil {
+		t.Errorf("Unable to randomize Passkey struct: %s", err)
 	}
 
 	if err = o.Upsert(ctx, tx, true, nil, boil.Infer(), boil.Infer()); err != nil {
-		t.Errorf("Unable to upsert UserAuthKey: %s", err)
+		t.Errorf("Unable to upsert Passkey: %s", err)
 	}
 
-	count, err = UserAuthKeys().Count(ctx, tx)
+	count, err = Passkeys().Count(ctx, tx)
 	if err != nil {
 		t.Error(err)
 	}

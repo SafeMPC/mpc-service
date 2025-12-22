@@ -537,7 +537,7 @@ func testBackupShareDeliveriesSelect(t *testing.T) {
 }
 
 var (
-	backupShareDeliveryDBTypes = map[string]string{`ID`: `bigint`, `KeyID`: `character varying`, `NodeID`: `character varying`, `UserID`: `character varying`, `ShareIndex`: `integer`, `Status`: `character varying`, `DeliveredAt`: `timestamp with time zone`, `ConfirmedAt`: `timestamp with time zone`, `FailureReason`: `text`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`}
+	backupShareDeliveryDBTypes = map[string]string{`ID`: `bigint`, `KeyID`: `character varying`, `NodeID`: `character varying`, `ShareIndex`: `integer`, `Status`: `character varying`, `DeliveredAt`: `timestamp with time zone`, `ConfirmedAt`: `timestamp with time zone`, `FailureReason`: `text`, `CreatedAt`: `timestamp with time zone`, `UpdatedAt`: `timestamp with time zone`}
 	_                          = bytes.MinRead
 )
 

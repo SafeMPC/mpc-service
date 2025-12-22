@@ -517,7 +517,6 @@ paths:
     post:
       security:
       - Bearer: []
-      - Management: []
       description: 从根密钥派生子钱包密钥 (BIP-32)
       tags:
       - MPC Keys
@@ -816,6 +815,33 @@ paths:
           description: Standard error response
           schema:
             $ref: '#/definitions/publicHttpError'
+  /api/v1/infra/passkeys:
+    post:
+      security:
+      - Bearer: []
+      tags:
+      - Infrastructure
+      summary: 添加用户Passkey
+      operationId: postAddPasskey
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/postAddPasskeyPayload'
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/addPasskeyResponse'
+        "400":
+          description: Standard error response
+          schema:
+            $ref: '#/definitions/publicHttpError'
+        "500":
+          description: Standard error response
+          schema:
+            $ref: '#/definitions/publicHttpError'
   /api/v1/infra/sessions:
     post:
       security:
@@ -1088,15 +1114,37 @@ paths:
         "200":
           description: OK
 definitions:
+  addPasskeyResponse:
+    type: object
+    properties:
+      message:
+        type: string
+      success:
+        type: boolean
   authToken:
     type: object
     required:
     - public_key
     - signature
     properties:
+      authenticator_data:
+        type: string
+        format: byte
+        example: SGVsbG8gV29ybGQ=
+      client_data_json:
+        type: string
+        format: byte
+        example: SGVsbG8gV29ybGQ=
+      credential_id:
+        type: string
+        example: cred-xyz
       member_id:
         type: string
         example: user-123
+      passkey_signature:
+        type: string
+        format: byte
+        example: SGVsbG8gV29ybGQ=
       public_key:
         type: string
         example: pub-0x1234567890abcdef...
@@ -1569,6 +1617,21 @@ definitions:
     enum:
     - asc
     - desc
+  postAddPasskeyPayload:
+    type: object
+    required:
+    - credential_id
+    - public_key
+    properties:
+      credential_id:
+        type: string
+        example: cred-xyz
+      device_name:
+        type: string
+        example: MacBook Pro
+      public_key:
+        type: string
+        example: pub-key-hex
   postBatchSignPayload:
     type: object
     required:

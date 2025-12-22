@@ -240,18 +240,18 @@ func (s *PostgreSQLStore) ListKeys(ctx context.Context, filter *KeyFilter) ([]*K
 	return keys, nil
 }
 
-// SaveUserPasskey 保存用户 Passkey
-func (s *PostgreSQLStore) SaveUserPasskey(ctx context.Context, passkey *UserPasskey) error {
+// SavePasskey 保存用户 Passkey
+func (s *PostgreSQLStore) SavePasskey(ctx context.Context, passkey *Passkey) error {
 	query := `
-		INSERT INTO user_passkeys (user_id, credential_id, public_key, device_name, created_at)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (user_id, credential_id) DO UPDATE SET
+		INSERT INTO passkeys (credential_id, public_key, device_name, created_at)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (credential_id) DO UPDATE SET
 			public_key = EXCLUDED.public_key,
 			device_name = EXCLUDED.device_name
 	`
 
 	_, err := s.db.ExecContext(ctx, query,
-		passkey.UserID, passkey.CredentialID, passkey.PublicKey, passkey.DeviceName, passkey.CreatedAt,
+		passkey.CredentialID, passkey.PublicKey, passkey.DeviceName, passkey.CreatedAt,
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to save user passkey")
@@ -260,17 +260,17 @@ func (s *PostgreSQLStore) SaveUserPasskey(ctx context.Context, passkey *UserPass
 	return nil
 }
 
-// GetUserPasskey 获取用户 Passkey
-func (s *PostgreSQLStore) GetUserPasskey(ctx context.Context, userID, credentialID string) (*UserPasskey, error) {
+// GetPasskey 获取用户 Passkey
+func (s *PostgreSQLStore) GetPasskey(ctx context.Context, credentialID string) (*Passkey, error) {
 	query := `
-		SELECT user_id, credential_id, public_key, device_name, created_at
-		FROM user_passkeys
-		WHERE user_id = $1 AND credential_id = $2
+		SELECT credential_id, public_key, device_name, created_at
+		FROM passkeys
+		WHERE credential_id = $1
 	`
 
-	var passkey UserPasskey
-	err := s.db.QueryRowContext(ctx, query, userID, credentialID).Scan(
-		&passkey.UserID, &passkey.CredentialID, &passkey.PublicKey, &passkey.DeviceName, &passkey.CreatedAt,
+	var passkey Passkey
+	err := s.db.QueryRowContext(ctx, query, credentialID).Scan(
+		&passkey.CredentialID, &passkey.PublicKey, &passkey.DeviceName, &passkey.CreatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -280,36 +280,6 @@ func (s *PostgreSQLStore) GetUserPasskey(ctx context.Context, userID, credential
 	}
 
 	return &passkey, nil
-}
-
-// ListUserPasskeys 列出用户 Passkeys
-func (s *PostgreSQLStore) ListUserPasskeys(ctx context.Context, userID string) ([]*UserPasskey, error) {
-	query := `
-		SELECT user_id, credential_id, public_key, device_name, created_at
-		FROM user_passkeys
-		WHERE user_id = $1
-		ORDER BY created_at DESC
-	`
-
-	rows, err := s.db.QueryContext(ctx, query, userID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list user passkeys")
-	}
-	defer rows.Close()
-
-	var passkeys []*UserPasskey
-	for rows.Next() {
-		var passkey UserPasskey
-		err := rows.Scan(
-			&passkey.UserID, &passkey.CredentialID, &passkey.PublicKey, &passkey.DeviceName, &passkey.CreatedAt,
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to scan user passkey")
-		}
-		passkeys = append(passkeys, &passkey)
-	}
-
-	return passkeys, nil
 }
 
 // SaveNode 保存节点信息
@@ -857,10 +827,10 @@ func (s *PostgreSQLStore) ListAllBackupShares(ctx context.Context, keyID string)
 func (s *PostgreSQLStore) SaveBackupShareDelivery(ctx context.Context, delivery *BackupShareDelivery) error {
 	query := `
 		INSERT INTO backup_share_deliveries (
-			key_id, node_id, user_id, share_index, status,
+			key_id, node_id, share_index, status,
 			delivered_at, confirmed_at, failure_reason, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		ON CONFLICT (key_id, node_id, share_index, user_id) DO UPDATE SET
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		ON CONFLICT (key_id, node_id, share_index) DO UPDATE SET
 			status = EXCLUDED.status,
 			delivered_at = EXCLUDED.delivered_at,
 			confirmed_at = EXCLUDED.confirmed_at,
@@ -877,7 +847,7 @@ func (s *PostgreSQLStore) SaveBackupShareDelivery(ctx context.Context, delivery 
 	}
 
 	_, err := s.db.ExecContext(ctx, query,
-		delivery.KeyID, delivery.NodeID, delivery.UserID, delivery.ShareIndex, delivery.Status,
+		delivery.KeyID, delivery.NodeID, delivery.ShareIndex, delivery.Status,
 		deliveredAt, confirmedAt, delivery.FailureReason, delivery.CreatedAt, delivery.UpdatedAt,
 	)
 	if err != nil {
@@ -888,20 +858,20 @@ func (s *PostgreSQLStore) SaveBackupShareDelivery(ctx context.Context, delivery 
 }
 
 // GetBackupShareDelivery 获取备份分片下发记录
-func (s *PostgreSQLStore) GetBackupShareDelivery(ctx context.Context, keyID, userID, nodeID string, shareIndex int) (*BackupShareDelivery, error) {
+func (s *PostgreSQLStore) GetBackupShareDelivery(ctx context.Context, keyID, nodeID string, shareIndex int) (*BackupShareDelivery, error) {
 	query := `
-		SELECT key_id, node_id, user_id, share_index, status,
+		SELECT key_id, node_id, share_index, status,
 			delivered_at, confirmed_at, failure_reason, created_at, updated_at
 		FROM backup_share_deliveries
-		WHERE key_id = $1 AND user_id = $2 AND node_id = $3 AND share_index = $4
+		WHERE key_id = $1 AND node_id = $2 AND share_index = $3
 	`
 
 	var delivery BackupShareDelivery
 	var deliveredAt, confirmedAt sql.NullTime
 	var failureReason sql.NullString
 
-	err := s.db.QueryRowContext(ctx, query, keyID, userID, nodeID, shareIndex).Scan(
-		&delivery.KeyID, &delivery.NodeID, &delivery.UserID, &delivery.ShareIndex, &delivery.Status,
+	err := s.db.QueryRowContext(ctx, query, keyID, nodeID, shareIndex).Scan(
+		&delivery.KeyID, &delivery.NodeID, &delivery.ShareIndex, &delivery.Status,
 		&deliveredAt, &confirmedAt, &failureReason, &delivery.CreatedAt, &delivery.UpdatedAt,
 	)
 	if err != nil {
@@ -925,10 +895,10 @@ func (s *PostgreSQLStore) GetBackupShareDelivery(ctx context.Context, keyID, use
 }
 
 // UpdateBackupShareDeliveryStatus 更新备份分片下发状态
-func (s *PostgreSQLStore) UpdateBackupShareDeliveryStatus(ctx context.Context, keyID, userID, nodeID string, shareIndex int, status string, reason string) error {
+func (s *PostgreSQLStore) UpdateBackupShareDeliveryStatus(ctx context.Context, keyID, nodeID string, shareIndex int, status string, reason string) error {
 	query := `
 		UPDATE backup_share_deliveries
-		SET status = $5, failure_reason = $6, updated_at = NOW()
+		SET status = $4, failure_reason = $5, updated_at = NOW()
 	`
 
 	// 根据状态更新相应的时间字段
@@ -938,9 +908,9 @@ func (s *PostgreSQLStore) UpdateBackupShareDeliveryStatus(ctx context.Context, k
 		query += `, confirmed_at = NOW()`
 	}
 
-	query += ` WHERE key_id = $1 AND user_id = $2 AND node_id = $3 AND share_index = $4`
+	query += ` WHERE key_id = $1 AND node_id = $2 AND share_index = $3`
 
-	_, err := s.db.ExecContext(ctx, query, keyID, userID, nodeID, shareIndex, status, reason)
+	_, err := s.db.ExecContext(ctx, query, keyID, nodeID, shareIndex, status, reason)
 	if err != nil {
 		return errors.Wrap(err, "failed to update backup share delivery status")
 	}
@@ -951,7 +921,7 @@ func (s *PostgreSQLStore) UpdateBackupShareDeliveryStatus(ctx context.Context, k
 // ListBackupShareDeliveries 列出备份分片下发记录
 func (s *PostgreSQLStore) ListBackupShareDeliveries(ctx context.Context, keyID, nodeID string) ([]*BackupShareDelivery, error) {
 	query := `
-		SELECT key_id, node_id, user_id, share_index, status,
+		SELECT key_id, node_id, share_index, status,
 			delivered_at, confirmed_at, failure_reason, created_at, updated_at
 		FROM backup_share_deliveries
 		WHERE key_id = $1 AND node_id = $2
@@ -971,7 +941,7 @@ func (s *PostgreSQLStore) ListBackupShareDeliveries(ctx context.Context, keyID, 
 		var failureReason sql.NullString
 
 		err := rows.Scan(
-			&delivery.KeyID, &delivery.NodeID, &delivery.UserID, &delivery.ShareIndex, &delivery.Status,
+			&delivery.KeyID, &delivery.NodeID, &delivery.ShareIndex, &delivery.Status,
 			&deliveredAt, &confirmedAt, &failureReason, &delivery.CreatedAt, &delivery.UpdatedAt,
 		)
 		if err != nil {

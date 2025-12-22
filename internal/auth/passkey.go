@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/go-webauthn/webauthn/protocol"
@@ -89,11 +90,50 @@ func HexToBase64URL(hexStr string) (string, error) {
 }
 
 // VerifyAdminPasskey 验证 Admin 的 Passkey
-// adminAuth: Admin 鉴权 Token
-// requestHash: 请求的 Hash (Raw bytes)
+// adminAuth: 需包含字段 PublicKey(string), PasskeySignature([]byte), AuthenticatorData([]byte), ClientDataJson([]byte)
+// requestHash: 请求参数的哈希 (Raw bytes)，函数内部转为 Base64URL 用作 expectedChallenge
 func VerifyAdminPasskey(adminAuth interface{}, requestHash []byte) error {
-	// 由于 Go 的泛型限制或为了解耦，这里接收 interface{}，实际应为 *pb.AdminAuthToken
-	// 但为了避免循环依赖 (pb -> auth -> pb)，我们可以让调用者传入字段，或者在这里使用反射/接口定义
-	// 更好的方式是让 VerifyPasskeySignature 足够通用，调用者负责提取字段。
-	return nil
+	v := reflect.ValueOf(adminAuth)
+	if !v.IsValid() {
+		return fmt.Errorf("invalid adminAuth")
+	}
+	// 支持指针
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	// 提取必须字段
+	getString := func(name string) (string, error) {
+		f := v.FieldByName(name)
+		if !f.IsValid() || f.Kind() != reflect.String {
+			return "", fmt.Errorf("missing field %s", name)
+		}
+		return f.String(), nil
+	}
+	getBytes := func(name string) ([]byte, error) {
+		f := v.FieldByName(name)
+		if !f.IsValid() || f.Kind() != reflect.Slice || f.Type().Elem().Kind() != reflect.Uint8 {
+			return nil, fmt.Errorf("missing field %s", name)
+		}
+		return f.Bytes(), nil
+	}
+
+	publicKey, err := getString("PublicKey")
+	if err != nil {
+		return err
+	}
+	signature, err := getBytes("PasskeySignature")
+	if err != nil {
+		return err
+	}
+	authData, err := getBytes("AuthenticatorData")
+	if err != nil {
+		return err
+	}
+	clientDataJSON, err := getBytes("ClientDataJson")
+	if err != nil {
+		return err
+	}
+
+	expectedChallenge := base64.RawURLEncoding.EncodeToString(requestHash)
+	return VerifyPasskeySignature(publicKey, signature, authData, clientDataJSON, expectedChallenge)
 }

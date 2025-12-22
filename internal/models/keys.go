@@ -38,6 +38,7 @@ type Key struct {
 	CreatedAt    time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt    time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	DeletionDate null.Time   `boil:"deletion_date" json:"deletion_date,omitempty" toml:"deletion_date" yaml:"deletion_date,omitempty"`
+	ChainCode    null.String `boil:"chain_code" json:"chain_code,omitempty" toml:"chain_code" yaml:"chain_code,omitempty"`
 
 	R *keyR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L keyL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -58,6 +59,7 @@ var KeyColumns = struct {
 	CreatedAt    string
 	UpdatedAt    string
 	DeletionDate string
+	ChainCode    string
 }{
 	KeyID:        "key_id",
 	PublicKey:    "public_key",
@@ -73,6 +75,7 @@ var KeyColumns = struct {
 	CreatedAt:    "created_at",
 	UpdatedAt:    "updated_at",
 	DeletionDate: "deletion_date",
+	ChainCode:    "chain_code",
 }
 
 var KeyTableColumns = struct {
@@ -90,6 +93,7 @@ var KeyTableColumns = struct {
 	CreatedAt    string
 	UpdatedAt    string
 	DeletionDate string
+	ChainCode    string
 }{
 	KeyID:        "keys.key_id",
 	PublicKey:    "keys.public_key",
@@ -105,6 +109,7 @@ var KeyTableColumns = struct {
 	CreatedAt:    "keys.created_at",
 	UpdatedAt:    "keys.updated_at",
 	DeletionDate: "keys.deletion_date",
+	ChainCode:    "keys.chain_code",
 }
 
 // Generated where
@@ -124,6 +129,7 @@ var KeyWhere = struct {
 	CreatedAt    whereHelpertime_Time
 	UpdatedAt    whereHelpertime_Time
 	DeletionDate whereHelpernull_Time
+	ChainCode    whereHelpernull_String
 }{
 	KeyID:        whereHelperstring{field: "\"keys\".\"key_id\""},
 	PublicKey:    whereHelperstring{field: "\"keys\".\"public_key\""},
@@ -139,6 +145,7 @@ var KeyWhere = struct {
 	CreatedAt:    whereHelpertime_Time{field: "\"keys\".\"created_at\""},
 	UpdatedAt:    whereHelpertime_Time{field: "\"keys\".\"updated_at\""},
 	DeletionDate: whereHelpernull_Time{field: "\"keys\".\"deletion_date\""},
+	ChainCode:    whereHelpernull_String{field: "\"keys\".\"chain_code\""},
 }
 
 // KeyRels is where relationship names are stored.
@@ -216,9 +223,9 @@ func (r *keyR) GetSigningSessions() SigningSessionSlice {
 type keyL struct{}
 
 var (
-	keyAllColumns            = []string{"key_id", "public_key", "algorithm", "curve", "threshold", "total_nodes", "chain_type", "address", "status", "description", "tags", "created_at", "updated_at", "deletion_date"}
+	keyAllColumns            = []string{"key_id", "public_key", "algorithm", "curve", "threshold", "total_nodes", "chain_type", "address", "status", "description", "tags", "created_at", "updated_at", "deletion_date", "chain_code"}
 	keyColumnsWithoutDefault = []string{"key_id", "public_key", "algorithm", "curve", "threshold", "total_nodes", "chain_type", "status"}
-	keyColumnsWithDefault    = []string{"address", "description", "tags", "created_at", "updated_at", "deletion_date"}
+	keyColumnsWithDefault    = []string{"address", "description", "tags", "created_at", "updated_at", "deletion_date", "chain_code"}
 	keyPrimaryKeyColumns     = []string{"key_id"}
 	keyGeneratedColumns      = []string{}
 )
