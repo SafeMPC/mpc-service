@@ -4,7 +4,7 @@ package infra.v1;
 
 import "infra/v1/common.proto";
 
-option go_package = "github.com/kashguard/go-mpc-infra/infra/v1";
+option go_package = "github.com/kashguard/go-mpc-infra/pb/infra/v1/v1;infra";
 
 // SigningService 签名服务
 service SigningService {

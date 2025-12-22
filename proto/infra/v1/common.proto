@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package infra.v1;
 
-option go_package = "github.com/kashguard/go-mpc-infra/infra/v1";
+option go_package = "github.com/kashguard/go-mpc-infra/pb/infra/v1/v1;infra";
 
 // 通用响应消息
 message StatusResponse {
@@ -23,4 +23,3 @@ message PaginationResponse {
   int32 limit = 2;
   int32 offset = 3;
 }
-
