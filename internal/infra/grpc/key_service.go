@@ -112,14 +112,54 @@ func (s *InfrastructureServer) DeleteRootKey(ctx context.Context, req *pb.Delete
 
 // ListRootKeys 列出根密钥
 func (s *InfrastructureServer) ListRootKeys(ctx context.Context, req *pb.ListRootKeysRequest) (*pb.ListRootKeysResponse, error) {
-	// TODO: 实现列表查询
-	// 暂时返回空列表
+	limit := int32(50)
+	offset := int32(0)
+	if req.Pagination != nil {
+		if req.Pagination.Limit > 0 {
+			limit = req.Pagination.Limit
+		}
+		if req.Pagination.Offset >= 0 {
+			offset = req.Pagination.Offset
+		}
+	}
+	keys, err := s.keyService.ListKeys(ctx, &key.KeyFilter{
+		Status: req.Status,
+		Limit:  int(limit),
+		Offset: int(offset),
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, errors.Wrap(err, "failed to list keys").Error())
+	}
+	var rootKeys []*pb.RootKeyMetadata
+	for _, k := range keys {
+		if k.ChainType != "" {
+			continue
+		}
+		item := &pb.RootKeyMetadata{
+			KeyId:       k.KeyID,
+			PublicKey:   k.PublicKey,
+			Algorithm:   k.Algorithm,
+			Curve:       k.Curve,
+			Threshold:   int32(k.Threshold),
+			TotalNodes:  int32(k.TotalNodes),
+			Protocol:    "",
+			Status:      k.Status,
+			Description: k.Description,
+			Tags:        k.Tags,
+			CreatedAt:   k.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:   k.UpdatedAt.Format(time.RFC3339),
+		}
+		if k.DeletionDate != nil {
+			item.DeletionDate = k.DeletionDate.Format(time.RFC3339)
+		}
+		rootKeys = append(rootKeys, item)
+	}
 	return &pb.ListRootKeysResponse{
-		Keys: []*pb.RootKeyMetadata{},
+		Keys: rootKeys,
 		Pagination: &pb.PaginationResponse{
-			Total:  0,
-			Limit:  req.Pagination.Limit,
-			Offset: req.Pagination.Offset,
+			Total:  int32(len(rootKeys)),
+			Limit:  limit,
+			Offset: offset,
 		},
 	}, nil
 }
@@ -164,19 +204,82 @@ func (s *InfrastructureServer) DeriveWalletKey(ctx context.Context, req *pb.Deri
 
 // GetWalletKey 获取钱包密钥
 func (s *InfrastructureServer) GetWalletKey(ctx context.Context, req *pb.GetWalletKeyRequest) (*pb.GetWalletKeyResponse, error) {
-	// TODO: 实现获取钱包密钥
-	return nil, status.Error(codes.Unimplemented, "GetWalletKey not yet implemented")
+	k, err := s.keyService.GetKey(ctx, req.WalletId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, errors.Wrap(err, "wallet key not found").Error())
+	}
+	resp := &pb.GetWalletKeyResponse{
+		Wallet: &pb.WalletKeyMetadata{
+			WalletId:    k.KeyID,
+			RootKeyId:   k.Tags["parent_key_id"],
+			ChainType:   k.ChainType,
+			Index:       0,
+			PublicKey:   k.PublicKey,
+			Address:     k.Address,
+			Status:      k.Status,
+			Description: k.Description,
+			Tags:        k.Tags,
+			CreatedAt:   k.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:   k.UpdatedAt.Format(time.RFC3339),
+		},
+	}
+	if k.DeletionDate != nil {
+		resp.Wallet.DeletionDate = k.DeletionDate.Format(time.RFC3339)
+	}
+	return resp, nil
 }
 
 // ListWalletKeys 列出钱包密钥
 func (s *InfrastructureServer) ListWalletKeys(ctx context.Context, req *pb.ListWalletKeysRequest) (*pb.ListWalletKeysResponse, error) {
-	// TODO: 实现列表查询
+	limit := int32(50)
+	offset := int32(0)
+	if req.Pagination != nil {
+		if req.Pagination.Limit > 0 {
+			limit = req.Pagination.Limit
+		}
+		if req.Pagination.Offset >= 0 {
+			offset = req.Pagination.Offset
+		}
+	}
+	keys, err := s.keyService.ListKeys(ctx, &key.KeyFilter{
+		ChainType: req.ChainType,
+		Limit:     int(limit),
+		Offset:    int(offset),
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, errors.Wrap(err, "failed to list wallet keys").Error())
+	}
+	var wallets []*pb.WalletKeyMetadata
+	for _, k := range keys {
+		if req.RootKeyId != "" {
+			if parent, ok := k.Tags["parent_key_id"]; !ok || parent != req.RootKeyId {
+				continue
+			}
+		}
+		item := &pb.WalletKeyMetadata{
+			WalletId:    k.KeyID,
+			RootKeyId:   k.Tags["parent_key_id"],
+			ChainType:   k.ChainType,
+			Index:       0,
+			PublicKey:   k.PublicKey,
+			Address:     k.Address,
+			Status:      k.Status,
+			Description: k.Description,
+			Tags:        k.Tags,
+			CreatedAt:   k.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:   k.UpdatedAt.Format(time.RFC3339),
+		}
+		if k.DeletionDate != nil {
+			item.DeletionDate = k.DeletionDate.Format(time.RFC3339)
+		}
+		wallets = append(wallets, item)
+	}
 	return &pb.ListWalletKeysResponse{
-		Wallets: []*pb.WalletKeyMetadata{},
+		Wallets: wallets,
 		Pagination: &pb.PaginationResponse{
-			Total:  0,
-			Limit:  req.Pagination.Limit,
-			Offset: req.Pagination.Offset,
+			Total:  int32(len(wallets)),
+			Limit:  limit,
+			Offset: offset,
 		},
 	}, nil
 }

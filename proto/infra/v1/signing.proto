@@ -41,6 +41,8 @@ message ThresholdSignRequest {
   bytes message = 2;
   string message_hex = 3;
   string chain_type = 4;
+  // 团队签名的鉴权令牌（WebAuthn）
+  repeated AuthToken auth_tokens = 11;
 }
 
 // ThresholdSignResponse 阈值签名响应
@@ -110,4 +112,12 @@ message SigningSession {
   string created_at = 11;
   string completed_at = 12;
   int32 duration_ms = 13;
+}
+
+// AuthToken 鉴权令牌（WebAuthn）
+message AuthToken {
+  bytes passkey_signature = 1;   // WebAuthn Assertion Signature
+  bytes authenticator_data = 2;  // WebAuthn AuthData
+  bytes client_data_json = 3;    // WebAuthn ClientDataJSON
+  string credential_id = 4;      // WebAuthn Credential ID
 }

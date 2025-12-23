@@ -121,11 +121,13 @@ func (x *CreateSigningSessionResponse) GetSession() *SigningSession {
 
 // ThresholdSignRequest 阈值签名请求
 type ThresholdSignRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	KeyId         string                 `protobuf:"bytes,1,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
-	Message       []byte                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	MessageHex    string                 `protobuf:"bytes,3,opt,name=message_hex,json=messageHex,proto3" json:"message_hex,omitempty"`
-	ChainType     string                 `protobuf:"bytes,4,opt,name=chain_type,json=chainType,proto3" json:"chain_type,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	KeyId      string                 `protobuf:"bytes,1,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
+	Message    []byte                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	MessageHex string                 `protobuf:"bytes,3,opt,name=message_hex,json=messageHex,proto3" json:"message_hex,omitempty"`
+	ChainType  string                 `protobuf:"bytes,4,opt,name=chain_type,json=chainType,proto3" json:"chain_type,omitempty"`
+	// 团队签名的鉴权令牌（WebAuthn）
+	AuthTokens    []*AuthToken `protobuf:"bytes,11,rep,name=auth_tokens,json=authTokens,proto3" json:"auth_tokens,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -186,6 +188,13 @@ func (x *ThresholdSignRequest) GetChainType() string {
 		return x.ChainType
 	}
 	return ""
+}
+
+func (x *ThresholdSignRequest) GetAuthTokens() []*AuthToken {
+	if x != nil {
+		return x.AuthTokens
+	}
+	return nil
 }
 
 // ThresholdSignResponse 阈值签名响应
@@ -780,6 +789,75 @@ func (x *SigningSession) GetDurationMs() int32 {
 	return 0
 }
 
+// AuthToken 鉴权令牌（WebAuthn）
+type AuthToken struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	PasskeySignature  []byte                 `protobuf:"bytes,1,opt,name=passkey_signature,json=passkeySignature,proto3" json:"passkey_signature,omitempty"`    // WebAuthn Assertion Signature
+	AuthenticatorData []byte                 `protobuf:"bytes,2,opt,name=authenticator_data,json=authenticatorData,proto3" json:"authenticator_data,omitempty"` // WebAuthn AuthData
+	ClientDataJson    []byte                 `protobuf:"bytes,3,opt,name=client_data_json,json=clientDataJson,proto3" json:"client_data_json,omitempty"`        // WebAuthn ClientDataJSON
+	CredentialId      string                 `protobuf:"bytes,4,opt,name=credential_id,json=credentialId,proto3" json:"credential_id,omitempty"`                // WebAuthn Credential ID
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *AuthToken) Reset() {
+	*x = AuthToken{}
+	mi := &file_infra_v1_signing_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthToken) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthToken) ProtoMessage() {}
+
+func (x *AuthToken) ProtoReflect() protoreflect.Message {
+	mi := &file_infra_v1_signing_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthToken.ProtoReflect.Descriptor instead.
+func (*AuthToken) Descriptor() ([]byte, []int) {
+	return file_infra_v1_signing_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *AuthToken) GetPasskeySignature() []byte {
+	if x != nil {
+		return x.PasskeySignature
+	}
+	return nil
+}
+
+func (x *AuthToken) GetAuthenticatorData() []byte {
+	if x != nil {
+		return x.AuthenticatorData
+	}
+	return nil
+}
+
+func (x *AuthToken) GetClientDataJson() []byte {
+	if x != nil {
+		return x.ClientDataJson
+	}
+	return nil
+}
+
+func (x *AuthToken) GetCredentialId() string {
+	if x != nil {
+		return x.CredentialId
+	}
+	return ""
+}
+
 var File_infra_v1_signing_proto protoreflect.FileDescriptor
 
 const file_infra_v1_signing_proto_rawDesc = "" +
@@ -789,14 +867,16 @@ const file_infra_v1_signing_proto_rawDesc = "" +
 	"\x06key_id\x18\x01 \x01(\tR\x05keyId\x12\x1a\n" +
 	"\bprotocol\x18\x02 \x01(\tR\bprotocol\"R\n" +
 	"\x1cCreateSigningSessionResponse\x122\n" +
-	"\asession\x18\x01 \x01(\v2\x18.infra.v1.SigningSessionR\asession\"\x87\x01\n" +
+	"\asession\x18\x01 \x01(\v2\x18.infra.v1.SigningSessionR\asession\"\xbd\x01\n" +
 	"\x14ThresholdSignRequest\x12\x15\n" +
 	"\x06key_id\x18\x01 \x01(\tR\x05keyId\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\fR\amessage\x12\x1f\n" +
 	"\vmessage_hex\x18\x03 \x01(\tR\n" +
 	"messageHex\x12\x1d\n" +
 	"\n" +
-	"chain_type\x18\x04 \x01(\tR\tchainType\"\x91\x02\n" +
+	"chain_type\x18\x04 \x01(\tR\tchainType\x124\n" +
+	"\vauth_tokens\x18\v \x03(\v2\x13.infra.v1.AuthTokenR\n" +
+	"authTokens\"\x91\x02\n" +
 	"\x15ThresholdSignResponse\x12\x1c\n" +
 	"\tsignature\x18\x01 \x01(\tR\tsignature\x12\x15\n" +
 	"\x06key_id\x18\x02 \x01(\tR\x05keyId\x12\x1d\n" +
@@ -857,7 +937,12 @@ const file_infra_v1_signing_proto_rawDesc = "" +
 	"created_at\x18\v \x01(\tR\tcreatedAt\x12!\n" +
 	"\fcompleted_at\x18\f \x01(\tR\vcompletedAt\x12\x1f\n" +
 	"\vduration_ms\x18\r \x01(\x05R\n" +
-	"durationMs2\xc5\x03\n" +
+	"durationMs\"\xb6\x01\n" +
+	"\tAuthToken\x12+\n" +
+	"\x11passkey_signature\x18\x01 \x01(\fR\x10passkeySignature\x12-\n" +
+	"\x12authenticator_data\x18\x02 \x01(\fR\x11authenticatorData\x12(\n" +
+	"\x10client_data_json\x18\x03 \x01(\fR\x0eclientDataJson\x12#\n" +
+	"\rcredential_id\x18\x04 \x01(\tR\fcredentialId2\xc5\x03\n" +
 	"\x0eSigningService\x12e\n" +
 	"\x14CreateSigningSession\x12%.infra.v1.CreateSigningSessionRequest\x1a&.infra.v1.CreateSigningSessionResponse\x12P\n" +
 	"\rThresholdSign\x12\x1e.infra.v1.ThresholdSignRequest\x1a\x1f.infra.v1.ThresholdSignResponse\x12\\\n" +
@@ -877,7 +962,7 @@ func file_infra_v1_signing_proto_rawDescGZIP() []byte {
 	return file_infra_v1_signing_proto_rawDescData
 }
 
-var file_infra_v1_signing_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_infra_v1_signing_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_infra_v1_signing_proto_goTypes = []any{
 	(*CreateSigningSessionRequest)(nil),  // 0: infra.v1.CreateSigningSessionRequest
 	(*CreateSigningSessionResponse)(nil), // 1: infra.v1.CreateSigningSessionResponse
@@ -890,27 +975,29 @@ var file_infra_v1_signing_proto_goTypes = []any{
 	(*VerifySignatureRequest)(nil),       // 8: infra.v1.VerifySignatureRequest
 	(*VerifySignatureResponse)(nil),      // 9: infra.v1.VerifySignatureResponse
 	(*SigningSession)(nil),               // 10: infra.v1.SigningSession
+	(*AuthToken)(nil),                    // 11: infra.v1.AuthToken
 }
 var file_infra_v1_signing_proto_depIdxs = []int32{
 	10, // 0: infra.v1.CreateSigningSessionResponse.session:type_name -> infra.v1.SigningSession
-	10, // 1: infra.v1.GetSigningSessionResponse.session:type_name -> infra.v1.SigningSession
-	2,  // 2: infra.v1.BatchSignRequest.messages:type_name -> infra.v1.ThresholdSignRequest
-	3,  // 3: infra.v1.BatchSignResponse.signatures:type_name -> infra.v1.ThresholdSignResponse
-	0,  // 4: infra.v1.SigningService.CreateSigningSession:input_type -> infra.v1.CreateSigningSessionRequest
-	2,  // 5: infra.v1.SigningService.ThresholdSign:input_type -> infra.v1.ThresholdSignRequest
-	4,  // 6: infra.v1.SigningService.GetSigningSession:input_type -> infra.v1.GetSigningSessionRequest
-	6,  // 7: infra.v1.SigningService.BatchSign:input_type -> infra.v1.BatchSignRequest
-	8,  // 8: infra.v1.SigningService.VerifySignature:input_type -> infra.v1.VerifySignatureRequest
-	1,  // 9: infra.v1.SigningService.CreateSigningSession:output_type -> infra.v1.CreateSigningSessionResponse
-	3,  // 10: infra.v1.SigningService.ThresholdSign:output_type -> infra.v1.ThresholdSignResponse
-	5,  // 11: infra.v1.SigningService.GetSigningSession:output_type -> infra.v1.GetSigningSessionResponse
-	7,  // 12: infra.v1.SigningService.BatchSign:output_type -> infra.v1.BatchSignResponse
-	9,  // 13: infra.v1.SigningService.VerifySignature:output_type -> infra.v1.VerifySignatureResponse
-	9,  // [9:14] is the sub-list for method output_type
-	4,  // [4:9] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	11, // 1: infra.v1.ThresholdSignRequest.auth_tokens:type_name -> infra.v1.AuthToken
+	10, // 2: infra.v1.GetSigningSessionResponse.session:type_name -> infra.v1.SigningSession
+	2,  // 3: infra.v1.BatchSignRequest.messages:type_name -> infra.v1.ThresholdSignRequest
+	3,  // 4: infra.v1.BatchSignResponse.signatures:type_name -> infra.v1.ThresholdSignResponse
+	0,  // 5: infra.v1.SigningService.CreateSigningSession:input_type -> infra.v1.CreateSigningSessionRequest
+	2,  // 6: infra.v1.SigningService.ThresholdSign:input_type -> infra.v1.ThresholdSignRequest
+	4,  // 7: infra.v1.SigningService.GetSigningSession:input_type -> infra.v1.GetSigningSessionRequest
+	6,  // 8: infra.v1.SigningService.BatchSign:input_type -> infra.v1.BatchSignRequest
+	8,  // 9: infra.v1.SigningService.VerifySignature:input_type -> infra.v1.VerifySignatureRequest
+	1,  // 10: infra.v1.SigningService.CreateSigningSession:output_type -> infra.v1.CreateSigningSessionResponse
+	3,  // 11: infra.v1.SigningService.ThresholdSign:output_type -> infra.v1.ThresholdSignResponse
+	5,  // 12: infra.v1.SigningService.GetSigningSession:output_type -> infra.v1.GetSigningSessionResponse
+	7,  // 13: infra.v1.SigningService.BatchSign:output_type -> infra.v1.BatchSignResponse
+	9,  // 14: infra.v1.SigningService.VerifySignature:output_type -> infra.v1.VerifySignatureResponse
+	10, // [10:15] is the sub-list for method output_type
+	5,  // [5:10] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_infra_v1_signing_proto_init() }
@@ -925,7 +1012,7 @@ func file_infra_v1_signing_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_infra_v1_signing_proto_rawDesc), len(file_infra_v1_signing_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -67,6 +67,19 @@ func (s *InfrastructureServer) ThresholdSign(ctx context.Context, req *pb.Thresh
 		ChainType:  req.ChainType,
 	}
 
+	// 映射 gRPC AuthTokens 到内部签名请求
+	if len(req.AuthTokens) > 0 {
+		signReq.AuthTokens = make([]signing.AuthToken, len(req.AuthTokens))
+		for i, t := range req.AuthTokens {
+			signReq.AuthTokens[i] = signing.AuthToken{
+				PasskeySignature:  t.PasskeySignature,
+				AuthenticatorData: t.AuthenticatorData,
+				ClientDataJSON:    t.ClientDataJson,
+				CredentialID:      t.CredentialId,
+			}
+		}
+	}
+
 	// 调用签名服务
 	resp, err := s.signingService.ThresholdSign(ctx, signReq)
 	if err != nil {
