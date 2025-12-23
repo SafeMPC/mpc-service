@@ -60,7 +60,7 @@ graph TD
     
     subgraph "Discovery & Config"
         Consul[Consul Service Registry]
-        Vault[HashiCorp Vault (Optional)]
+        Vault["HashiCorp Vault (Optional)"]
     end
     
     P1 -.->|Register| Consul
