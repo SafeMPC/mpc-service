@@ -15,6 +15,11 @@
   - [2.1 私钥分片分配机制](#21-私钥分片分配机制)
   - [2.2 签名流程与协作关系](#22-签名流程与协作关系)
   - [2.3 与传统钱包的对比](#23-与传统钱包的对比)
+  - [2.4 Passkey 鉴权与 2-of-3 方案](#24-passkey-鉴权与-2-of-3-方案)
+    - [2.4.1 注册绑定](#241-注册绑定)
+    - [2.4.2 新版个人签名流程](#242-新版个人签名流程)
+    - [2.4.3 团队多签（链下聚合）](#243-团队多签链下聚合)
+    - [2.4.4 灾难恢复](#244-灾难恢复)
 - [3. 核心价值](#3-核心价值)
 - [4. 个人用户使用场景](#4-个人用户使用场景)
 - [5. 团队用户使用场景](#5-团队用户使用场景)
@@ -710,6 +715,148 @@ graph LR
 | **安全性** | 集中式风险 | 分布式安全 |
 
 ---
+
+### 2.4 Passkey 鉴权与 2-of-3 方案
+
+为提升用户体验与安全防护，系统支持采用 Passkey（WebAuthn）作为用户授权凭证，并引入 2-of-3 Delegated Guardian 架构。该方案将复杂的 MPC 计算下沉到云端，由“运营方 (Operator)”与“鉴权代理 (Guardian)”协同完成，用户侧以 Passkey 进行轻量签名授权。
+
+参考设计文档：`docs/design/2_of_3_delegated_guardian.md`
+
+#### 2.4.1 注册绑定
+
+首次使用时，用户在本地设备完成 Passkey 注册，生成 `credential_id` 与 `public_key (COSE)`，并与钱包策略绑定。
+
+```mermaid
+sequenceDiagram
+    participant User as 用户 (APP)
+    participant Operator as 运营方服务 (Node A)
+    participant Guardian as 鉴权代理 (Node B)
+    participant Chain as 存证/数据库
+
+    Note over User: WebAuthn 注册 (Passkey)<br/>生成 credential_id 与 public_key (COSE)
+    User->>Operator: 提交注册完成数据 (credential_id, public_key, attestation)
+    Operator->>Guardian: 同步用户注册信息
+    Guardian->>Guardian: 绑定策略: WalletID <-> User_Auth_Pub
+    Guardian-->>Operator: 确认绑定成功
+    Operator-->>User: 注册完成
+```
+
+关键点：
+- 用户侧仅保存 Passkey 私钥，存放于设备安全硬件（Secure Enclave/KeyStore）
+- Guardian 自此只接受该用户公钥签名的授权指令
+
+#### 2.4.2 新版个人签名流程
+
+用户在 APP 上对交易挑战（如 `TxHash/Nonce`）进行 Passkey 轻量签名，随后由 Operator 与 Guardian 在云端完成 2-of-3 MPC 计算并广播交易。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 用户 (APP)
+    participant Operator as 运营方 (Share 1)
+    participant Guardian as 鉴权代理 (Share 2)
+    participant Network as 区块链网络
+
+    Note over User: 用户发起转账请求
+    User->>User: 1. WebAuthn 生成 Assertion<br/>对 Challenge(TxHash/Nonce) 签名 -> AuthToken
+    User->>Operator: 2. 发送交易请求 + AuthToken
+
+    Note over Operator: 3. 业务检查 (余额/风控)
+    Operator->>Operator: 准备 MPC 会话 (Share 1)
+
+    Operator->>Guardian: 4. 请求协同签名 (TxInfo + AuthToken)
+    rect rgb(240, 248, 255)
+        Note over Guardian: 安全核心步骤
+        Guardian->>Guardian: A. 验证 Passkey Assertion 有效性
+        Guardian->>Guardian: B. 验证 TxInfo 与 Challenge 一致 (防重放)
+        Guardian->>Guardian: C. 执行风控策略 (限额/白名单)
+    end
+
+    alt 验证失败
+        Guardian-->>Operator: 拒绝请求 (Access Denied)
+        Operator-->>User: 交易失败
+    else 验证成功
+        Note over Guardian: 加载 Share 2
+        Operator->>Guardian: 5. 执行 MPC 签名协议 (2-of-3)
+        Note right of Guardian: 生成最终链上签名 (Signature)
+    end
+
+    Operator->>Network: 6. 广播交易
+    Network-->>Operator: 交易确认
+    Operator-->>User: 通知交易成功
+```
+
+用户体验：
+- 所见即所签：APP 展示交易详情，Passkey 绑定 `origin` 与挑战内容
+- 轻量授权：用户只需完成一次设备级生物认证（FaceID/指纹）
+
+#### 2.4.3 团队多签（链下聚合）
+
+在 Delegated Guardian 架构下，实现团队审批无需链上多签合约。Guardian 收集多个成员的 Passkey 授权后再参与 MPC。
+
+```mermaid
+sequenceDiagram
+    participant Alice as 成员 A (App)
+    participant Bob as 成员 B (App)
+    participant Operator as 运营方服务 (API)
+    participant Guardian as 鉴权代理 (Guardian)
+
+    Note over Alice: Alice 发起转账提案
+    Alice->>Operator: 提交提案 (Proposal #101) + 授权 A
+    Operator->>Operator: 存储提案状态: [A:✅, B:⏳, C:⏳]
+    Operator-->>Bob: 推送待审批通知
+
+    Note over Bob: Bob 审批同意
+    Bob->>Operator: 提交对 Proposal #101 的授权 B
+    Operator->>Operator: 更新状态: [A:✅, B:✅, C:⏳]
+
+    Note over Operator: 检测到满足策略 (2/3)
+    Operator->>Guardian: 请求 MPC 签名<br/>(附带: 交易详情 + [授权A, 授权B])
+
+    Note over Guardian: 聚合验证
+    Guardian->>Guardian: 验证授权 A 属于 Alice
+    Guardian->>Guardian: 验证授权 B 属于 Bob
+    Guardian->>Guardian: 有效授权数 >= 阈值? ✅
+
+    Guardian->>Operator: 参与 MPC 计算 (使用 Share 2)
+```
+
+优势：
+- 零 Gas 成本：多人审批逻辑在链下完成
+- 灵活配置：可随时更换成员与阈值，无需迁移资产
+
+#### 2.4.4 灾难恢复
+
+当用户设备或运营方节点出现故障时，通过冷备份分片（Share 3）执行重分片恢复。
+
+```mermaid
+flowchart TD
+    Start((开始恢复)) --> Check[故障类型判断]
+    Check -->|用户手机/私钥丢失| UserLost
+    Check -->|运营方数据丢失| OperatorLost
+
+    subgraph UserRecovery [用户端恢复]
+        UserLost[用户发起重置请求] --> KYC[严格身份认证]
+        KYC --> Admin[管理员介入]
+        Admin --> Retrieve3[取出 Share 3]
+        Retrieve3 --> Reshare[执行 MPC Reshare]
+        Reshare --> NewShares[生成新 Share 1/2/3]
+        NewShares --> BindNew[绑定新设备 Passkey]
+        BindNew --> Finish1((恢复完成))
+    end
+
+    subgraph SysRecovery [系统恢复]
+        OperatorLost[启用灾备预案] --> Retrieve3_Sys[取出 Share 3]
+        Retrieve3_Sys --> Combine[Node B (Share 2) + Share 3]
+        Combine --> Reshare_Sys[执行 MPC Reshare]
+        Reshare_Sys --> Restore[恢复服务]
+        Restore --> Finish2((恢复完成))
+    end
+```
+
+安全说明：
+- 运营方无法单方作恶：Guardian 强制验证用户 Passkey 授权
+- 建议将 Guardian 部署在 TEE，以保证分片与验证逻辑的完整性
 
 ## 3. 核心价值
 
