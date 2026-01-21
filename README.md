@@ -4,6 +4,8 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-1.21+-blue.svg)](go.mod)
 
+> **[中文版](READMECN.md) | English**
+
 **go-mpc-infra** is an enterprise-grade MPC wallet infrastructure built on Threshold Signature Schemes (TSS). Designed for exchanges, custodians, and asset management platforms, it delivers a custody solution where **private keys never exist in complete form**, **no single point of failure exists**, and **policy-driven governance** controls digital asset operations.
 
 Unlike traditional single-key wallets or MultiSig smart contracts, this system implements cryptographic multi-party computation at the protocol level. It natively supports any blockchain using ECDSA (Bitcoin, Ethereum) or EdDSA (Solana) signatures—no on-chain contracts required.
