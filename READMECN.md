@@ -4,6 +4,8 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-1.21+-blue.svg)](go.mod)
 
+> **English](README.md) | 中文版**
+
 **go-mpc-infra** 是一套企业级 MPC 钱包基础设施解决方案。它基于阈值签名方案（Threshold Signature Scheme, TSS）构建，旨在为交易所、托管机构、资管平台提供**私钥永不完整出现**、**无单点故障**、**策略驱动**的数字资产管理能力。
 
 不同于传统单私钥钱包或多重签名（MultiSig）合约，本系统在密码学层面实现了通用的多方协同计算，天然支持所有基于 ECDSA (Bitcoin, Ethereum) 和 EdDSA (Solana) 的区块链网络，无需链上合约支持。
