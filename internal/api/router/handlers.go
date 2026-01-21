@@ -7,10 +7,10 @@ import (
 	"net/http"
 
 	"github.com/go-openapi/swag"
-	"github.com/kashguard/go-mpc-infra/internal/api/httperrors"
-	"github.com/kashguard/go-mpc-infra/internal/config"
-	"github.com/kashguard/go-mpc-infra/internal/types"
-	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/SafeMPC/mpc-service/internal/api/httperrors"
+	"github.com/SafeMPC/mpc-service/internal/config"
+	"github.com/SafeMPC/mpc-service/internal/types"
+	"github.com/SafeMPC/mpc-service/internal/util"
 	"github.com/labstack/echo/v4"
 	"github.com/timewasted/go-accept-headers"
 )

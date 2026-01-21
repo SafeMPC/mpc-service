@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kashguard/go-mpc-infra/internal/test"
-	"github.com/kashguard/go-mpc-infra/internal/util"
-	"github.com/kashguard/go-mpc-infra/scripts/internal/scaffold"
+	"github.com/SafeMPC/mpc-service/internal/test"
+	"github.com/SafeMPC/mpc-service/internal/util"
+	"github.com/SafeMPC/mpc-service/scripts/internal/scaffold"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

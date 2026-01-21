@@ -55,9 +55,9 @@ func (s *Service) DeregisterNode(ctx context.Context, nodeID, nodeType string) e
 	return s.consul.Deregister(ctx, serviceID)
 }
 
-// DiscoverParticipants 发现参与者节点
-func (s *Service) DiscoverParticipants(ctx context.Context, count int) ([]*ServiceInfo, error) {
-	services, err := s.consul.Discover(ctx, "mpc-participant", []string{"node-type:participant"})
+// DiscoverSigners 发现签名节点
+func (s *Service) DiscoverSigners(ctx context.Context, count int) ([]*ServiceInfo, error) {
+	services, err := s.consul.Discover(ctx, "mpc-signer", []string{"node-type:signer"})
 	if err != nil {
 		return nil, err
 	}
@@ -68,17 +68,17 @@ func (s *Service) DiscoverParticipants(ctx context.Context, count int) ([]*Servi
 			Int("index", i).
 			Str("service_id", svc.ID).
 			Strs("tags", svc.Tags).
-			Msg("DiscoverParticipants: service tags")
+			Msg("DiscoverSigners: service tags")
 	}
 
-	log.Debug().
-		Int("found_services", len(services)).
-		Int("required_count", count).
-		Msg("Discovered participants from Consul")
+		log.Debug().
+			Int("found_services", len(services)).
+			Int("required_count", count).
+			Msg("Discovered signers from Consul")
 
 	// 如果找到的服务不足要求的数量，返回错误但仍返回找到的服务
 	if len(services) < count {
-		return services, fmt.Errorf("insufficient participants: found %d, required %d", len(services), count)
+		return services, fmt.Errorf("insufficient signers: found %d, required %d", len(services), count)
 	}
 
 	// 返回前 count 个服务（或全部，如果不足）
@@ -88,15 +88,15 @@ func (s *Service) DiscoverParticipants(ctx context.Context, count int) ([]*Servi
 	return services, nil
 }
 
-// DiscoverCoordinator 发现协调者节点
-func (s *Service) DiscoverCoordinator(ctx context.Context) (*ServiceInfo, error) {
-	services, err := s.consul.Discover(ctx, "mpc-coordinator", []string{"node-type:coordinator"})
+// DiscoverService 发现 Service 节点
+func (s *Service) DiscoverService(ctx context.Context) (*ServiceInfo, error) {
+	services, err := s.consul.Discover(ctx, "mpc-service", []string{"node-type:service"})
 	if err != nil {
 		return nil, err
 	}
 
 	if len(services) == 0 {
-		return nil, fmt.Errorf("no coordinator found")
+		return nil, fmt.Errorf("no service node found")
 	}
 
 	return services[0], nil
@@ -111,11 +111,11 @@ func ExtractNodeID(svc *ServiceInfo) string {
 	}
 
 	// 如果标签中没有，尝试从服务 ID 中提取
-	// 服务 ID 格式：mpc-participant-{nodeID} 或 mpc-coordinator-{nodeID}
-	if strings.HasPrefix(svc.ID, "mpc-participant-") {
-		return strings.TrimPrefix(svc.ID, "mpc-participant-")
-	} else if strings.HasPrefix(svc.ID, "mpc-coordinator-") {
-		return strings.TrimPrefix(svc.ID, "mpc-coordinator-")
+	// 服务 ID 格式：mpc-signer-{nodeID} 或 mpc-service-{nodeID}
+	if strings.HasPrefix(svc.ID, "mpc-signer-") {
+		return strings.TrimPrefix(svc.ID, "mpc-signer-")
+	} else if strings.HasPrefix(svc.ID, "mpc-service-") {
+		return strings.TrimPrefix(svc.ID, "mpc-service-")
 	}
 
 	return ""

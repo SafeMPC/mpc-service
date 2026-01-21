@@ -47,6 +47,8 @@ type CreateRootKeyRequest struct {
 	TotalNodes  int    // 默认 3
 	Description string
 	Tags        map[string]string
+	// 2-of-2 模式：手机节点ID（P1），必需
+	MobileNodeID string
 }
 
 // DeriveWalletKeyRequest 派生钱包密钥请求

@@ -2,19 +2,14 @@
 package handlers
 
 import (
-	"github.com/kashguard/go-mpc-infra/internal/api"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/auth"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/common"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/backup"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/keys"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/members"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/nodes"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/passkeys"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/policy"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/sessions"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/infra/signing"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/push"
-	"github.com/kashguard/go-mpc-infra/internal/api/handlers/wellknown"
+	"github.com/SafeMPC/mpc-service/internal/api"
+	"github.com/SafeMPC/mpc-service/internal/api/handlers/auth"
+	"github.com/SafeMPC/mpc-service/internal/api/handlers/common"
+	"github.com/SafeMPC/mpc-service/internal/api/handlers/infra/keys"
+	"github.com/SafeMPC/mpc-service/internal/api/handlers/infra/sessions"
+	"github.com/SafeMPC/mpc-service/internal/api/handlers/infra/signing"
+	"github.com/SafeMPC/mpc-service/internal/api/handlers/push"
+	"github.com/SafeMPC/mpc-service/internal/api/handlers/wellknown"
 	"github.com/labstack/echo/v4"
 )
 
@@ -36,9 +31,6 @@ func AttachAllRoutes(s *api.Server) {
 		common.GetReadyRoute(s),
 		common.GetSwaggerRoute(s),
 		common.GetVersionRoute(s),
-		backup.GetBackupStatusRoute(s),
-		backup.GetListBackupSharesRoute(s),
-		backup.PostRecoverMPCShareRoute(s),
 		keys.DeleteKeyRoute(s),
 		keys.DeleteWalletKeyRoute(s),
 		keys.GetKeyRoute(s),
@@ -46,13 +38,6 @@ func AttachAllRoutes(s *api.Server) {
 		keys.PostCreateKeyRoute(s),
 		keys.PostDeriveKeyRoute(s),
 		keys.PostGenerateAddressRoute(s),
-		members.PostAddWalletMemberRoute(s),
-		members.DeleteWalletMemberRoute(s),
-		policy.PutSigningPolicyRoute(s),
-		policy.GetSigningPolicyRoute(s),
-		nodes.PostHeartbeatRoute(s),
-		nodes.PostRegisterNodeRoute(s),
-		passkeys.PostAddPasskeyRoute(s),
 		sessions.GetSessionRoute(s),
 		sessions.PostCancelSessionRoute(s),
 		sessions.PostCreateSessionRoute(s),

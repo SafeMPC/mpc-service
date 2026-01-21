@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kashguard/go-mpc-infra/internal/infra/discovery"
-	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
+	"github.com/SafeMPC/mpc-service/internal/infra/discovery"
+	"github.com/SafeMPC/mpc-service/internal/infra/storage"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -50,6 +50,40 @@ func (m *Manager) RegisterClientNode(ctx context.Context, userID string, publicK
 	if err := m.RegisterNode(ctx, node); err != nil {
 		return nil, errors.Wrap(err, "failed to register client node")
 	}
+
+	return node, nil
+}
+
+// RegisterMobileNode 注册手机节点（作为 Signer 参与 MPC，2-of-2 模式）
+// 手机节点作为 P1 参与 DKG 和签名
+func (m *Manager) RegisterMobileNode(ctx context.Context, nodeID string, endpoint string, publicKey string, metadata map[string]interface{}) (*Node, error) {
+	if nodeID == "" {
+		return nil, errors.New("nodeID is required")
+	}
+	if publicKey == "" {
+		return nil, errors.New("publicKey is required")
+	}
+
+	node := &Node{
+		NodeID:       nodeID,
+		NodeType:     string(NodeTypeSigner), // 手机节点作为 Signer
+		Purpose:      string(NodePurposeSigning),  // 用于签名
+		Endpoint:     endpoint,                    // 手机节点的 gRPC 端点
+		PublicKey:    publicKey,
+		Status:       string(NodeStatusActive),
+		Capabilities: []string{"signing", "dkg"},
+		Metadata:     metadata,
+		RegisteredAt: time.Now(),
+	}
+
+	if err := m.RegisterNode(ctx, node); err != nil {
+		return nil, errors.Wrap(err, "failed to register mobile node")
+	}
+
+	log.Info().
+		Str("node_id", nodeID).
+		Str("endpoint", endpoint).
+		Msg("Mobile node registered successfully as Signer")
 
 	return node, nil
 }
@@ -131,11 +165,11 @@ func (m *Manager) RegisterNode(ctx context.Context, node *Node) error {
 // GetNode 获取节点信息
 func (m *Manager) GetNode(ctx context.Context, nodeID string) (*Node, error) {
 	// 尝试所有可能的节点类型
-	types := []string{"mpc-participant", "mpc-coordinator", "mpc-client"}
+	types := []string{"mpc-signer", "mpc-service", "mpc-client"}
 
 	// 优化：根据 ID 前缀猜测类型
 	if strings.HasPrefix(nodeID, "client-") {
-		types = []string{"mpc-client", "mpc-participant", "mpc-coordinator"}
+		types = []string{"mpc-client", "mpc-signer", "mpc-service"}
 	}
 
 	for _, serviceName := range types {
@@ -158,7 +192,7 @@ func (m *Manager) ListNodes(ctx context.Context, filter *storage.NodeFilter) ([]
 	if filter != nil && filter.NodeType != "" {
 		serviceNames = []string{fmt.Sprintf("mpc-%s", filter.NodeType)}
 	} else {
-		serviceNames = []string{"mpc-participant", "mpc-coordinator", "mpc-client"}
+		serviceNames = []string{"mpc-signer", "mpc-service", "mpc-client"}
 	}
 
 	var allNodes []*Node

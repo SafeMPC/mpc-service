@@ -1,0 +1,53 @@
+definitions:
+  # ============================================
+  # 会话管理类型定义
+  # ============================================
+  
+  # 会话响应
+  SessionResponse:
+    type: object
+    required: [session_id, wallet_id, status]
+    properties:
+      session_id:
+        type: string
+        format: uuid
+      wallet_id:
+        type: string
+        format: uuid
+      session_type:
+        type: string
+        enum: [dkg, signing]
+        example: "signing"
+      status:
+        type: string
+        enum: [pending, running, completed, failed]
+        example: "running"
+      progress:
+        type: object
+        properties:
+          current_round:
+            type: integer
+            example: 1
+          total_rounds:
+            type: integer
+            example: 6
+      signature:
+        type: string
+        example: "0x..."
+        description: "签名结果（完成后才有）"
+      public_key:
+        type: string
+        example: "0x..."
+        description: "公钥（DKG 完成后才有）"
+      error_message:
+        type: string
+        description: "错误信息（失败时）"
+      created_at:
+        type: string
+        format: date-time
+      completed_at:
+        type: string
+        format: date-time
+      duration_ms:
+        type: integer
+        description: "执行时长（毫秒）"

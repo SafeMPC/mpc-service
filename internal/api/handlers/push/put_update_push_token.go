@@ -5,11 +5,11 @@ import (
 
 	"github.com/aarondl/null/v8"
 	"github.com/go-openapi/swag"
-	"github.com/kashguard/go-mpc-infra/internal/api"
-	"github.com/kashguard/go-mpc-infra/internal/auth"
-	"github.com/kashguard/go-mpc-infra/internal/data/dto"
-	"github.com/kashguard/go-mpc-infra/internal/types"
-	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/SafeMPC/mpc-service/internal/api"
+	"github.com/SafeMPC/mpc-service/internal/auth"
+	"github.com/SafeMPC/mpc-service/internal/data/dto"
+	"github.com/SafeMPC/mpc-service/internal/types"
+	"github.com/SafeMPC/mpc-service/internal/util"
 	"github.com/labstack/echo/v4"
 )
 

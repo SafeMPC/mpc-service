@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/go-openapi/swag"
-	"github.com/kashguard/go-mpc-infra/internal/data/dto"
-	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/SafeMPC/mpc-service/internal/data/dto"
+	"github.com/SafeMPC/mpc-service/internal/util"
 	"github.com/labstack/echo/v4"
 )
 

@@ -6,28 +6,28 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/dropbox/godropbox/time2"
-	"github.com/kashguard/go-mpc-infra/internal/config"
-	"github.com/kashguard/go-mpc-infra/internal/data/dto"
-	"github.com/kashguard/go-mpc-infra/internal/data/local"
-	"github.com/kashguard/go-mpc-infra/internal/i18n"
-	"github.com/kashguard/go-mpc-infra/internal/mailer"
-	"github.com/kashguard/go-mpc-infra/internal/metrics"
-	"github.com/kashguard/go-mpc-infra/internal/push"
-	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/SafeMPC/mpc-service/internal/config"
+	"github.com/SafeMPC/mpc-service/internal/data/dto"
+	"github.com/SafeMPC/mpc-service/internal/data/local"
+	"github.com/SafeMPC/mpc-service/internal/i18n"
+	"github.com/SafeMPC/mpc-service/internal/mailer"
+	"github.com/SafeMPC/mpc-service/internal/metrics"
+	"github.com/SafeMPC/mpc-service/internal/push"
+	"github.com/SafeMPC/mpc-service/internal/util"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 
 	// MPC imports
-	"github.com/kashguard/go-mpc-infra/internal/infra/coordinator"
-	"github.com/kashguard/go-mpc-infra/internal/infra/discovery"
-	infra_grpc "github.com/kashguard/go-mpc-infra/internal/infra/grpc"
-	"github.com/kashguard/go-mpc-infra/internal/infra/key"
-	"github.com/kashguard/go-mpc-infra/internal/infra/session"
-	"github.com/kashguard/go-mpc-infra/internal/infra/signing"
-	mpcgrpc "github.com/kashguard/go-mpc-infra/internal/mpc/grpc"
-	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
+	"github.com/SafeMPC/mpc-service/internal/infra/service"
+	"github.com/SafeMPC/mpc-service/internal/infra/discovery"
+	"github.com/SafeMPC/mpc-service/internal/infra/key"
+	"github.com/SafeMPC/mpc-service/internal/infra/session"
+	"github.com/SafeMPC/mpc-service/internal/infra/signing"
+	mpcgrpc "github.com/SafeMPC/mpc-service/internal/mpc/grpc"
+	"github.com/SafeMPC/mpc-service/internal/mpc/node"
 
 	// Import postgres driver for database/sql package
 	_ "github.com/lib/pq"
@@ -69,9 +69,9 @@ type Server struct {
 	Metrics *metrics.Service
 
 	// MPC services
-	KeyService         *key.Service
-	SigningService     *signing.Service
-	CoordinatorService *coordinator.Service
+	KeyService     *key.Service
+	SigningService *signing.Service
+	MPCService     *service.Service
 	NodeManager        *node.Manager
 	NodeRegistry       *node.Registry
 	NodeDiscovery      *node.Discovery
@@ -81,7 +81,6 @@ type Server struct {
 	// gRPC services (unified MPC gRPC)
 	MPCGRPCServer   *mpcgrpc.GRPCServer              // MPC gRPC 服务端（统一实现）
 	MPCGRPCClient   *mpcgrpc.GRPCClient              // MPC gRPC 客户端（用于节点间通信）
-	InfraGRPCServer *infra_grpc.InfrastructureServer // Infrastructure gRPC Server (Application Layer)
 }
 
 // newServerWithComponents is used by wire to initialize the server components.
@@ -99,7 +98,7 @@ func newServerWithComponents(
 	metrics *metrics.Service,
 	keyService *key.Service,
 	signingService *signing.Service,
-	coordinatorService *coordinator.Service,
+	mpcService *service.Service,
 	nodeManager *node.Manager,
 	nodeRegistry *node.Registry,
 	nodeDiscovery *node.Discovery,
@@ -107,7 +106,6 @@ func newServerWithComponents(
 	mpcGRPCServer *mpcgrpc.GRPCServer, // ✅ 统一的 MPC gRPC 服务端
 	mpcGRPCClient *mpcgrpc.GRPCClient, // ✅ 统一的 MPC gRPC 客户端
 	discoveryService *discovery.Service, // ✅ 新的统一服务发现
-	infraGRPCServer *infra_grpc.InfrastructureServer,
 ) *Server {
 	s := &Server{
 		Config:  cfg,
@@ -120,9 +118,9 @@ func newServerWithComponents(
 		Local:   local,
 		Metrics: metrics,
 
-		KeyService:         keyService,
-		SigningService:     signingService,
-		CoordinatorService: coordinatorService,
+		KeyService:     keyService,
+		SigningService: signingService,
+		MPCService:     mpcService,
 		NodeManager:        nodeManager,
 		NodeRegistry:       nodeRegistry,
 		NodeDiscovery:      nodeDiscovery,
@@ -131,7 +129,6 @@ func newServerWithComponents(
 		MPCGRPCServer:    mpcGRPCServer,    // ✅ 统一的 MPC gRPC 服务端
 		MPCGRPCClient:    mpcGRPCClient,    // ✅ 统一的 MPC gRPC 客户端
 		DiscoveryService: discoveryService, // ✅ 新的统一服务发现
-		InfraGRPCServer:  infraGRPCServer,
 	}
 
 	// 设置 NodeDiscovery 到 MPCGRPCClient，使其能够从 Consul 获取节点信息
@@ -182,11 +179,13 @@ func (s *Server) Start() error {
 	// 1. 注册节点到服务发现（Consul）
 	if s.DiscoveryService != nil && s.Config.MPC.NodeID != "" {
 		// ✅ 在 docker-compose 网络中使用可解析的主机名：
-		// coordinator 使用服务名 "coordinator"（避免使用 nodeID: coordinator-1 导致无法解析）
-		// participants 的 nodeID 与服务名一致（participant-1/2/3），可直接使用
+		// service 节点的 nodeID 与服务名一致，可直接使用
 		serviceHost := s.Config.MPC.NodeID
-		if s.Config.MPC.NodeType == "coordinator" {
-			serviceHost = "coordinator"
+		if s.Config.MPC.NodeType == "service" {
+			// 如果 nodeID 是 mpc-service-1，使用服务名 mpc-service
+			if strings.HasPrefix(s.Config.MPC.NodeID, "mpc-service") {
+				serviceHost = "mpc-service"
+			}
 		}
 
 		log.Info().
@@ -227,22 +226,6 @@ func (s *Server) Start() error {
 			Msg("MPC gRPC server started in background")
 	}
 
-	// 3. 启动 Infrastructure gRPC 服务器（仅 Coordinator）
-	if s.Config.MPC.NodeType == "coordinator" && s.InfraGRPCServer != nil {
-		go func() {
-			grpcCtx := context.Background()
-			if err := s.InfraGRPCServer.Start(grpcCtx); err != nil {
-				log.Error().Err(err).Msg("Infrastructure gRPC server failed")
-			}
-		}()
-		log.Info().
-			Str("node_type", s.Config.MPC.NodeType).
-			Msg("Infrastructure gRPC server started in background")
-	} else if s.InfraGRPCServer != nil {
-		log.Info().
-			Str("node_type", s.Config.MPC.NodeType).
-			Msg("Infrastructure gRPC server skipped (not coordinator)")
-	}
 
 	// 4. 启动 HTTP 服务器
 	if err := s.Echo.Start(s.Config.Echo.ListenAddress); err != nil {

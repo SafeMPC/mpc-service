@@ -5,11 +5,11 @@ import (
 
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
-	"github.com/kashguard/go-mpc-infra/internal/api"
-	"github.com/kashguard/go-mpc-infra/internal/api/httperrors"
-	"github.com/kashguard/go-mpc-infra/internal/infra/coordinator"
-	"github.com/kashguard/go-mpc-infra/internal/types"
-	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/SafeMPC/mpc-service/internal/api"
+	"github.com/SafeMPC/mpc-service/internal/api/httperrors"
+	"github.com/SafeMPC/mpc-service/internal/infra/service"
+	"github.com/SafeMPC/mpc-service/internal/types"
+	"github.com/SafeMPC/mpc-service/internal/util"
 	"github.com/labstack/echo/v4"
 )
 
@@ -44,14 +44,14 @@ func postCreateSessionHandler(s *api.Server) echo.HandlerFunc {
 			timeout = 300
 		}
 
-		req := &coordinator.CreateSessionRequest{
+		req := &service.CreateSessionRequest{
 			KeyID:    swag.StringValue(body.KeyID),
 			Message:  message,
 			Protocol: protocol,
 			Timeout:  int(timeout),
 		}
 
-		session, err := s.CoordinatorService.CreateSigningSession(ctx, req)
+		session, err := s.MPCService.CreateSigningSession(ctx, req)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to create session")
 			return httperrors.NewHTTPError(http.StatusInternalServerError, types.PublicHTTPErrorTypeGeneric, "Failed to create session")

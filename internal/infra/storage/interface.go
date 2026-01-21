@@ -100,6 +100,8 @@ type MetadataStore interface {
 	// Passkey 操作
 	SavePasskey(ctx context.Context, passkey *Passkey) error
 	GetPasskey(ctx context.Context, credentialID string) (*Passkey, error)
+	ListUserPasskeys(ctx context.Context, userID string) ([]*Passkey, error)
+	SaveUserCredential(ctx context.Context, userID string, credentialID string, deviceName string) error
 
 	// 团队成员操作
 	AddWalletMember(ctx context.Context, walletID, credentialID, role string) error

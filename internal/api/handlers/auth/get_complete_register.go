@@ -3,12 +3,12 @@ package auth
 import (
 	"net/http"
 
-	"github.com/kashguard/go-mpc-infra/internal/api"
-	"github.com/kashguard/go-mpc-infra/internal/api/router/templates"
-	"github.com/kashguard/go-mpc-infra/internal/types/auth"
-	"github.com/kashguard/go-mpc-infra/internal/util/url"
+	"github.com/SafeMPC/mpc-service/internal/api"
+	"github.com/SafeMPC/mpc-service/internal/api/router/templates"
+	"github.com/SafeMPC/mpc-service/internal/types/auth"
+	"github.com/SafeMPC/mpc-service/internal/util/url"
 
-	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/SafeMPC/mpc-service/internal/util"
 	"github.com/labstack/echo/v4"
 )
 

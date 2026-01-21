@@ -17,6 +17,8 @@ type SignRequest struct {
 	ChainType      string
 	DerivationPath string
 	AuthTokens     []AuthToken
+	// 2-of-2 模式：手机节点ID（P1），必需
+	MobileNodeID string
 }
 
 // SignResponse 签名响应

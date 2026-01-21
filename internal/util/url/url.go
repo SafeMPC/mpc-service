@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/kashguard/go-mpc-infra/internal/config"
+	"github.com/SafeMPC/mpc-service/internal/config"
 )
 
 const (

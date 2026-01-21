@@ -7,11 +7,11 @@ import (
 
 	"github.com/aarondl/null/v8"
 	"github.com/aarondl/sqlboiler/v4/boil"
-	"github.com/kashguard/go-mpc-infra/internal/api"
-	"github.com/kashguard/go-mpc-infra/internal/api/httperrors"
-	"github.com/kashguard/go-mpc-infra/internal/models"
-	"github.com/kashguard/go-mpc-infra/internal/test"
-	"github.com/kashguard/go-mpc-infra/internal/test/fixtures"
+	"github.com/SafeMPC/mpc-service/internal/api"
+	"github.com/SafeMPC/mpc-service/internal/api/httperrors"
+	"github.com/SafeMPC/mpc-service/internal/models"
+	"github.com/SafeMPC/mpc-service/internal/test"
+	"github.com/SafeMPC/mpc-service/internal/test/fixtures"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 )

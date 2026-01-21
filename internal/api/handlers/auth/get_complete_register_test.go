@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/kashguard/go-mpc-infra/internal/api"
-	"github.com/kashguard/go-mpc-infra/internal/test"
-	"github.com/kashguard/go-mpc-infra/internal/test/fixtures"
+	"github.com/SafeMPC/mpc-service/internal/api"
+	"github.com/SafeMPC/mpc-service/internal/test"
+	"github.com/SafeMPC/mpc-service/internal/test/fixtures"
 	"github.com/stretchr/testify/require"
 )
 

@@ -8,10 +8,10 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/google/uuid"
-	"github.com/kashguard/go-mpc-infra/internal/infra/backup"
-	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
-	"github.com/kashguard/go-mpc-infra/internal/mpc/chain"
-	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
+	"github.com/SafeMPC/mpc-service/internal/infra/backup"
+	"github.com/SafeMPC/mpc-service/internal/infra/storage"
+	"github.com/SafeMPC/mpc-service/internal/mpc/chain"
+	"github.com/SafeMPC/mpc-service/internal/mpc/protocol"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -253,6 +253,7 @@ func (s *Service) CreateRootKey(ctx context.Context, req *CreateRootKeyRequest) 
 		TotalNodes:  totalNodes,
 		Description: req.Description,
 		Tags:        req.Tags,
+		MobileNodeID: req.MobileNodeID, // 2-of-2 模式支持
 	}
 
 	// 预先保存密钥状态为 Pending，以满足 DKG Session 的外键约束

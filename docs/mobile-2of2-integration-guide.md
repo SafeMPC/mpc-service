@@ -11,11 +11,12 @@
 
 - [1. 概述](#1-概述)
 - [2. 架构设计](#2-架构设计)
-- [3. 服务端修改清单](#3-服务端修改清单)
-- [4. 手机端适配方案](#4-手机端适配方案)
-- [5. 实施步骤](#5-实施步骤)
-- [6. 测试验证](#6-测试验证)
-- [7. 常见问题](#7-常见问题)
+- [3. 命名规范](#3-命名规范)
+- [4. 服务端修改清单](#4-服务端修改清单)
+- [5. 手机端适配方案](#5-手机端适配方案)
+- [6. 实施步骤](#6-实施步骤)
+- [7. 测试验证](#7-测试验证)
+- [8. 常见问题](#8-常见问题)
 
 ---
 
@@ -61,8 +62,8 @@ graph TB
     end
     
     subgraph "服务器端 (Server)"
-        E[Coordinator Service]
-        F[Participant Service<br/>P2]
+        E[MPC Service<br/>会话管理/协调]
+        F[Signer Node<br/>P2 签名计算]
         G[密钥分片存储<br/>加密文件系统]
         H[gRPC Server]
     end
@@ -114,13 +115,13 @@ graph TB
 sequenceDiagram
     participant App as 手机 APP
     participant Mobile as 手机 MPC Client
-    participant Server as Coordinator
-    participant P2 as 服务器 Participant
+    participant Server as MPC Service
+    participant P2 as 服务器 Signer
     
     App->>Server: 1. 创建密钥请求<br/>(threshold=2, totalNodes=2)
     Server->>Server: 2. 创建 DKG 会话
     Server->>Mobile: 3. 通知手机参与 DKG<br/>(StartDKG gRPC)
-    Server->>P2: 4. 通知服务器参与 DKG
+    Server->>P2: 4. 通知服务器 Signer 参与 DKG
     
     Note over Mobile,P2: 5. 执行 DKG 协议（GG20/FROST）
     Mobile->>P2: 5a. Round 1: Commitments
@@ -141,13 +142,13 @@ sequenceDiagram
 sequenceDiagram
     participant App as 手机 APP
     participant Mobile as 手机 MPC Client
-    participant Server as Coordinator
-    participant P2 as 服务器 Participant
+    participant Server as MPC Service
+    participant P2 as 服务器 Signer
     
     App->>Server: 1. 创建签名请求
     Server->>Server: 2. 创建签名会话
     Server->>Mobile: 3. 通知手机参与签名
-    Server->>P2: 4. 通知服务器参与签名
+    Server->>P2: 4. 通知服务器 Signer 参与签名
     
     Note over Mobile,P2: 5. 执行签名协议（GG20/FROST）
     Mobile->>P2: 5a. Round 1: Commitment
@@ -164,11 +165,267 @@ sequenceDiagram
 
 ---
 
-## 3. 服务端修改清单
+## 3. 命名规范
 
-### 3.1 核心修改点
+### 3.1 命名重命名方案
 
-#### 3.1.1 节点选择逻辑修改
+为了更清晰地表达 2-of-2 模式下的架构，我们将对现有命名进行重命名：
+
+#### 3.1.1 命名映射表
+
+| 当前命名 | 新命名 | 说明 |
+|---------|--------|------|
+| `Coordinator` | `Service` | MPC 服务，负责 API 和会话管理 |
+| `Participant` | `Signer` | 签名节点，参与 MPC 协议计算 |
+| `coordinator` | `service` | 小写形式 |
+| `participant` | `signer` | 小写形式 |
+| `NodeTypeCoordinator` | `NodeTypeService` | 节点类型枚举 |
+| `NodeTypeParticipant` | `NodeTypeSigner` | 节点类型枚举 |
+| `mpc-coordinator` | `mpc-service` | 服务发现中的服务名 |
+| `mpc-participant` | `mpc-signer` | 服务发现中的服务名 |
+
+#### 3.1.2 命名理由
+
+**为什么选择 Service / Signer？**
+
+1. **语义清晰**：
+   - `Service`：提供 API 服务，管理会话，不参与计算
+   - `Signer`：执行签名计算，语义明确
+
+2. **符合业务场景**：
+   - 手机端 P1 = Mobile Signer
+   - 服务器端 P2 = Server Signer
+   - 服务器端 Service = MPC Service
+
+3. **代码命名友好**：
+   - `mpc-service` / `signer-node`
+   - `MPCService` / `SignerNode`
+
+#### 3.1.3 架构图更新
+
+采用新命名后的架构图：
+
+```mermaid
+graph TB
+    subgraph "手机端 (Mobile Device)"
+        A[移动 APP]
+        B[MPC Client SDK]
+        C[密钥分片存储<br/>Secure Enclave/Keychain]
+        D[gRPC Client]
+    end
+    
+    subgraph "服务器端 (Server)"
+        E[MPC Service<br/>会话管理/协调]
+        F[Signer Node<br/>P2 签名计算]
+        G[密钥分片存储<br/>加密文件系统]
+        H[gRPC Server]
+    end
+    
+    subgraph "MPC 协议层"
+        I[GG18/GG20 Protocol]
+        J[FROST Protocol]
+    end
+    
+    A --> B
+    B --> C
+    B --> D
+    D <-->|gRPC/TLS| H
+    H --> F
+    F --> G
+    E --> F
+    E --> H
+    
+    B -->|DKG/Sign| I
+    F -->|DKG/Sign| I
+    I -->|消息交换| D
+    I -->|消息交换| H
+```
+
+### 3.2 需要修改的地方
+
+#### 3.2.1 代码层面
+
+**包名和目录**：
+- `internal/infra/coordinator/` → `internal/infra/service/`
+- 包声明：`package coordinator` → `package service`
+
+**类型名**：
+- `coordinator.Service` → `service.Service`
+- 注释中的 "Coordinator服务" → "MPC Service"
+
+**变量和函数名**：
+- `coordinatorService` → `mpcService`
+- `NewCoordinatorService` → `NewService`（已在 service 包内）
+- `NodeTypeCoordinator` → `NodeTypeService`
+- `NodeTypeParticipant` → `NodeTypeSigner`
+
+**注释和日志**：
+- "Coordinator 不参与 DKG" → "Service 不参与 DKG"
+- "通知参与者" → "通知签名节点"
+- "participant nodes" → "signer nodes"
+
+#### 3.2.2 配置文件
+
+**环境变量**：
+- `MPC_NODE_TYPE=coordinator` → `MPC_NODE_TYPE=service`
+- `MPC_NODE_TYPE=participant` → `MPC_NODE_TYPE=signer`
+
+**服务发现配置**：
+- `mpc-coordinator` → `mpc-service`
+- `mpc-participant` → `mpc-signer`
+
+**Consul 标签**：
+- `node-type:coordinator` → `node-type:service`
+- `node-type:participant` → `node-type:signer`
+
+#### 3.2.3 Proto 文件
+
+**服务名**：
+- `MPCCoordinator` → `MPCService`（或保持 `MPCCoordinator` 以保持向后兼容）
+
+**消息字段**：
+- `participant_nodes` → `signer_nodes`
+- `coordinator_id` → `service_id`
+
+**注释**：
+- "coordinator" → "service"
+- "participant" → "signer"
+
+#### 3.2.4 数据库
+
+**节点类型字段**：
+- `node_type = 'coordinator'` → `node_type = 'service'`
+- `node_type = 'participant'` → `node_type = 'signer'`
+
+**注意**：数据库迁移需要谨慎处理，可能需要：
+1. 添加新字段 `node_type_v2`
+2. 迁移数据
+3. 更新应用代码
+4. 删除旧字段
+
+#### 3.2.5 文档
+
+**所有文档中的命名**：
+- Coordinator → Service
+- Participant → Signer
+- coordinator → service
+- participant → signer
+
+**示例**：
+- "Coordinator 服务" → "MPC Service"
+- "Participant 节点" → "Signer 节点"
+- "通知参与者" → "通知签名节点"
+
+### 3.3 重命名实施计划
+
+#### Phase 1: 代码重命名（1-2 天）
+
+1. **重命名包目录**
+   ```bash
+   mv internal/infra/coordinator internal/infra/service
+   ```
+
+2. **更新包声明**
+   - `package coordinator` → `package service`
+
+3. **更新类型定义**
+   - `internal/mpc/node/types.go`：更新 `NodeType` 常量
+
+4. **更新所有引用**
+   - 使用 IDE 全局替换功能
+   - 确保所有导入路径正确
+
+#### Phase 2: 配置更新（0.5 天）
+
+1. **更新环境变量配置**
+   - `.env` 文件
+   - `docker-compose.yml`
+   - Kubernetes 配置
+
+2. **更新服务发现配置**
+   - Consul 服务注册
+   - 服务发现查询逻辑
+
+#### Phase 3: Proto 文件更新（0.5 天）
+
+1. **更新 proto 定义**
+   - 字段名和注释
+   - 保持向后兼容（可选）
+
+2. **重新生成代码**
+   ```bash
+   make proto
+   ```
+
+#### Phase 4: 数据库迁移（1 天）
+
+1. **创建迁移脚本**
+   ```sql
+   -- 添加新字段
+   ALTER TABLE nodes ADD COLUMN node_type_v2 VARCHAR(50);
+   
+   -- 迁移数据
+   UPDATE nodes SET node_type_v2 = 'service' WHERE node_type = 'coordinator';
+   UPDATE nodes SET node_type_v2 = 'signer' WHERE node_type = 'participant';
+   
+   -- 删除旧字段（可选，建议保留一段时间）
+   -- ALTER TABLE nodes DROP COLUMN node_type;
+   -- ALTER TABLE nodes RENAME COLUMN node_type_v2 TO node_type;
+   ```
+
+2. **测试迁移**
+   - 在测试环境验证
+   - 确保数据完整性
+
+#### Phase 5: 文档更新（0.5 天）
+
+1. **更新所有文档**
+   - 架构设计文档
+   - API 文档
+   - 部署文档
+   - 开发指南
+
+2. **更新代码注释**
+   - 所有相关注释
+   - README 文件
+
+### 3.4 向后兼容性考虑
+
+为了平滑过渡，可以考虑：
+
+1. **保留旧命名一段时间**
+   - 在代码中同时支持新旧命名
+   - 通过配置开关控制
+
+2. **数据库兼容**
+   - 同时支持 `node_type` 和 `node_type_v2`
+   - 查询时优先使用新字段
+
+3. **API 兼容**
+   - Proto 定义保持向后兼容
+   - 客户端逐步迁移
+
+### 3.5 验证清单
+
+重命名完成后，需要验证：
+
+- [ ] 所有代码编译通过
+- [ ] 所有测试通过
+- [ ] 服务发现正常工作
+- [ ] 节点注册和发现正常
+- [ ] DKG 流程正常
+- [ ] 签名流程正常
+- [ ] 数据库查询正常
+- [ ] 日志输出正确
+- [ ] 文档已更新
+
+---
+
+## 4. 服务端修改清单
+
+### 4.1 核心修改点
+
+#### 4.1.1 节点选择逻辑修改
 
 **文件**: `internal/infra/signing/service.go`
 
@@ -183,27 +440,27 @@ if keyMetadata.Threshold == 2 && keyMetadata.TotalNodes == 3 {
 **修改为**（支持 2-of-2 模式）:
 ```go
 if keyMetadata.Threshold == 2 && keyMetadata.TotalNodes == 2 {
-    // 2-of-2 模式：手机 P1 + 服务器 P2
+    // 2-of-2 模式：手机 P1 + 服务器 Signer P2
     // 从会话或请求中获取手机节点ID
     mobileNodeID := getMobileNodeID(ctx, req)
     if mobileNodeID == "" {
         return nil, errors.New("mobile node ID is required for 2-of-2 mode")
     }
-    participatingNodes = []string{mobileNodeID, "server-p2"}
+    participatingNodes = []string{mobileNodeID, "server-signer-p2"}
     
     log.Info().
         Str("key_id", req.KeyID).
         Strs("participating_nodes", participatingNodes).
         Int("threshold", keyMetadata.Threshold).
         Int("total_nodes", keyMetadata.TotalNodes).
-        Msg("Using 2-of-2 mode: mobile + server")
+        Msg("Using 2-of-2 mode: mobile signer + server signer")
 } else if keyMetadata.Threshold == 2 && keyMetadata.TotalNodes == 3 {
     // 保持向后兼容：2-of-3 模式
     participatingNodes = []string{"server-proxy-1", "server-proxy-2"}
 }
 ```
 
-#### 3.1.2 DKG 节点选择修改
+#### 4.1.2 DKG 节点选择修改
 
 **文件**: `internal/infra/key/dkg.go`
 
@@ -222,20 +479,20 @@ if req.Threshold == 2 && req.TotalNodes == 2 {
     if mobileNodeID == "" {
         return nil, errors.New("mobile node ID is required for 2-of-2 DKG")
     }
-    nodeIDs = []string{mobileNodeID, "server-p2"}
+    nodeIDs = []string{mobileNodeID, "server-signer-p2"}
     
     log.Info().
         Str("key_id", keyID).
         Strs("node_ids", nodeIDs).
         Int("node_count", len(nodeIDs)).
-        Msg("ExecuteDKG: Using 2-of-2 mode")
+        Msg("ExecuteDKG: Using 2-of-2 mode (mobile signer + server signer)")
 } else if req.Threshold == 2 && req.TotalNodes == 3 {
     // 保持向后兼容：2-of-3 模式
     nodeIDs = []string{"server-proxy-1", "server-proxy-2", "server-backup-1"}
 }
 ```
 
-#### 3.1.3 节点注册和发现
+#### 4.1.3 节点注册和发现
 
 **文件**: `internal/mpc/node/manager.go`
 
@@ -246,11 +503,11 @@ if req.Threshold == 2 && req.TotalNodes == 2 {
 
 **新增接口**:
 ```go
-// RegisterMobileNode 注册手机节点
+// RegisterMobileNode 注册手机节点（作为 Signer）
 func (m *Manager) RegisterMobileNode(ctx context.Context, nodeID string, endpoint string, publicKey string) error {
     node := &Node{
         NodeID:    nodeID,
-        NodeType:  NodeTypeMobile, // 新增类型
+        NodeType:  NodeTypeSigner, // 使用 Signer 类型（手机和服务器 Signer 都是 Signer 类型）
         Endpoint:  endpoint,
         PublicKey: publicKey,
         Status:    NodeStatusActive,
@@ -260,7 +517,7 @@ func (m *Manager) RegisterMobileNode(ctx context.Context, nodeID string, endpoin
 }
 ```
 
-#### 3.1.4 API 接口修改
+#### 4.1.4 API 接口修改
 
 **文件**: `internal/api/handlers/infra/keys/post_create_key.go`
 
@@ -290,9 +547,9 @@ type PostSignPayload struct {
 }
 ```
 
-### 3.2 数据库修改
+### 4.2 数据库修改
 
-#### 3.2.1 Nodes 表扩展
+#### 4.2.1 Nodes 表扩展
 
 **迁移文件**: `migrations/YYYYMMDDHHMMSS-add-mobile-node-support.sql`
 
@@ -309,7 +566,7 @@ CREATE INDEX IF NOT EXISTS idx_nodes_device_type ON nodes(device_type);
 CREATE INDEX IF NOT EXISTS idx_nodes_user_id ON nodes(user_id);
 ```
 
-#### 3.2.2 Keys 表扩展
+#### 4.2.2 Keys 表扩展
 
 ```sql
 -- 添加手机节点关联（可选，用于快速查询）
@@ -317,9 +574,9 @@ ALTER TABLE keys ADD COLUMN IF NOT EXISTS mobile_node_id VARCHAR(255);
 CREATE INDEX IF NOT EXISTS idx_keys_mobile_node_id ON keys(mobile_node_id);
 ```
 
-### 3.3 gRPC 服务修改
+### 4.3 gRPC 服务修改
 
-#### 3.3.1 支持移动端连接
+#### 4.3.1 支持移动端连接
 
 **文件**: `internal/mpc/grpc/server.go`
 
@@ -341,7 +598,7 @@ serverConfig := &ServerConfig{
 }
 ```
 
-### 3.4 配置修改
+### 4.4 配置修改
 
 **文件**: `internal/config/server_config.go`
 
@@ -352,8 +609,8 @@ type MPC struct {
     
     // 2-of-2 模式配置
     Enable2of2Mode    bool   // 是否启用 2-of-2 模式
-    MobileNodePrefix  string // 手机节点ID前缀（默认 "mobile-"）
-    ServerNodeID      string // 服务器节点ID（默认 "server-p2"）
+    MobileNodePrefix  string // 手机节点ID前缀（默认 "mobile-signer-"）
+    ServerSignerNodeID string // 服务器 Signer 节点ID（默认 "server-signer-p2"）
     
     // 移动端连接配置
     MobileGRPCEndpoint string // 移动端 gRPC 端点
@@ -363,9 +620,9 @@ type MPC struct {
 
 ---
 
-## 4. 手机端适配方案
+## 5. 手机端适配方案
 
-### 4.1 架构设计
+### 5.1 架构设计
 
 ```mermaid
 graph TB
@@ -390,9 +647,9 @@ graph TB
     style E fill:#fff3e0
 ```
 
-### 4.2 iOS 实现方案
+### 5.2 iOS 实现方案
 
-#### 4.2.1 项目结构
+#### 5.2.1 项目结构
 
 ```
 MPCWalletSDK-iOS/
@@ -414,7 +671,7 @@ MPCWalletSDK-iOS/
 └── MPCWalletSDK.podspec
 ```
 
-#### 4.2.2 核心实现（基于 tss-lib/mobile）
+#### 5.2.2 核心实现（基于 tss-lib/mobile）
 
 **MPCClient.swift**:
 ```swift
@@ -651,7 +908,7 @@ class SecureStorage {
 }
 ```
 
-#### 4.2.3 依赖管理
+#### 5.2.3 依赖管理
 
 **MPCWalletSDK.podspec**:
 ```ruby
@@ -678,9 +935,9 @@ dependencies: [
 ]
 ```
 
-### 4.3 Android 实现方案
+### 5.3 Android 实现方案
 
-#### 4.3.1 项目结构
+#### 5.3.1 项目结构
 
 ```
 MPCWalletSDK-Android/
@@ -701,7 +958,7 @@ MPCWalletSDK-Android/
 └── build.gradle
 ```
 
-#### 4.3.2 核心实现（基于 tss-lib/mobile）
+#### 5.3.2 核心实现（基于 tss-lib/mobile）
 
 **MPCClient.kt**:
 ```kotlin
@@ -942,9 +1199,9 @@ class SecureStorage(private val context: Context) {
 }
 ```
 
-### 4.4 网络通信
+### 5.4 网络通信
 
-#### 4.4.1 gRPC 客户端实现
+#### 5.4.1 gRPC 客户端实现
 
 **iOS (Swift)**:
 ```swift
@@ -1013,9 +1270,9 @@ class GRPCClient(private val endpoint: String) {
 }
 ```
 
-### 4.5 tss-lib 集成
+### 5.5 tss-lib 集成
 
-#### 4.5.1 使用 tss-lib/mobile 包
+#### 5.5.1 使用 tss-lib/mobile 包
 
 **tss-lib 已提供移动端 API 包装**，位于 `github.com/kashguard/tss-lib/mobile`，使用 gomobile 编译为 iOS/Android 库。
 
@@ -1059,7 +1316,7 @@ unzip -l build/android/tsslib.aar
 # 应该包含 classes.jar 和 jni/ 目录
 ```
 
-#### 4.5.2 集成到项目
+#### 5.5.2 集成到项目
 
 **iOS (Xcode)**:
 1. 将 `TssLib.xcframework` 拖拽到 Xcode 项目中
@@ -1075,7 +1332,7 @@ dependencies {
 }
 ```
 
-#### 4.5.3 API 使用
+#### 5.5.3 API 使用
 
 tss-lib/mobile 提供了 `PartyManager` 类，封装了 DKG 和签名协议：
 
@@ -1094,9 +1351,9 @@ tss-lib/mobile 提供了 `PartyManager` 类，封装了 DKG 和签名协议：
 
 ---
 
-## 5. 实施步骤
+## 6. 实施步骤
 
-### 5.1 Phase 1: 服务端基础改造（1-2 周）
+### 6.1 Phase 1: 服务端基础改造（1-2 周）
 
 1. **修改节点选择逻辑**
    - [ ] 修改 `signing/service.go` 支持 2-of-2 模式
@@ -1113,7 +1370,7 @@ tss-lib/mobile 提供了 `PartyManager` 类，封装了 DKG 和签名协议：
    - [ ] 修改签名接口，支持 `mobile_node_id` 参数
    - [ ] 添加手机节点注册接口
 
-### 5.2 Phase 2: 手机端 SDK 开发（2-3 周）
+### 6.2 Phase 2: 手机端 SDK 开发（2-3 周）
 
 1. **iOS SDK**
    - [ ] 实现 MPC Client 核心类
@@ -1127,7 +1384,7 @@ tss-lib/mobile 提供了 `PartyManager` 类，封装了 DKG 和签名协议：
    - [ ] 实现 gRPC 客户端
    - [ ] 集成 tss-lib（通过 Go Mobile）
 
-### 5.3 Phase 3: 集成测试（1-2 周）
+### 6.3 Phase 3: 集成测试（1-2 周）
 
 1. **单元测试**
    - [ ] 测试 DKG 流程（2-of-2）
@@ -1140,7 +1397,7 @@ tss-lib/mobile 提供了 `PartyManager` 类，封装了 DKG 和签名协议：
    - [ ] 网络异常处理测试
    - [ ] 节点离线恢复测试
 
-### 5.4 Phase 4: 生产部署（1 周）
+### 6.4 Phase 4: 生产部署（1 周）
 
 1. **配置和部署**
    - [ ] 配置 TLS 证书
@@ -1154,11 +1411,11 @@ tss-lib/mobile 提供了 `PartyManager` 类，封装了 DKG 和签名协议：
 
 ---
 
-## 6. 测试验证
+## 7. 测试验证
 
-### 6.1 功能测试
+### 7.1 功能测试
 
-#### 6.1.1 DKG 测试
+#### 7.1.1 DKG 测试
 
 ```go
 func TestDKG_2of2_MobileAndServer(t *testing.T) {
@@ -1187,7 +1444,7 @@ func TestDKG_2of2_MobileAndServer(t *testing.T) {
 }
 ```
 
-#### 6.1.2 签名测试
+#### 7.1.2 签名测试
 
 ```go
 func TestSigning_2of2_MobileAndServer(t *testing.T) {
@@ -1209,13 +1466,13 @@ func TestSigning_2of2_MobileAndServer(t *testing.T) {
 }
 ```
 
-### 6.2 性能测试
+### 7.2 性能测试
 
 - **DKG 耗时**: < 5 秒（GG20，4 轮）
 - **签名耗时**: < 1.5 秒（GG20，6 轮）
 - **网络延迟**: < 200ms（4G 网络）
 
-### 6.3 安全测试
+### 7.3 安全测试
 
 - **密钥分片安全**: 验证分片加密存储
 - **传输安全**: 验证 TLS 加密
@@ -1223,9 +1480,9 @@ func TestSigning_2of2_MobileAndServer(t *testing.T) {
 
 ---
 
-## 7. 常见问题
+## 8. 常见问题
 
-### 7.1 技术问题
+### 8.1 技术问题
 
 **Q: tss-lib 如何在移动端使用？**
 
@@ -1250,7 +1507,7 @@ A:
 - 生物认证保护访问
 - 密钥分片加密存储
 
-### 7.2 业务问题
+### 8.2 业务问题
 
 **Q: 2-of-2 和 2-of-3 模式如何选择？**
 

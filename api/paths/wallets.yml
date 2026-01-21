@@ -1,0 +1,285 @@
+paths:
+  # ============================================
+  # 钱包管理 API (MVP)
+  # ============================================
+  
+  # 创建钱包（DKG）
+  /v1/wallets:
+    post:
+      operationId: postCreateWallet
+      summary: 创建 MPC 钱包
+      description: 通过 DKG 创建 2-of-2 MPC 钱包，需要 WebAuthn 二次验证
+      tags:
+        - Wallets
+      security:
+        - Bearer: []
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/postCreateWalletPayload"
+      responses:
+        "201":
+          description: 钱包创建会话已创建
+          schema:
+            $ref: "#/definitions/createWalletResponse"
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "401":
+          description: 未授权或 WebAuthn 验证失败
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: "#/definitions/publicHttpError"
+    
+    get:
+      operationId: getWallets
+      summary: 列出钱包
+      description: 获取用户的所有钱包列表
+      tags:
+        - Wallets
+      security:
+        - Bearer: []
+      parameters:
+        - name: chain_type
+          in: query
+          type: string
+          description: 过滤区块链类型
+          example: "ethereum"
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+          description: 每页数量
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+          description: 偏移量
+      responses:
+        "200":
+          description: 钱包列表
+          schema:
+            $ref: "#/definitions/listWalletsResponse"
+        "401":
+          description: 未授权
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: "#/definitions/publicHttpError"
+
+  # 查询钱包详情
+  /v1/wallets/{walletId}:
+    get:
+      operationId: getWallet
+      summary: 获取钱包详情
+      description: 获取指定钱包的详细信息
+      tags:
+        - Wallets
+      security:
+        - Bearer: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          type: string
+          description: 钱包 ID
+      responses:
+        "200":
+          description: 钱包详情
+          schema:
+            $ref: "#/definitions/walletResponse"
+        "404":
+          description: 钱包不存在
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "401":
+          description: 未授权
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: "#/definitions/publicHttpError"
+
+  # 生成地址
+  /v1/wallets/{walletId}/addresses:
+    post:
+      operationId: postGenerateWalletAddress
+      summary: 生成钱包地址
+      description: 为指定钱包生成新的区块链地址（HD 派生）
+      tags:
+        - Wallets
+      security:
+        - Bearer: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            required: [chain_type]
+            properties:
+              chain_type:
+                type: string
+                example: "ethereum"
+                description: 区块链类型
+              derivation_path:
+                type: string
+                example: "m/44'/60'/0'/0/0"
+                description: BIP44 派生路径
+      responses:
+        "200":
+          description: 地址生成成功
+          schema:
+            $ref: "#/definitions/generateAddressResponse"
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "404":
+          description: 钱包不存在
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: "#/definitions/publicHttpError"
+
+  # 查询余额
+  /v1/wallets/{walletId}/balance:
+    get:
+      operationId: getWalletBalance
+      summary: 查询钱包余额
+      description: 查询指定钱包在区块链上的余额
+      tags:
+        - Wallets
+      security:
+        - Bearer: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          type: string
+        - name: chain_type
+          in: query
+          type: string
+          required: true
+          description: 区块链类型
+          example: "ethereum"
+      responses:
+        "200":
+          description: 余额信息
+          schema:
+            $ref: "#/definitions/walletBalanceResponse"
+        "404":
+          description: 钱包不存在
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "401":
+          description: 未授权
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: "#/definitions/publicHttpError"
+
+  # 查询交易历史
+  /v1/wallets/{walletId}/transactions:
+    get:
+      operationId: getWalletTransactions
+      summary: 查询交易历史
+      description: 获取钱包的交易历史记录
+      tags:
+        - Wallets
+      security:
+        - Bearer: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          type: string
+        - name: chain_type
+          in: query
+          type: string
+          required: true
+          example: "ethereum"
+        - name: limit
+          in: query
+          type: integer
+          default: 20
+        - name: offset
+          in: query
+          type: integer
+          default: 0
+      responses:
+        "200":
+          description: 交易历史
+          schema:
+            $ref: "#/definitions/transactionsResponse"
+        "404":
+          description: 钱包不存在
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "401":
+          description: 未授权
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: "#/definitions/publicHttpError"
+
+  # 签名交易
+  /v1/wallets/{walletId}/sign:
+    post:
+      operationId: postSignTransaction
+      summary: 签名交易
+      description: 使用 MPC 钱包签名交易，需要 WebAuthn 二次验证
+      tags:
+        - Wallets
+      security:
+        - Bearer: []
+      parameters:
+        - name: walletId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/postSignTransactionPayload"
+      responses:
+        "200":
+          description: 签名会话已创建
+          schema:
+            $ref: "#/definitions/signTransactionResponse"
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "401":
+          description: 未授权或 WebAuthn 验证失败
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "404":
+          description: 钱包不存在
+          schema:
+            $ref: "#/definitions/publicHttpError"
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: "#/definitions/publicHttpError"

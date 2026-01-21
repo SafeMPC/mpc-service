@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-openapi/swag"
-	"github.com/kashguard/go-mpc-infra/internal/types"
+	"github.com/SafeMPC/mpc-service/internal/types"
 	"github.com/labstack/echo/v4"
 )
 

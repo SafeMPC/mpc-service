@@ -7,7 +7,7 @@ produces:
   - application/json
 swagger: "2.0"
 info:
-  title: github.com/kashguard/go-mpc-infra
+  title: github.com/SafeMPC/mpc-service
   version: 0.1.0
   description: API documentation
 paths: {}
@@ -104,6 +104,61 @@ definitions:
     $ref: "../definitions/infra.yml#/definitions/PostAddPasskeyPayload"
   addPasskeyResponse:
     $ref: "../definitions/infra.yml#/definitions/AddPasskeyResponse"
+  # Wallet Member definitions
+  addWalletMemberPayload:
+    $ref: "../definitions/infra.yml#/definitions/AddWalletMemberPayload"
+  removeWalletMemberPayload:
+    $ref: "../definitions/infra.yml#/definitions/RemoveWalletMemberPayload"
+  walletMemberResponse:
+    $ref: "../definitions/infra.yml#/definitions/WalletMemberResponse"
+  # Signing Policy definitions
+  setSigningPolicyPayload:
+    $ref: "../definitions/infra.yml#/definitions/SetSigningPolicyPayload"
+  signingPolicyResponse:
+    $ref: "../definitions/infra.yml#/definitions/SigningPolicyResponse"
+  # WebAuthn definitions
+  postWebAuthnRegisterBeginPayload:
+    $ref: "../definitions/webauthn.yml#/definitions/PostWebAuthnRegisterBeginPayload"
+  webAuthnRegisterBeginResponse:
+    $ref: "../definitions/webauthn.yml#/definitions/WebAuthnRegisterBeginResponse"
+  postWebAuthnRegisterFinishPayload:
+    $ref: "../definitions/webauthn.yml#/definitions/PostWebAuthnRegisterFinishPayload"
+  postWebAuthnLoginBeginPayload:
+    $ref: "../definitions/webauthn.yml#/definitions/PostWebAuthnLoginBeginPayload"
+  webAuthnLoginBeginResponse:
+    $ref: "../definitions/webauthn.yml#/definitions/WebAuthnLoginBeginResponse"
+  postWebAuthnLoginFinishPayload:
+    $ref: "../definitions/webauthn.yml#/definitions/PostWebAuthnLoginFinishPayload"
+  webAuthnLoginResponse:
+    $ref: "../definitions/webauthn.yml#/definitions/WebAuthnLoginResponse"
+  # Wallet definitions
+  webAuthnAssertion:
+    $ref: "../definitions/wallets.yml#/definitions/WebAuthnAssertion"
+  postCreateWalletPayload:
+    $ref: "../definitions/wallets.yml#/definitions/PostCreateWalletPayload"
+  createWalletResponse:
+    $ref: "../definitions/wallets.yml#/definitions/CreateWalletResponse"
+  listWalletsResponse:
+    $ref: "../definitions/wallets.yml#/definitions/ListWalletsResponse"
+  walletSummary:
+    $ref: "../definitions/wallets.yml#/definitions/WalletSummary"
+  walletResponse:
+    $ref: "../definitions/wallets.yml#/definitions/WalletResponse"
+  generateAddressResponse:
+    $ref: "../definitions/wallets.yml#/definitions/GenerateAddressResponse"
+  walletBalanceResponse:
+    $ref: "../definitions/wallets.yml#/definitions/WalletBalanceResponse"
+  transactionsResponse:
+    $ref: "../definitions/wallets.yml#/definitions/TransactionsResponse"
+  transaction:
+    $ref: "../definitions/wallets.yml#/definitions/Transaction"
+  postSignTransactionPayload:
+    $ref: "../definitions/wallets.yml#/definitions/PostSignTransactionPayload"
+  signTransactionResponse:
+    $ref: "../definitions/wallets.yml#/definitions/SignTransactionResponse"
+  # Session definitions
+  sessionResponse:
+    $ref: "../definitions/sessions.yml#/definitions/SessionResponse"
 
 responses:
   errorResponse:

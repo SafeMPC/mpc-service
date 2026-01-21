@@ -324,8 +324,8 @@ import (
     "fmt"
     "sync"
     
-    "github.com/kashguard/go-mpc-infra/internal/config"
-    mpcgrpc "github.com/kashguard/go-mpc-infra/internal/mpc/grpc"
+    "github.com/SafeMPC/mpc-service/internal/config"
+    mpcgrpc "github.com/SafeMPC/mpc-service/internal/mpc/grpc"
     "github.com/kashguard/tss-lib/tss"
 )
 

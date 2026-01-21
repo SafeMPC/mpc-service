@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kashguard/go-mpc-infra/internal/mailer/transport"
-	"github.com/kashguard/go-mpc-infra/internal/push/provider"
-	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/SafeMPC/mpc-service/internal/mailer/transport"
+	"github.com/SafeMPC/mpc-service/internal/push/provider"
+	"github.com/SafeMPC/mpc-service/internal/util"
 	"github.com/rs/zerolog"
 	"golang.org/x/text/language"
 )

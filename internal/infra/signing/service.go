@@ -7,11 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kashguard/go-mpc-infra/internal/infra/key"
-	"github.com/kashguard/go-mpc-infra/internal/infra/session"
-	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
-	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
-	pb "github.com/kashguard/go-mpc-infra/pb/mpc/v1"
+	"github.com/SafeMPC/mpc-service/internal/infra/key"
+	"github.com/SafeMPC/mpc-service/internal/infra/session"
+	"github.com/SafeMPC/mpc-service/internal/mpc/node"
+	"github.com/SafeMPC/mpc-service/internal/mpc/protocol"
+	pb "github.com/SafeMPC/mpc-service/pb/mpc/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -175,13 +175,26 @@ func (s *Service) ThresholdSign(ctx context.Context, req *SignRequest) (*SignRes
 		return nil, errors.Wrap(err, "failed to create signing session")
 	}
 
-	// 4. 选择参与节点（2-of-3 模式：只选择服务器节点）
-	// 对于 2-of-3 MPC，签名只需要服务器节点（server-proxy-1, server-proxy-2）
-	// 客户端节点不参与签名流程
+	// 4. 选择参与节点
+	// 支持 2-of-2 模式（手机 P1 + 服务器 P2）和 2-of-3 模式（服务器节点）
 	var participatingNodes []string
 
-	if keyMetadata.Threshold == 2 && keyMetadata.TotalNodes == 3 {
-		// 固定 2-of-3 模式：使用固定的服务器节点列表
+	if keyMetadata.Threshold == 2 && keyMetadata.TotalNodes == 2 {
+		// 2-of-2 模式：手机 P1 + 服务器 Signer P2
+		if req.MobileNodeID == "" {
+			return nil, errors.New("mobile node ID is required for 2-of-2 signing")
+		}
+		participatingNodes = []string{req.MobileNodeID, "server-signer-p2"}
+
+		log.Info().
+			Str("key_id", req.KeyID).
+			Strs("participating_nodes", participatingNodes).
+			Int("threshold", keyMetadata.Threshold).
+			Int("total_nodes", keyMetadata.TotalNodes).
+			Str("mobile_node_id", req.MobileNodeID).
+			Msg("Using 2-of-2 mode: mobile signer + server signer")
+	} else if keyMetadata.Threshold == 2 && keyMetadata.TotalNodes == 3 {
+		// 保持向后兼容：2-of-3 模式：使用固定的服务器节点列表
 		participatingNodes = []string{"server-proxy-1", "server-proxy-2"}
 
 		log.Info().
@@ -198,8 +211,8 @@ func (s *Service) ThresholdSign(ctx context.Context, req *SignRequest) (*SignRes
 			limit = keyMetadata.Threshold
 		}
 
-		// 发现节点时，只选择 participant 类型且 purpose=signing 的节点
-		participants, err := s.nodeDiscovery.DiscoverNodes(ctx, node.NodeTypeParticipant, node.NodeStatusActive, limit)
+		// 发现节点时，只选择 signer 类型且 purpose=signing 的节点
+		participants, err := s.nodeDiscovery.DiscoverNodes(ctx, node.NodeTypeSigner, node.NodeStatusActive, limit)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to discover participants")
 		}

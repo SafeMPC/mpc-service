@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
-	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
-	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
-	pb "github.com/kashguard/go-mpc-infra/pb/mpc/v1"
+	"github.com/SafeMPC/mpc-service/internal/infra/storage"
+	"github.com/SafeMPC/mpc-service/internal/mpc/node"
+	"github.com/SafeMPC/mpc-service/internal/mpc/protocol"
+	pb "github.com/SafeMPC/mpc-service/pb/mpc/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -104,8 +104,22 @@ func (s *DKGService) ExecuteDKG(ctx context.Context, keyID string, req *CreateKe
 			Int("node_count", len(nodeIDs)).
 			Msg("ExecuteDKG: Using node IDs from DKG session")
 	} else {
-		// 回退：如果没有会话信息，则在典型 2-of-3 模式下使用固定节点列表
-		if req.Threshold == 2 && req.TotalNodes == 3 {
+		// 支持 2-of-2 模式：手机 P1 + 服务器 P2
+		if req.Threshold == 2 && req.TotalNodes == 2 {
+			if req.MobileNodeID == "" {
+				return nil, errors.New("mobile node ID is required for 2-of-2 DKG")
+			}
+			// 2-of-2 模式：手机节点 P1 + 服务器 Signer P2
+			nodeIDs = []string{req.MobileNodeID, "server-signer-p2"}
+
+			log.Info().
+				Str("key_id", keyID).
+				Strs("node_ids", nodeIDs).
+				Int("node_count", len(nodeIDs)).
+				Str("mobile_node_id", req.MobileNodeID).
+				Msg("ExecuteDKG: Using 2-of-2 mode (mobile signer + server signer)")
+		} else if req.Threshold == 2 && req.TotalNodes == 3 {
+			// 保持向后兼容：2-of-3 模式
 			nodeIDs = []string{"server-proxy-1", "server-proxy-2", "server-backup-1"}
 
 			log.Info().

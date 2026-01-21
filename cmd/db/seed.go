@@ -6,12 +6,12 @@ import (
 	"fmt"
 
 	"github.com/aarondl/sqlboiler/v4/boil"
-	"github.com/kashguard/go-mpc-infra/internal/api"
-	"github.com/kashguard/go-mpc-infra/internal/config"
-	data "github.com/kashguard/go-mpc-infra/internal/data/fixtures"
-	"github.com/kashguard/go-mpc-infra/internal/util"
-	"github.com/kashguard/go-mpc-infra/internal/util/command"
-	dbutil "github.com/kashguard/go-mpc-infra/internal/util/db"
+	"github.com/SafeMPC/mpc-service/internal/api"
+	"github.com/SafeMPC/mpc-service/internal/config"
+	data "github.com/SafeMPC/mpc-service/internal/data/fixtures"
+	"github.com/SafeMPC/mpc-service/internal/util"
+	"github.com/SafeMPC/mpc-service/internal/util/command"
+	dbutil "github.com/SafeMPC/mpc-service/internal/util/db"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

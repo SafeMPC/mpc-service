@@ -282,25 +282,55 @@ func (s *PostgreSQLStore) GetPasskey(ctx context.Context, credentialID string) (
 	return &passkey, nil
 }
 
-// SaveNode 保存节点信息 (Deprecated: Use Consul)
-// func (s *PostgreSQLStore) SaveNode(ctx context.Context, node *NodeInfo) error {
-// 	return errors.New("SaveNode is deprecated, use Consul")
-// }
+// ListUserPasskeys 获取用户的所有 Passkey
+func (s *PostgreSQLStore) ListUserPasskeys(ctx context.Context, userID string) ([]*Passkey, error) {
+	query := `
+		SELECT p.credential_id, p.public_key, p.device_name, p.created_at
+		FROM passkeys p
+		INNER JOIN user_credentials uc ON p.credential_id = uc.credential_id
+		WHERE uc.user_id = $1::uuid
+		ORDER BY uc.created_at DESC
+	`
 
-// GetNode 获取节点信息 (Deprecated: Use Consul)
-// func (s *PostgreSQLStore) GetNode(ctx context.Context, nodeID string) (*NodeInfo, error) {
-// 	return nil, errors.New("GetNode is deprecated, use Consul")
-// }
+	rows, err := s.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to query user passkeys")
+	}
+	defer rows.Close()
 
-// UpdateNode 更新节点信息 (Deprecated: Use Consul)
-// func (s *PostgreSQLStore) UpdateNode(ctx context.Context, node *NodeInfo) error {
-// 	return errors.New("UpdateNode is deprecated, use Consul")
-// }
+	var passkeys []*Passkey
+	for rows.Next() {
+		var passkey Passkey
+		if err := rows.Scan(
+			&passkey.CredentialID, &passkey.PublicKey, &passkey.DeviceName, &passkey.CreatedAt,
+		); err != nil {
+			return nil, errors.Wrap(err, "failed to scan passkey")
+		}
+		passkeys = append(passkeys, &passkey)
+	}
 
-// UpdateNodeHeartbeat 更新节点心跳 (Deprecated: Use Consul)
-// func (s *PostgreSQLStore) UpdateNodeHeartbeat(ctx context.Context, nodeID string) error {
-// 	return errors.New("UpdateNodeHeartbeat is deprecated, use Consul")
-// }
+	return passkeys, nil
+}
+
+// SaveUserCredential 保存用户凭证关联
+func (s *PostgreSQLStore) SaveUserCredential(ctx context.Context, userID string, credentialID string, deviceName string) error {
+	query := `
+		INSERT INTO user_credentials (user_id, credential_id, device_name, created_at)
+		VALUES ($1::uuid, $2, $3, NOW())
+		ON CONFLICT (user_id, credential_id) DO UPDATE SET
+			device_name = EXCLUDED.device_name,
+			last_used_at = NOW()
+	`
+
+	_, err := s.db.ExecContext(ctx, query, userID, credentialID, deviceName)
+	if err != nil {
+		return errors.Wrap(err, "failed to save user credential")
+	}
+
+	return nil
+}
+
+// 已废弃的节点管理方法已删除，现在使用 Consul 进行节点发现和管理
 
 // SaveSigningSession 保存签名会话
 func (s *PostgreSQLStore) SaveSigningSession(ctx context.Context, session *SigningSession) error {

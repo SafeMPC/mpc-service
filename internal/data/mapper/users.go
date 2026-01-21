@@ -1,8 +1,8 @@
 package mapper
 
 import (
-	"github.com/kashguard/go-mpc-infra/internal/data/dto"
-	"github.com/kashguard/go-mpc-infra/internal/models"
+	"github.com/SafeMPC/mpc-service/internal/data/dto"
+	"github.com/SafeMPC/mpc-service/internal/models"
 )
 
 func LocalAppUserProfileToDTO(appUserProfile *models.AppUserProfile) dto.AppUserProfile {

@@ -1,0 +1,100 @@
+definitions:
+  # WebAuthn 注册请求
+  PostWebAuthnRegisterBeginPayload:
+    type: object
+    required: [user_id, user_name]
+    properties:
+      user_id:
+        type: string
+        example: "user-123"
+        description: "用户唯一标识"
+      user_name:
+        type: string
+        example: "john@example.com"
+        description: "用户名（通常是邮箱）"
+      display_name:
+        type: string
+        example: "John Doe"
+        description: "显示名称"
+
+  # WebAuthn 注册开始响应
+  WebAuthnRegisterBeginResponse:
+    type: object
+    required: [options, session_data]
+    properties:
+      options:
+        type: object
+        description: "WebAuthn CredentialCreationOptions"
+      session_data:
+        type: string
+        description: "会话数据（Base64URL 编码的 challenge）"
+
+  # WebAuthn 注册完成请求
+  PostWebAuthnRegisterFinishPayload:
+    type: object
+    required: [user_id, user_name, session_data, response]
+    properties:
+      user_id:
+        type: string
+        example: "user-123"
+      user_name:
+        type: string
+        example: "john@example.com"
+      session_data:
+        type: string
+        description: "从 begin 接口返回的 session_data"
+      response:
+        type: object
+        description: "前端 navigator.credentials.create() 的返回结果"
+
+  # WebAuthn 登录开始请求
+  PostWebAuthnLoginBeginPayload:
+    type: object
+    required: [user_id]
+    properties:
+      user_id:
+        type: string
+        example: "user-123"
+
+  # WebAuthn 登录开始响应
+  WebAuthnLoginBeginResponse:
+    type: object
+    required: [options, session_data]
+    properties:
+      options:
+        type: object
+        description: "WebAuthn CredentialRequestOptions"
+      session_data:
+        type: string
+        description: "会话数据（Base64URL 编码的 challenge）"
+
+  # WebAuthn 登录完成请求
+  PostWebAuthnLoginFinishPayload:
+    type: object
+    required: [user_id, session_data, response]
+    properties:
+      user_id:
+        type: string
+        example: "user-123"
+      session_data:
+        type: string
+        description: "从 begin 接口返回的 session_data"
+      response:
+        type: object
+        description: "前端 navigator.credentials.get() 的返回结果"
+
+  # WebAuthn 登录响应
+  WebAuthnLoginResponse:
+    type: object
+    required: [success, access_token]
+    properties:
+      success:
+        type: boolean
+        example: true
+      access_token:
+        type: string
+        description: "访问令牌（JWT）"
+      expires_in:
+        type: integer
+        description: "令牌过期时间（秒）"
+        example: 3600

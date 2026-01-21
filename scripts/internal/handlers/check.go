@@ -14,10 +14,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kashguard/go-mpc-infra/internal/api"
-	"github.com/kashguard/go-mpc-infra/internal/api/router"
-	"github.com/kashguard/go-mpc-infra/internal/config"
-	"github.com/kashguard/go-mpc-infra/internal/types"
+	"github.com/SafeMPC/mpc-service/internal/api"
+	"github.com/SafeMPC/mpc-service/internal/api/router"
+	"github.com/SafeMPC/mpc-service/internal/config"
+	"github.com/SafeMPC/mpc-service/internal/types"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

@@ -39,6 +39,8 @@ type CreateKeyRequest struct {
 	ChainType   string
 	Description string
 	Tags        map[string]string
+	// 2-of-2 模式：手机节点ID（P1）
+	MobileNodeID string
 }
 
 // KeyFilter 密钥过滤条件

@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/jordan-wright/email"
-	"github.com/kashguard/go-mpc-infra/internal/config"
-	"github.com/kashguard/go-mpc-infra/internal/mailer"
-	"github.com/kashguard/go-mpc-infra/internal/mailer/transport"
+	"github.com/SafeMPC/mpc-service/internal/config"
+	"github.com/SafeMPC/mpc-service/internal/mailer"
+	"github.com/SafeMPC/mpc-service/internal/mailer/transport"
 )
 
 const (

@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kashguard/go-mpc-infra/internal/config"
-	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
-	pb "github.com/kashguard/go-mpc-infra/pb/mpc/v1"
+	"github.com/SafeMPC/mpc-service/internal/config"
+	"github.com/SafeMPC/mpc-service/internal/mpc/node"
+	pb "github.com/SafeMPC/mpc-service/pb/mpc/v1"
 	"github.com/kashguard/tss-lib/tss"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"

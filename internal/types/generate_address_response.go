@@ -24,15 +24,14 @@ type GenerateAddressResponse struct {
 	// Required: true
 	Address *string `json:"address"`
 
-	// chain type
-	// Example: ethereum
-	// Required: true
-	ChainType *string `json:"chain_type"`
+	// derivation path
+	// Example: m/44'/60'/0'/0/0
+	DerivationPath string `json:"derivation_path,omitempty"`
 
-	// key id
-	// Example: key-1234567890abcdef
+	// public key
+	// Example: 0x04...
 	// Required: true
-	KeyID *string `json:"key_id"`
+	PublicKey *string `json:"public_key"`
 }
 
 // Validate validates this generate address response
@@ -43,11 +42,7 @@ func (m *GenerateAddressResponse) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
-	if err := m.validateChainType(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateKeyID(formats); err != nil {
+	if err := m.validatePublicKey(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -66,18 +61,9 @@ func (m *GenerateAddressResponse) validateAddress(formats strfmt.Registry) error
 	return nil
 }
 
-func (m *GenerateAddressResponse) validateChainType(formats strfmt.Registry) error {
+func (m *GenerateAddressResponse) validatePublicKey(formats strfmt.Registry) error {
 
-	if err := validate.Required("chain_type", "body", m.ChainType); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *GenerateAddressResponse) validateKeyID(formats strfmt.Registry) error {
-
-	if err := validate.Required("key_id", "body", m.KeyID); err != nil {
+	if err := validate.Required("public_key", "body", m.PublicKey); err != nil {
 		return err
 	}
 

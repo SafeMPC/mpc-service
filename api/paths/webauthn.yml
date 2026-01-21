@@ -1,0 +1,165 @@
+paths:
+  # WebAuthn 注册开始
+  /v1/auth/webauthn/register/begin:
+    post:
+      summary: "开始 WebAuthn 注册"
+      description: "生成 WebAuthn 注册选项和 challenge"
+      tags:
+        - WebAuthn
+      operationId: postWebAuthnRegisterBegin
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/postWebAuthnRegisterBeginPayload"
+      responses:
+        "200":
+          description: "注册选项"
+          schema:
+            $ref: "#/definitions/webAuthnRegisterBeginResponse"
+        "400":
+          description: "Bad Request"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+        "500":
+          description: "Internal Server Error"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+
+  # WebAuthn 注册完成
+  /v1/auth/webauthn/register/finish:
+    post:
+      summary: "完成 WebAuthn 注册"
+      description: "验证前端返回的凭证并保存"
+      tags:
+        - WebAuthn
+      operationId: postWebAuthnRegisterFinish
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/postWebAuthnRegisterFinishPayload"
+      responses:
+        "200":
+          description: "注册成功"
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: true
+              message:
+                type: string
+                example: "Passkey registered successfully"
+        "400":
+          description: "Bad Request"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+        "500":
+          description: "Internal Server Error"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+
+  # WebAuthn 登录开始
+  /v1/auth/webauthn/login/begin:
+    post:
+      summary: "开始 WebAuthn 登录"
+      description: "生成 WebAuthn 登录选项和 challenge"
+      tags:
+        - WebAuthn
+      operationId: postWebAuthnLoginBegin
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/postWebAuthnLoginBeginPayload"
+      responses:
+        "200":
+          description: "登录选项"
+          schema:
+            $ref: "#/definitions/webAuthnLoginBeginResponse"
+        "400":
+          description: "Bad Request"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+        "404":
+          description: "用户不存在或无凭证"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+        "500":
+          description: "Internal Server Error"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+
+  # WebAuthn 登录完成
+  /v1/auth/webauthn/login/finish:
+    post:
+      summary: "完成 WebAuthn 登录"
+      description: "验证前端返回的断言并生成访问令牌"
+      tags:
+        - WebAuthn
+      operationId: postWebAuthnLoginFinish
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/postWebAuthnLoginFinishPayload"
+      responses:
+        "200":
+          description: "登录成功"
+          schema:
+            $ref: "#/definitions/webAuthnLoginResponse"
+        "400":
+          description: "Bad Request"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+        "401":
+          description: "认证失败"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+        "500":
+          description: "Internal Server Error"
+          schema:
+            type: object
+            properties:
+              error:
+                type: string

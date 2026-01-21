@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kashguard/go-mpc-infra/internal/util"
+	"github.com/SafeMPC/mpc-service/internal/util"
 	"golang.org/x/sys/unix"
 )
 

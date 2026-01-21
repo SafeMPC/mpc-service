@@ -1,0 +1,270 @@
+definitions:
+  # ============================================
+  # 钱包管理类型定义
+  # ============================================
+  
+  # WebAuthn 断言（用于关键操作二次验证）
+  WebAuthnAssertion:
+    type: object
+    required: [credential_id, authenticator_data, client_data_json, signature]
+    properties:
+      credential_id:
+        type: string
+        format: byte
+        description: "WebAuthn Credential ID (base64)"
+        example: "Y3JlZGVudGlhbC1pZA=="
+      authenticator_data:
+        type: string
+        format: byte
+        description: "Authenticator Data (base64)"
+      client_data_json:
+        type: string
+        format: byte
+        description: "Client Data JSON (base64)"
+      signature:
+        type: string
+        format: byte
+        description: "Signature (base64)"
+
+  # 创建钱包请求
+  PostCreateWalletPayload:
+    type: object
+    required: [algorithm, curve, chain_type, webauthn_assertion]
+    properties:
+      algorithm:
+        type: string
+        enum: [ECDSA, EdDSA]
+        example: "ECDSA"
+        description: "签名算法"
+      curve:
+        type: string
+        enum: [secp256k1, ed25519]
+        example: "secp256k1"
+        description: "椭圆曲线"
+      chain_type:
+        type: string
+        enum: [ethereum, bitcoin, solana, polkadot]
+        example: "ethereum"
+        description: "区块链类型"
+      webauthn_assertion:
+        $ref: "#/definitions/WebAuthnAssertion"
+
+  # 创建钱包响应
+  CreateWalletResponse:
+    type: object
+    required: [wallet_id, dkg_session_id, status, websocket_url]
+    properties:
+      wallet_id:
+        type: string
+        format: uuid
+        description: "钱包 ID"
+      dkg_session_id:
+        type: string
+        format: uuid
+        description: "DKG 会话 ID"
+      status:
+        type: string
+        enum: [pending, running, completed, failed]
+        example: "pending"
+        description: "会话状态"
+      websocket_url:
+        type: string
+        example: "ws://localhost:8080/v1/ws?token=xxx"
+        description: "WebSocket 连接 URL（用于接收 DKG 协议消息）"
+
+  # 钱包列表响应
+  ListWalletsResponse:
+    type: object
+    required: [wallets, total, limit, offset]
+    properties:
+      wallets:
+        type: array
+        items:
+          $ref: "#/definitions/WalletSummary"
+      total:
+        type: integer
+        description: "总数"
+      limit:
+        type: integer
+        description: "每页数量"
+      offset:
+        type: integer
+        description: "偏移量"
+
+  # 钱包摘要
+  WalletSummary:
+    type: object
+    properties:
+      wallet_id:
+        type: string
+        format: uuid
+      address:
+        type: string
+        example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+      public_key:
+        type: string
+        example: "0x04..."
+      chain_type:
+        type: string
+        example: "ethereum"
+      algorithm:
+        type: string
+        example: "ECDSA"
+      curve:
+        type: string
+        example: "secp256k1"
+      created_at:
+        type: string
+        format: date-time
+
+  # 钱包详情响应
+  WalletResponse:
+    type: object
+    required: [wallet_id, address, public_key, chain_type]
+    properties:
+      wallet_id:
+        type: string
+        format: uuid
+      address:
+        type: string
+        example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+      public_key:
+        type: string
+        example: "0x04..."
+        description: "公钥（hex）"
+      chain_type:
+        type: string
+        example: "ethereum"
+      algorithm:
+        type: string
+        example: "ECDSA"
+      curve:
+        type: string
+        example: "secp256k1"
+      threshold:
+        type: integer
+        example: 2
+      total_nodes:
+        type: integer
+        example: 2
+      created_at:
+        type: string
+        format: date-time
+
+  # 生成地址响应
+  GenerateAddressResponse:
+    type: object
+    required: [address, public_key]
+    properties:
+      address:
+        type: string
+        example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+      derivation_path:
+        type: string
+        example: "m/44'/60'/0'/0/0"
+      public_key:
+        type: string
+        example: "0x04..."
+
+  # 余额响应
+  WalletBalanceResponse:
+    type: object
+    required: [balance, symbol, decimals]
+    properties:
+      balance:
+        type: string
+        example: "1.5"
+        description: "余额（字符串，避免精度损失）"
+      symbol:
+        type: string
+        example: "ETH"
+      decimals:
+        type: integer
+        example: 18
+      chain_type:
+        type: string
+        example: "ethereum"
+
+  # 交易历史响应
+  TransactionsResponse:
+    type: object
+    required: [transactions, total]
+    properties:
+      transactions:
+        type: array
+        items:
+          $ref: "#/definitions/Transaction"
+      total:
+        type: integer
+      limit:
+        type: integer
+      offset:
+        type: integer
+
+  # 交易详情
+  Transaction:
+    type: object
+    properties:
+      tx_hash:
+        type: string
+        example: "0x..."
+      from:
+        type: string
+        example: "0x..."
+      to:
+        type: string
+        example: "0x..."
+      value:
+        type: string
+        example: "1.5"
+      status:
+        type: string
+        enum: [pending, confirmed, failed]
+        example: "confirmed"
+      block_number:
+        type: integer
+      timestamp:
+        type: string
+        format: date-time
+
+  # 签名交易请求
+  PostSignTransactionPayload:
+    type: object
+    required: [message_hex, chain_type, webauthn_assertion]
+    properties:
+      message_hex:
+        type: string
+        example: "0xf86c..."
+        description: "待签名的消息（hex）"
+      chain_type:
+        type: string
+        enum: [ethereum, bitcoin, solana]
+        example: "ethereum"
+      derivation_path:
+        type: string
+        example: "m/44'/60'/0'/0/0"
+        description: "派生路径（可选）"
+      webauthn_assertion:
+        $ref: "#/definitions/WebAuthnAssertion"
+
+  # 签名交易响应
+  SignTransactionResponse:
+    type: object
+    required: [session_id, status, websocket_url]
+    properties:
+      session_id:
+        type: string
+        format: uuid
+        description: "签名会话 ID"
+      status:
+        type: string
+        enum: [pending, signing, completed, failed]
+        example: "pending"
+      websocket_url:
+        type: string
+        example: "ws://localhost:8080/v1/ws?token=xxx"
+        description: "WebSocket 连接 URL（用于协议消息交换）"
+      estimated_time:
+        type: string
+        example: "2s"
+        description: "预计完成时间"

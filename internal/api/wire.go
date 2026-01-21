@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/google/wire"
-	"github.com/kashguard/go-mpc-infra/internal/auth"
-	"github.com/kashguard/go-mpc-infra/internal/config"
-	"github.com/kashguard/go-mpc-infra/internal/data/local"
-	"github.com/kashguard/go-mpc-infra/internal/metrics"
+	"github.com/SafeMPC/mpc-service/internal/auth"
+	"github.com/SafeMPC/mpc-service/internal/config"
+	"github.com/SafeMPC/mpc-service/internal/data/local"
+	"github.com/SafeMPC/mpc-service/internal/metrics"
 )
 
 // INJECTORS - https://github.com/google/wire/blob/main/docs/guide.md#injectors
@@ -52,14 +52,13 @@ var mpcServiceSet = wire.NewSet(
 	NewDKGServiceProvider,
 	NewKeyServiceProvider,
 	NewSigningServiceProvider,
-	NewCoordinatorServiceProvider,
+	NewMPCServiceProvider,
 	// Service discovery
 	NewMPCDiscoveryService,
 	// Backup & Recovery & Infra
 	NewBackupService,
 	NewRecoveryService,
 	NewBackupStore,
-	NewInfrastructureServer,
 )
 
 // InitNewServer returns a new Server instance.

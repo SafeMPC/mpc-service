@@ -3,7 +3,7 @@ package provider
 import (
 	"errors"
 
-	"github.com/kashguard/go-mpc-infra/internal/push"
+	"github.com/SafeMPC/mpc-service/internal/push"
 	"github.com/rs/zerolog/log"
 )
 

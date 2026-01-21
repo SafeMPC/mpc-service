@@ -3,8 +3,8 @@ package fixtures_test
 import (
 	"testing"
 
-	data "github.com/kashguard/go-mpc-infra/internal/data/fixtures"
-	"github.com/kashguard/go-mpc-infra/internal/models"
+	data "github.com/SafeMPC/mpc-service/internal/data/fixtures"
+	"github.com/SafeMPC/mpc-service/internal/models"
 	"github.com/stretchr/testify/assert"
 )
 

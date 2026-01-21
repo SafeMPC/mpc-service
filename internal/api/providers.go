@@ -8,24 +8,23 @@ import (
 	"time"
 
 	"github.com/dropbox/godropbox/time2"
-	"github.com/kashguard/go-mpc-infra/internal/auth"
-	"github.com/kashguard/go-mpc-infra/internal/config"
-	"github.com/kashguard/go-mpc-infra/internal/i18n"
-	"github.com/kashguard/go-mpc-infra/internal/infra/backup"
-	"github.com/kashguard/go-mpc-infra/internal/infra/coordinator"
-	"github.com/kashguard/go-mpc-infra/internal/infra/discovery"
-	infra_grpc "github.com/kashguard/go-mpc-infra/internal/infra/grpc"
-	"github.com/kashguard/go-mpc-infra/internal/infra/key"
-	"github.com/kashguard/go-mpc-infra/internal/infra/session"
-	"github.com/kashguard/go-mpc-infra/internal/infra/signing"
-	"github.com/kashguard/go-mpc-infra/internal/infra/storage"
-	"github.com/kashguard/go-mpc-infra/internal/mailer"
-	mpcgrpc "github.com/kashguard/go-mpc-infra/internal/mpc/grpc"
-	"github.com/kashguard/go-mpc-infra/internal/mpc/node"
-	"github.com/kashguard/go-mpc-infra/internal/mpc/protocol"
-	"github.com/kashguard/go-mpc-infra/internal/persistence"
-	"github.com/kashguard/go-mpc-infra/internal/push"
-	"github.com/kashguard/go-mpc-infra/internal/push/provider"
+	"github.com/SafeMPC/mpc-service/internal/auth"
+	"github.com/SafeMPC/mpc-service/internal/config"
+	"github.com/SafeMPC/mpc-service/internal/i18n"
+	"github.com/SafeMPC/mpc-service/internal/infra/backup"
+	"github.com/SafeMPC/mpc-service/internal/infra/service"
+	"github.com/SafeMPC/mpc-service/internal/infra/discovery"
+	"github.com/SafeMPC/mpc-service/internal/infra/key"
+	"github.com/SafeMPC/mpc-service/internal/infra/session"
+	"github.com/SafeMPC/mpc-service/internal/infra/signing"
+	"github.com/SafeMPC/mpc-service/internal/infra/storage"
+	"github.com/SafeMPC/mpc-service/internal/mailer"
+	mpcgrpc "github.com/SafeMPC/mpc-service/internal/mpc/grpc"
+	"github.com/SafeMPC/mpc-service/internal/mpc/node"
+	"github.com/SafeMPC/mpc-service/internal/mpc/protocol"
+	"github.com/SafeMPC/mpc-service/internal/persistence"
+	"github.com/SafeMPC/mpc-service/internal/push"
+	"github.com/SafeMPC/mpc-service/internal/push/provider"
 	"github.com/kashguard/tss-lib/tss"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
@@ -343,17 +342,6 @@ func NewKeyServiceProvider(
 	return key.NewService(metadataStore, keyShareStorage, protocolEngine, dkgService, backupService)
 }
 
-func NewInfrastructureServer(
-	cfg config.Server,
-	keyService *key.Service,
-	signingService *signing.Service,
-	backupService backup.SSSBackupService,
-	recoveryService *backup.RecoveryService,
-	store backup.Store,
-	nodeManager *node.Manager,
-) *infra_grpc.InfrastructureServer {
-	return infra_grpc.NewInfrastructureServer(&cfg, keyService, signingService, backupService, recoveryService, store, nodeManager)
-}
 
 func NewSigningServiceProvider(keyService *key.Service, protocolEngine protocol.Engine, sessionManager *session.Manager, nodeDiscovery *node.Discovery, cfg config.Server, grpcClient *mpcgrpc.GRPCClient) *signing.Service {
 	defaultProtocol := cfg.MPC.DefaultProtocol
@@ -363,24 +351,24 @@ func NewSigningServiceProvider(keyService *key.Service, protocolEngine protocol.
 	return signing.NewService(keyService, protocolEngine, sessionManager, nodeDiscovery, defaultProtocol, grpcClient)
 }
 
-func NewCoordinatorServiceProvider(
+func NewMPCServiceProvider(
 	cfg config.Server,
 	keyService *key.Service,
 	sessionManager *session.Manager,
 	nodeDiscovery *node.Discovery,
 	protocolEngine protocol.Engine,
 	grpcClient *mpcgrpc.GRPCClient,
-) *coordinator.Service {
-	// coordinator.Service 需要 GRPCClient 接口，mpcgrpc.GRPCClient 实现了该接口
+) *service.Service {
+	// service.Service 需要 GRPCClient 接口，mpcgrpc.GRPCClient 实现了该接口
 	// 记录配置的 NodeID（用于调试）
 	nodeID := cfg.MPC.NodeID
 	log.Error().
 		Str("mpc_node_id", nodeID).
 		Bool("is_empty", nodeID == "").
 		Str("mpc_node_type", cfg.MPC.NodeType).
-		Msg("NewCoordinatorServiceProvider: creating coordinator service with NodeID")
+		Msg("NewMPCServiceProvider: creating MPC service with NodeID")
 
-	return coordinator.NewService(keyService, sessionManager, nodeDiscovery, protocolEngine, grpcClient, nodeID)
+	return service.NewService(keyService, sessionManager, nodeDiscovery, protocolEngine, grpcClient, nodeID)
 }
 
 // ✅ 删除旧的 internal/grpc 相关 providers（已废弃，已统一到 internal/mpc/grpc）

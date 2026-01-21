@@ -1,6 +1,6 @@
 package main
 
-import "github.com/kashguard/go-mpc-infra/cmd"
+import "github.com/SafeMPC/mpc-service/cmd"
 
 func main() {
 	cmd.Execute()
