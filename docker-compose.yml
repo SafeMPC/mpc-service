@@ -105,6 +105,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # 允许访问宿主机服务（用于连接 Signer）
 
   # ============================================
   # 注意：根据 2-of-2 架构设计
