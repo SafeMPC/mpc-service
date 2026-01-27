@@ -8,10 +8,8 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/google/uuid"
-	"github.com/SafeMPC/mpc-service/internal/infra/backup"
 	"github.com/SafeMPC/mpc-service/internal/infra/storage"
 	"github.com/SafeMPC/mpc-service/internal/mpc/chain"
-	"github.com/SafeMPC/mpc-service/internal/mpc/protocol"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 )
@@ -20,9 +18,7 @@ import (
 type Service struct {
 	metadataStore     storage.MetadataStore
 	keyShareStorage   storage.KeyShareStorage
-	protocolEngine    protocol.Engine
 	dkgService        *DKGService
-	backupService     backup.SSSBackupService
 	derivationService *DerivationService
 }
 
@@ -30,18 +26,42 @@ type Service struct {
 func NewService(
 	metadataStore storage.MetadataStore,
 	keyShareStorage storage.KeyShareStorage,
-	protocolEngine protocol.Engine,
 	dkgService *DKGService,
-	backupService backup.SSSBackupService,
 ) *Service {
 	return &Service{
 		metadataStore:     metadataStore,
 		keyShareStorage:   keyShareStorage,
-		protocolEngine:    protocolEngine,
 		dkgService:        dkgService,
-		backupService:     backupService,
 		derivationService: NewDerivationService(),
 	}
+}
+
+// CreateKeyPlaceholder 创建密钥占位符（不执行 DKG）
+// 用于在创建 DKG 会话前先创建 key 记录，满足外键约束
+func (s *Service) CreateKeyPlaceholder(ctx context.Context, req *CreateKeyRequest) error {
+	now := time.Now()
+	pendingKey := &storage.KeyMetadata{
+		KeyID:       req.KeyID,
+		PublicKey:   "", // 暂时为空，DKG 完成后更新
+		Algorithm:   req.Algorithm,
+		Curve:       req.Curve,
+		ChainCode:   "",
+		Threshold:   req.Threshold,
+		TotalNodes:  req.TotalNodes,
+		ChainType:   req.ChainType,
+		Address:     "",
+		Status:      "Pending",
+		Description: req.Description,
+		Tags:        req.Tags,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+
+	if err := s.metadataStore.SaveKeyMetadata(ctx, pendingKey); err != nil {
+		return errors.Wrap(err, "failed to save pending key metadata")
+	}
+
+	return nil
 }
 
 // GetKey 获取密钥信息
@@ -184,7 +204,7 @@ func (s *Service) GenerateAddress(ctx context.Context, keyID string, chainType s
 	case "bitcoin", "btc":
 		adapter = chain.NewBitcoinAdapter(&chaincfg.MainNetParams)
 	case "ethereum", "eth", "evm":
-		adapter = chain.NewEthereumAdapter(big.NewInt(1)) // mainnet
+		adapter = chain.NewEthereumAdapter(big.NewInt(1), "") // mainnet, rpcEndpoint 暂时为空
 	case "solana", "sol":
 		adapter = chain.NewSolanaAdapter()
 	default:
@@ -280,7 +300,8 @@ func (s *Service) CreateRootKey(ctx context.Context, req *CreateRootKeyRequest) 
 	}
 
 	// 执行 DKG
-	var dkgResp *protocol.KeyGenResponse
+	// 注意：Service 节点不执行协议计算，只负责协调
+	var dkgResp interface{}
 	var err error
 	if s.dkgService != nil {
 		dkgResp, err = s.dkgService.ExecuteDKG(ctx, keyID, dkgReq)
@@ -295,14 +316,19 @@ func (s *Service) CreateRootKey(ctx context.Context, req *CreateRootKeyRequest) 
 		return nil, errors.New("DKG service is required for root key creation")
 	}
 
-	// 存储密钥分片
-	for nodeID, share := range dkgResp.KeyShares {
-		// 存储所有参与节点的分片
-		// server-proxy-1, server-proxy-2 用于在线签名
-		// server-backup-1 用于灾备恢复 (也存储在DB中，但签名时不加载)
-		if err := s.keyShareStorage.StoreKeyShare(ctx, keyID, nodeID, share.Share); err != nil {
-			return nil, errors.Wrapf(err, "failed to store key share for node %s", nodeID)
+	// 注意：Service 节点不存储密钥分片
+	// 密钥分片应该存储在 Signer 节点和移动端
+	// 这里只保存公钥信息
+
+	// 从 dkgResp 中提取公钥（dkgResp 是 map[string]interface{}）
+	var publicKeyHex string
+	if respMap, ok := dkgResp.(map[string]interface{}); ok {
+		if pk, ok := respMap["public_key"].(string); ok {
+			publicKeyHex = pk
 		}
+	}
+	if publicKeyHex == "" {
+		return nil, errors.New("failed to get public key from DKG response")
 	}
 
 	// 保存根密钥元数据
@@ -315,7 +341,7 @@ func (s *Service) CreateRootKey(ctx context.Context, req *CreateRootKeyRequest) 
 
 	rootKeyMetadata := &RootKeyMetadata{
 		KeyID:       keyID,
-		PublicKey:   dkgResp.PublicKey.Hex,
+		PublicKey:   publicKeyHex,
 		Algorithm:   req.Algorithm,
 		Curve:       req.Curve,
 		ChainCode:   chainCodeHex,
@@ -352,55 +378,6 @@ func (s *Service) CreateRootKey(ctx context.Context, req *CreateRootKeyRequest) 
 		return nil, errors.Wrap(err, "failed to update root key metadata")
 	}
 
-	// 集成 SSS 备份服务：对每个 MPC 分片分别进行 SSS 备份
-	if s.backupService != nil {
-		backupStorage, ok := s.metadataStore.(storage.BackupShareStorage)
-		if !ok {
-			log.Warn().Msg("MetadataStore does not implement BackupShareStorage, skipping SSS backup")
-		} else {
-			for nodeID, mpcShare := range dkgResp.KeyShares {
-				// 对单个MPC分片进行SSS备份（不是完整密钥）
-				backupShares, err := s.backupService.GenerateBackupShares(ctx, mpcShare.Share, 3, 5)
-				if err != nil {
-					log.Error().
-						Err(err).
-						Str("key_id", keyID).
-						Str("node_id", nodeID).
-						Msg("Failed to generate backup shares for MPC share")
-					// 继续处理其他分片，不中断流程
-					continue
-				}
-
-				log.Info().
-					Str("key_id", keyID).
-					Str("node_id", nodeID).
-					Int("generated_shares", len(backupShares)).
-					Msg("Generated SSS backup shares for MPC share")
-
-				// 存储备份分片
-				for i, backupShare := range backupShares {
-					shareIndex := i + 1
-
-					// 保存备份分片到存储
-					if err := backupStorage.SaveBackupShare(ctx, keyID, nodeID, shareIndex, backupShare.ShareData); err != nil {
-						log.Error().
-							Err(err).
-							Str("key_id", keyID).
-							Str("node_id", nodeID).
-							Int("share_index", shareIndex).
-							Msg("Failed to save backup share")
-						// 继续处理其他备份分片
-						continue
-					}
-					log.Info().
-						Str("key_id", keyID).
-						Str("node_id", nodeID).
-						Int("share_index", shareIndex).
-						Msg("Saved SSS backup share")
-				}
-			}
-		}
-	}
 
 	return rootKeyMetadata, nil
 }
@@ -572,7 +549,7 @@ func (s *Service) DeriveWalletKey(ctx context.Context, req *DeriveWalletKeyReque
 	case "bitcoin", "btc":
 		adapter = chain.NewBitcoinAdapter(&chaincfg.MainNetParams)
 	case "ethereum", "eth", "evm":
-		adapter = chain.NewEthereumAdapter(big.NewInt(1)) // mainnet
+		adapter = chain.NewEthereumAdapter(big.NewInt(1), "") // mainnet, rpcEndpoint 暂时为空
 	case "solana", "sol":
 		adapter = chain.NewSolanaAdapter()
 	default:
@@ -657,131 +634,10 @@ func (s *Service) RestoreKeyShare(ctx context.Context, keyID, nodeID string, sha
 }
 
 // RotateKey 密钥轮换（Resharing）
+// 注意：在 V2 架构中，Service 节点不支持密钥轮换功能
+// 密钥轮换应该在 Signer 节点完成
 func (s *Service) RotateKey(ctx context.Context, keyID string, oldNodeIDs []string, newNodeIDs []string, oldThreshold int, newThreshold int) (*KeyMetadata, error) {
-	// 1. 获取密钥元数据
-	key, err := s.GetKey(ctx, keyID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get key metadata")
-	}
-
-	// 2. 验证参数
-	if oldThreshold == 0 {
-		oldThreshold = key.Threshold
-	}
-	if newThreshold == 0 {
-		newThreshold = key.Threshold // 默认不改变阈值
-	}
-
-	// 3. 执行 Resharing (需要 Coordinator 协调，这里假设通过 DKGService 或类似机制)
-	// TODO: 实现 ResharingService 类似于 DKGService
-	// 目前我们假设 DKGService 扩展了 ExecuteResharing 方法
-	// 或者直接调用 protocolEngine.ExecuteResharing (如果是在参与者节点上)
-	// 但这里是 KeyService，通常运行在 Coordinator 或 Server 上
-
-	// 如果有 DKGService，使用它来协调 Resharing
-	if s.dkgService != nil {
-		// 使用 DKGService 执行 Resharing
-		resp, err := s.dkgService.ExecuteResharing(ctx, keyID, oldNodeIDs, newNodeIDs, oldThreshold, newThreshold)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to execute resharing via DKGService")
-		}
-
-		// 4. 更新存储 (如果 DKGService 返回了 KeyShares，说明本节点参与了计算)
-		// 注意：如果本节点是 Coordinator 但不是 Participant，KeyShares 可能为空
-		if len(resp.KeyShares) > 0 {
-			for nodeID, share := range resp.KeyShares {
-				if err := s.keyShareStorage.StoreKeyShare(ctx, keyID, nodeID, share.Share); err != nil {
-					return nil, errors.Wrapf(err, "failed to store new key share for node %s", nodeID)
-				}
-			}
-		}
-
-		// 5. 更新元数据
-		key.Threshold = newThreshold
-		key.TotalNodes = len(newNodeIDs)
-		key.UpdatedAt = time.Now()
-		// PublicKey 应该保持不变
-		if resp.PublicKey != nil && resp.PublicKey.Hex != key.PublicKey {
-			log.Warn().Str("old_pub", key.PublicKey).Str("new_pub", resp.PublicKey.Hex).Msg("Resharing resulted in different public key (unexpected!)")
-		}
-
-		storageKey := &storage.KeyMetadata{
-			KeyID:        key.KeyID,
-			PublicKey:    key.PublicKey,
-			Algorithm:    key.Algorithm,
-			Curve:        key.Curve,
-			Threshold:    key.Threshold,
-			TotalNodes:   key.TotalNodes,
-			ChainType:    key.ChainType,
-			Address:      key.Address,
-			Status:       key.Status,
-			Description:  key.Description,
-			Tags:         key.Tags,
-			CreatedAt:    key.CreatedAt,
-			UpdatedAt:    key.UpdatedAt,
-			DeletionDate: key.DeletionDate,
-		}
-
-		if err := s.metadataStore.UpdateKeyMetadata(ctx, storageKey); err != nil {
-			return nil, errors.Wrap(err, "failed to update key metadata")
-		}
-
-		return key, nil
-	}
-
-	// 如果没有 DKGService，尝试直接使用 ProtocolEngine (单机或测试模式)
-	// 需要检查 ProtocolEngine 是否支持 Resharing
-	resharer, ok := s.protocolEngine.(interface {
-		ExecuteResharing(ctx context.Context, keyID string, oldNodeIDs []string, newNodeIDs []string, oldThreshold int, newThreshold int) (*protocol.KeyGenResponse, error)
-	})
-	if !ok {
-		return nil, errors.New("ProtocolEngine does not support Resharing")
-	}
-
-	resp, err := resharer.ExecuteResharing(ctx, keyID, oldNodeIDs, newNodeIDs, oldThreshold, newThreshold)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute resharing")
-	}
-
-	// 4. 更新存储
-	// 存储新分片
-	for nodeID, share := range resp.KeyShares {
-		if err := s.keyShareStorage.StoreKeyShare(ctx, keyID, nodeID, share.Share); err != nil {
-			return nil, errors.Wrapf(err, "failed to store new key share for node %s", nodeID)
-		}
-	}
-
-	// 5. 更新元数据
-	key.Threshold = newThreshold
-	key.TotalNodes = len(newNodeIDs)
-	key.UpdatedAt = time.Now()
-	// PublicKey 应该保持不变，但可以校验一下
-	if resp.PublicKey.Hex != key.PublicKey {
-		log.Warn().Str("old_pub", key.PublicKey).Str("new_pub", resp.PublicKey.Hex).Msg("Resharing resulted in different public key (unexpected!)")
-	}
-
-	storageKey := &storage.KeyMetadata{
-		KeyID:        key.KeyID,
-		PublicKey:    key.PublicKey,
-		Algorithm:    key.Algorithm,
-		Curve:        key.Curve,
-		Threshold:    key.Threshold,
-		TotalNodes:   key.TotalNodes,
-		ChainType:    key.ChainType,
-		Address:      key.Address,
-		Status:       key.Status,
-		Description:  key.Description,
-		Tags:         key.Tags,
-		CreatedAt:    key.CreatedAt,
-		UpdatedAt:    key.UpdatedAt,
-		DeletionDate: key.DeletionDate,
-	}
-
-	if err := s.metadataStore.UpdateKeyMetadata(ctx, storageKey); err != nil {
-		return nil, errors.Wrap(err, "failed to update key metadata")
-	}
-
-	return key, nil
+	return nil, errors.New("key rotation (Resharing) is not supported in Service node. This feature should be implemented in Signer nodes")
 }
 
 // DeriveWalletKeyByPath 派生钱包密钥（支持路径）
@@ -846,7 +702,7 @@ func (s *Service) DeriveWalletKeyByPath(ctx context.Context, req *DeriveWalletKe
 	case "bitcoin", "btc":
 		adapter = chain.NewBitcoinAdapter(&chaincfg.MainNetParams)
 	case "ethereum", "eth", "evm":
-		adapter = chain.NewEthereumAdapter(big.NewInt(1)) // mainnet
+		adapter = chain.NewEthereumAdapter(big.NewInt(1), "") // mainnet, rpcEndpoint 暂时为空
 	default:
 		// 如果不支持，暂时不生成地址
 		log.Warn().Str("chain_type", req.ChainType).Msg("Unsupported chain type for address generation")

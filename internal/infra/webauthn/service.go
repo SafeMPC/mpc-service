@@ -89,7 +89,8 @@ func (s *Service) BeginRegistration(ctx context.Context, userID string, userName
 	}
 
 	// 保存 session data（实际应该存到 Redis，这里简化）
-	sessionDataJSON := base64.RawURLEncoding.EncodeToString(sessionData.Challenge)
+	// sessionData.Challenge 已经是 string 类型，直接使用
+	sessionDataJSON := sessionData.Challenge
 
 	log.Info().
 		Str("user_id", userID).
@@ -101,11 +102,8 @@ func (s *Service) BeginRegistration(ctx context.Context, userID string, userName
 
 // FinishRegistration 完成 Passkey 注册
 func (s *Service) FinishRegistration(ctx context.Context, userID string, userName string, sessionData string, credentialResponse *protocol.ParsedCredentialCreationData) error {
-	// 解析 session data
-	challengeBytes, err := base64.RawURLEncoding.DecodeString(sessionData)
-	if err != nil {
-		return errors.Wrap(err, "invalid session data")
-	}
+	// sessionData 就是 challenge string，直接使用
+	challengeString := sessionData
 
 	// 创建用户对象
 	user := &User{
@@ -124,7 +122,7 @@ func (s *Service) FinishRegistration(ctx context.Context, userID string, userNam
 
 	// 验证注册响应
 	session := webauthn.SessionData{
-		Challenge:            challengeBytes,
+		Challenge:            challengeString,
 		UserID:               []byte(userID),
 		UserVerification:     protocol.VerificationRequired,
 		RelyingPartyID:       s.rpID,
@@ -201,7 +199,8 @@ func (s *Service) BeginLogin(ctx context.Context, userID string) (*protocol.Cred
 	}
 
 	// 保存 session data
-	sessionDataJSON := base64.RawURLEncoding.EncodeToString(sessionData.Challenge)
+	// sessionData.Challenge 已经是 string 类型，直接使用
+	sessionDataJSON := sessionData.Challenge
 
 	log.Info().
 		Str("user_id", userID).
@@ -214,11 +213,8 @@ func (s *Service) BeginLogin(ctx context.Context, userID string) (*protocol.Cred
 
 // FinishLogin 完成 Passkey 登录
 func (s *Service) FinishLogin(ctx context.Context, userID string, sessionData string, credentialResponse *protocol.ParsedCredentialAssertionData) error {
-	// 解析 session data
-	challengeBytes, err := base64.RawURLEncoding.DecodeString(sessionData)
-	if err != nil {
-		return errors.Wrap(err, "invalid session data")
-	}
+	// sessionData 就是 challenge string，直接使用
+	challengeString := sessionData
 
 	// 创建用户对象
 	user := &User{
@@ -241,7 +237,7 @@ func (s *Service) FinishLogin(ctx context.Context, userID string, sessionData st
 
 	// 验证登录响应
 	session := webauthn.SessionData{
-		Challenge:        challengeBytes,
+		Challenge:        challengeString,
 		UserID:           []byte(userID),
 		UserVerification: protocol.VerificationRequired,
 		RelyingPartyID:   s.rpID,

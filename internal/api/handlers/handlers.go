@@ -5,10 +5,11 @@ import (
 	"github.com/SafeMPC/mpc-service/internal/api"
 	"github.com/SafeMPC/mpc-service/internal/api/handlers/auth"
 	"github.com/SafeMPC/mpc-service/internal/api/handlers/common"
-	"github.com/SafeMPC/mpc-service/internal/api/handlers/infra/keys"
 	"github.com/SafeMPC/mpc-service/internal/api/handlers/infra/sessions"
-	"github.com/SafeMPC/mpc-service/internal/api/handlers/infra/signing"
 	"github.com/SafeMPC/mpc-service/internal/api/handlers/push"
+	walletshandlers "github.com/SafeMPC/mpc-service/internal/api/handlers/wallets"
+	webauthnhandlers "github.com/SafeMPC/mpc-service/internal/api/handlers/webauthn"
+	websockethandlers "github.com/SafeMPC/mpc-service/internal/api/handlers/websocket"
 	"github.com/SafeMPC/mpc-service/internal/api/handlers/wellknown"
 	"github.com/labstack/echo/v4"
 )
@@ -27,24 +28,21 @@ func AttachAllRoutes(s *api.Server) {
 		auth.PostLogoutRoute(s),
 		auth.PostRefreshRoute(s),
 		auth.PostRegisterRoute(s),
+		webauthnhandlers.PostWebAuthnRegisterBeginRoute(s),
+		webauthnhandlers.PostWebAuthnRegisterFinishRoute(s),
+		webauthnhandlers.PostWebAuthnLoginBeginRoute(s),
+		webauthnhandlers.PostWebAuthnLoginFinishRoute(s),
 		common.GetHealthyRoute(s),
 		common.GetReadyRoute(s),
 		common.GetSwaggerRoute(s),
 		common.GetVersionRoute(s),
-		keys.DeleteKeyRoute(s),
-		keys.DeleteWalletKeyRoute(s),
-		keys.GetKeyRoute(s),
-		keys.GetListKeysRoute(s),
-		keys.PostCreateKeyRoute(s),
-		keys.PostDeriveKeyRoute(s),
-		keys.PostGenerateAddressRoute(s),
 		sessions.GetSessionRoute(s),
-		sessions.PostCancelSessionRoute(s),
-		sessions.PostCreateSessionRoute(s),
-		sessions.PostJoinSessionRoute(s),
-		signing.PostBatchSignRoute(s),
-		signing.PostSignRoute(s),
-		signing.PostVerifyRoute(s),
+		walletshandlers.PostCreateWalletRoute(s),
+		walletshandlers.GetWalletsRoute(s),
+		walletshandlers.GetWalletRoute(s),
+		walletshandlers.GetWalletBalanceRoute(s),
+		walletshandlers.PostSignTransactionRoute(s),
+		websockethandlers.WebSocketRoute(s),
 		push.PutUpdatePushTokenRoute(s),
 		wellknown.GetAndroidDigitalAssetLinksRoute(s),
 		wellknown.GetAppleAppSiteAssociationRoute(s),

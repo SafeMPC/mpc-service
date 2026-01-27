@@ -35,87 +35,6 @@ definitions:
     enum:
       - asc
       - desc
-  # MPC definitions (Migrated to Infra)
-  postCreateKeyPayload:
-    $ref: "../definitions/infra.yml#/definitions/PostCreateKeyPayload"
-  createKeyResponse:
-    $ref: "../definitions/infra.yml#/definitions/CreateKeyResponse"
-  postDeriveKeyPayload:
-    $ref: "../definitions/infra.yml#/definitions/PostDeriveKeyPayload"
-  deriveKeyResponse:
-    $ref: "../definitions/infra.yml#/definitions/DeriveKeyResponse"
-  getKeyResponse:
-    $ref: "../definitions/infra.yml#/definitions/GetKeyResponse"
-  listKeysResponse:
-    $ref: "../definitions/infra.yml#/definitions/ListKeysResponse"
-  postSignPayload:
-    $ref: "../definitions/infra.yml#/definitions/PostSignPayload"
-  signResponse:
-    $ref: "../definitions/infra.yml#/definitions/SignResponse"
-  postRegisterNodePayload:
-    $ref: "../definitions/infra.yml#/definitions/PostRegisterNodePayload"
-  registerNodeResponse:
-    $ref: "../definitions/infra.yml#/definitions/RegisterNodeResponse"
-  getNodeResponse:
-    $ref: "../definitions/infra.yml#/definitions/GetNodeResponse"
-  listNodesResponse:
-    $ref: "../definitions/infra.yml#/definitions/ListNodesResponse"
-  postCreateSessionPayload:
-    $ref: "../definitions/infra.yml#/definitions/PostCreateSessionPayload"
-  createSessionResponse:
-    $ref: "../definitions/infra.yml#/definitions/CreateSessionResponse"
-  getSessionResponse:
-    $ref: "../definitions/infra.yml#/definitions/GetSessionResponse"
-  generateAddressResponse:
-    $ref: "../definitions/infra.yml#/definitions/GenerateAddressResponse"
-  postBatchSignPayload:
-    $ref: "../definitions/infra.yml#/definitions/PostBatchSignPayload"
-  batchSignResponse:
-    $ref: "../definitions/infra.yml#/definitions/BatchSignResponse"
-  postVerifyPayload:
-    $ref: "../definitions/infra.yml#/definitions/PostVerifyPayload"
-  verifyResponse:
-    $ref: "../definitions/infra.yml#/definitions/VerifyResponse"
-  # Infra definitions
-  nodeRegistration:
-    $ref: "../definitions/infra.yml#/definitions/NodeRegistration"
-  nodeRegistrationResponse:
-    $ref: "../definitions/infra.yml#/definitions/NodeRegistrationResponse"
-  heartbeatRequest:
-    $ref: "../definitions/infra.yml#/definitions/HeartbeatRequest"
-  heartbeatResponse:
-    $ref: "../definitions/infra.yml#/definitions/HeartbeatResponse"
-  # Backup definitions
-  recoverMPCShareRequest:
-    $ref: "../definitions/infra.yml#/definitions/RecoverMPCShareRequest"
-  recoverMPCShareResponse:
-    $ref: "../definitions/infra.yml#/definitions/RecoverMPCShareResponse"
-  getBackupStatusResponse:
-    $ref: "../definitions/infra.yml#/definitions/GetBackupStatusResponse"
-  listBackupSharesResponse:
-    $ref: "../definitions/infra.yml#/definitions/ListBackupSharesResponse"
-  backupStatus:
-    $ref: "../definitions/infra.yml#/definitions/BackupStatus"
-  backupShares:
-    $ref: "../definitions/infra.yml#/definitions/BackupShares"
-  backupShare:
-    $ref: "../definitions/infra.yml#/definitions/BackupShare"
-  postAddPasskeyPayload:
-    $ref: "../definitions/infra.yml#/definitions/PostAddPasskeyPayload"
-  addPasskeyResponse:
-    $ref: "../definitions/infra.yml#/definitions/AddPasskeyResponse"
-  # Wallet Member definitions
-  addWalletMemberPayload:
-    $ref: "../definitions/infra.yml#/definitions/AddWalletMemberPayload"
-  removeWalletMemberPayload:
-    $ref: "../definitions/infra.yml#/definitions/RemoveWalletMemberPayload"
-  walletMemberResponse:
-    $ref: "../definitions/infra.yml#/definitions/WalletMemberResponse"
-  # Signing Policy definitions
-  setSigningPolicyPayload:
-    $ref: "../definitions/infra.yml#/definitions/SetSigningPolicyPayload"
-  signingPolicyResponse:
-    $ref: "../definitions/infra.yml#/definitions/SigningPolicyResponse"
   # WebAuthn definitions
   postWebAuthnRegisterBeginPayload:
     $ref: "../definitions/webauthn.yml#/definitions/PostWebAuthnRegisterBeginPayload"
@@ -144,6 +63,10 @@ definitions:
     $ref: "../definitions/wallets.yml#/definitions/WalletSummary"
   walletResponse:
     $ref: "../definitions/wallets.yml#/definitions/WalletResponse"
+  postGenerateWalletAddressPayload:
+    $ref: "../definitions/wallets.yml#/definitions/PostGenerateWalletAddressPayload"
+  postGenerateWalletAddressBody:
+    $ref: "../definitions/wallets.yml#/definitions/PostGenerateWalletAddressBody"
   generateAddressResponse:
     $ref: "../definitions/wallets.yml#/definitions/GenerateAddressResponse"
   walletBalanceResponse:
@@ -158,6 +81,8 @@ definitions:
     $ref: "../definitions/wallets.yml#/definitions/SignTransactionResponse"
   # Session definitions
   sessionResponse:
+    $ref: "../definitions/sessions.yml#/definitions/SessionResponse"
+  getSessionResponse:
     $ref: "../definitions/sessions.yml#/definitions/SessionResponse"
 
 responses:

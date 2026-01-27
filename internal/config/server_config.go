@@ -132,6 +132,7 @@ type MPC struct {
 
 	// JWT 配置 (用于基础设施层鉴权)
 	JWTSecret   string
+	JWTIssuer   string
 	JWTDuration time.Duration
 
 	// KeepAlive 配置
@@ -323,6 +324,7 @@ func DefaultServiceConfigFromEnv() Server {
 			TLSKeyFile:            util.GetEnv("MPC_TLS_KEY_FILE", ""),
 			TLSCACertFile:         util.GetEnv("MPC_TLS_CA_CERT_FILE", ""),
 			JWTSecret:             util.GetEnv("MPC_JWT_SECRET", "change-me-in-production"),
+			JWTIssuer:             util.GetEnv("MPC_JWT_ISSUER", "safempc"),
 			JWTDuration:           time.Minute * time.Duration(util.GetEnvAsInt("MPC_JWT_DURATION_MINUTES", 60)),
 			EnableAudit:           util.GetEnvAsBool("MPC_ENABLE_AUDIT", true),
 			EnablePolicy:          util.GetEnvAsBool("MPC_ENABLE_POLICY", true),

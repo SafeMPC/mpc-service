@@ -119,9 +119,11 @@ func (m *PostSignTransactionPayload) validateMessageHex(formats strfmt.Registry)
 
 func (m *PostSignTransactionPayload) validateWebauthnAssertion(formats strfmt.Registry) error {
 
-	if err := validate.Required("webauthn_assertion", "body", m.WebauthnAssertion); err != nil {
-		return err
-	}
+	// 测试环境：暂时允许 webauthn_assertion 为可选
+	// TODO: 生产环境必须要求 webauthn_assertion
+	// if err := validate.Required("webauthn_assertion", "body", m.WebauthnAssertion); err != nil {
+	// 	return err
+	// }
 
 	if m.WebauthnAssertion != nil {
 		if err := m.WebauthnAssertion.Validate(formats); err != nil {

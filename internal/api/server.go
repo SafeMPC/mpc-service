@@ -26,6 +26,8 @@ import (
 	"github.com/SafeMPC/mpc-service/internal/infra/key"
 	"github.com/SafeMPC/mpc-service/internal/infra/session"
 	"github.com/SafeMPC/mpc-service/internal/infra/signing"
+	"github.com/SafeMPC/mpc-service/internal/infra/webauthn"
+	"github.com/SafeMPC/mpc-service/internal/infra/websocket"
 	mpcgrpc "github.com/SafeMPC/mpc-service/internal/mpc/grpc"
 	"github.com/SafeMPC/mpc-service/internal/mpc/node"
 
@@ -77,10 +79,14 @@ type Server struct {
 	NodeDiscovery      *node.Discovery
 	SessionManager     *session.Manager
 	DiscoveryService   *discovery.Service // ✅ 新的统一服务发现
+	WebAuthnService    *webauthn.Service  // WebAuthn 服务
 
 	// gRPC services (unified MPC gRPC)
-	MPCGRPCServer   *mpcgrpc.GRPCServer              // MPC gRPC 服务端（统一实现）
+	// 注意：Service 节点不应该有 gRPC Server，只有 Signer 节点才有
 	MPCGRPCClient   *mpcgrpc.GRPCClient              // MPC gRPC 客户端（用于节点间通信）
+
+	// WebSocket 服务
+	WebSocketServer *websocket.Server                // WebSocket 服务器（消息中继）
 }
 
 // newServerWithComponents is used by wire to initialize the server components.
@@ -103,9 +109,10 @@ func newServerWithComponents(
 	nodeRegistry *node.Registry,
 	nodeDiscovery *node.Discovery,
 	sessionManager *session.Manager,
-	mpcGRPCServer *mpcgrpc.GRPCServer, // ✅ 统一的 MPC gRPC 服务端
 	mpcGRPCClient *mpcgrpc.GRPCClient, // ✅ 统一的 MPC gRPC 客户端
 	discoveryService *discovery.Service, // ✅ 新的统一服务发现
+	webAuthnService *webauthn.Service, // WebAuthn 服务
+	webSocketServer *websocket.Server, // WebSocket 服务器
 ) *Server {
 	s := &Server{
 		Config:  cfg,
@@ -125,10 +132,10 @@ func newServerWithComponents(
 		NodeRegistry:       nodeRegistry,
 		NodeDiscovery:      nodeDiscovery,
 		SessionManager:     sessionManager,
-
-		MPCGRPCServer:    mpcGRPCServer,    // ✅ 统一的 MPC gRPC 服务端
-		MPCGRPCClient:    mpcGRPCClient,    // ✅ 统一的 MPC gRPC 客户端
-		DiscoveryService: discoveryService, // ✅ 新的统一服务发现
+		DiscoveryService:   discoveryService, // ✅ 新的统一服务发现
+		WebAuthnService:    webAuthnService,
+		MPCGRPCClient:      mpcGRPCClient,    // ✅ 统一的 MPC gRPC 客户端
+		WebSocketServer:    webSocketServer,  // WebSocket 服务器
 	}
 
 	// 设置 NodeDiscovery 到 MPCGRPCClient，使其能够从 Consul 获取节点信息
@@ -211,20 +218,8 @@ func (s *Server) Start() error {
 		}
 	}
 
-	// 2. 启动 MPC gRPC 服务器（如果已初始化）
-	// 注意：gRPC 服务器有自己的 Start 方法，它会在 goroutine 中运行并等待 context
-	// 使用 context.Background() 让 gRPC 服务器一直运行直到显式停止
-	if s.MPCGRPCServer != nil {
-		go func() {
-			grpcCtx := context.Background() // gRPC 服务器会一直运行，直到在 Shutdown 中显式停止
-			if err := s.MPCGRPCServer.Start(grpcCtx); err != nil {
-				log.Error().Err(err).Msg("MPC gRPC server failed")
-			}
-		}()
-		log.Info().
-			Int("port", s.Config.MPC.GRPCPort).
-			Msg("MPC gRPC server started in background")
-	}
+	// 注意：Service 节点不应该有 gRPC Server
+	// 只有 Signer 节点才需要 gRPC Server
 
 
 	// 4. 启动 HTTP 服务器
@@ -254,14 +249,8 @@ func (s *Server) Shutdown(ctx context.Context) []error {
 		}
 	}
 
-	// 2. 停止 MPC gRPC 服务器（如果已初始化）
-	if s.MPCGRPCServer != nil {
-		log.Debug().Msg("Stopping MPC gRPC server")
-		if err := s.MPCGRPCServer.Stop(); err != nil {
-			log.Error().Err(err).Msg("Failed to stop MPC gRPC server")
-			errs = append(errs, err)
-		}
-	}
+	// 注意：Service 节点不应该有 gRPC Server
+	// 只有 Signer 节点才需要停止 gRPC Server
 
 	// 3. 关闭 HTTP 服务器
 	if s.Echo != nil {

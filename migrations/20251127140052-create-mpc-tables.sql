@@ -43,22 +43,8 @@ CREATE INDEX idx_keys_status ON keys (status);
 
 CREATE INDEX idx_keys_created_at ON keys (created_at);
 
-CREATE TABLE nodes (
-    node_id varchar(255) PRIMARY KEY,
-    node_type varchar(50) NOT NULL,
-    endpoint varchar(255) NOT NULL,
-    public_key text,
-    status varchar(50) NOT NULL,
-    capabilities jsonb,
-    metadata jsonb,
-    registered_at timestamptz NOT NULL DEFAULT NOW(),
-    last_heartbeat timestamptz
-);
-
-CREATE INDEX idx_nodes_type ON nodes (node_type);
-
-CREATE INDEX idx_nodes_status ON nodes (status);
-
+-- 注意：nodes 表已删除，使用 Consul 服务发现替代
+-- CREATE TABLE nodes ... (已删除)
 CREATE TABLE signing_sessions (
     session_id varchar(255) PRIMARY KEY,
     key_id varchar(255) NOT NULL,
@@ -106,8 +92,8 @@ DROP INDEX IF EXISTS idx_audit_node_id;
 
 DROP TABLE IF EXISTS signing_sessions;
 
-DROP TABLE IF EXISTS nodes;
-
+-- 注意：nodes 表已删除
+-- DROP TABLE IF EXISTS nodes;
 DROP INDEX IF EXISTS idx_keys_created_at;
 
 DROP INDEX IF EXISTS idx_keys_status;

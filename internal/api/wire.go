@@ -44,10 +44,12 @@ var mpcServiceSet = wire.NewSet(
 	NewNodeRegistry,
 	NewNodeDiscovery,
 	NewSessionManager,
-	// gRPC communication (must be before NewProtocolEngine)
+	// WebAuthn service
+	NewWebAuthnServiceProvider,
+	// gRPC communication
 	NewMPCGRPCClient,
-	NewMPCGRPCServer,
-	NewProtocolEngine,
+	// WebSocket server (depends on gRPC client)
+	NewWebSocketServerProvider,
 	// DKG service (must be before NewKeyServiceProvider)
 	NewDKGServiceProvider,
 	NewKeyServiceProvider,
@@ -55,10 +57,6 @@ var mpcServiceSet = wire.NewSet(
 	NewMPCServiceProvider,
 	// Service discovery
 	NewMPCDiscoveryService,
-	// Backup & Recovery & Infra
-	NewBackupService,
-	NewRecoveryService,
-	NewBackupStore,
 )
 
 // InitNewServer returns a new Server instance.

@@ -11,21 +11,20 @@ import (
 	"github.com/SafeMPC/mpc-service/internal/auth"
 	"github.com/SafeMPC/mpc-service/internal/config"
 	"github.com/SafeMPC/mpc-service/internal/i18n"
-	"github.com/SafeMPC/mpc-service/internal/infra/backup"
 	"github.com/SafeMPC/mpc-service/internal/infra/service"
 	"github.com/SafeMPC/mpc-service/internal/infra/discovery"
 	"github.com/SafeMPC/mpc-service/internal/infra/key"
 	"github.com/SafeMPC/mpc-service/internal/infra/session"
 	"github.com/SafeMPC/mpc-service/internal/infra/signing"
 	"github.com/SafeMPC/mpc-service/internal/infra/storage"
+	"github.com/SafeMPC/mpc-service/internal/infra/webauthn"
+	"github.com/SafeMPC/mpc-service/internal/infra/websocket"
 	"github.com/SafeMPC/mpc-service/internal/mailer"
 	mpcgrpc "github.com/SafeMPC/mpc-service/internal/mpc/grpc"
 	"github.com/SafeMPC/mpc-service/internal/mpc/node"
-	"github.com/SafeMPC/mpc-service/internal/mpc/protocol"
 	"github.com/SafeMPC/mpc-service/internal/persistence"
 	"github.com/SafeMPC/mpc-service/internal/push"
 	"github.com/SafeMPC/mpc-service/internal/push/provider"
-	"github.com/kashguard/tss-lib/tss"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 )
@@ -97,6 +96,22 @@ func NewMetadataStore(db *sql.DB) storage.MetadataStore {
 	return storage.NewPostgreSQLStore(db)
 }
 
+// NewWebAuthnServiceProvider 创建 WebAuthn 服务
+func NewWebAuthnServiceProvider(cfg config.Server, metadataStore storage.MetadataStore) (*webauthn.Service, error) {
+	// 从环境变量或配置获取 WebAuthn 配置
+	// 如果没有配置，使用默认值（仅用于开发环境）
+	rpID := "localhost" // TODO: 从配置读取
+	rpName := "SafeMPC"
+	rpOrigin := "http://localhost:8080"
+	
+	return webauthn.NewService(rpID, rpName, rpOrigin, metadataStore)
+}
+
+// NewWebSocketServerProvider 创建 WebSocket 服务器
+func NewWebSocketServerProvider(grpcClient *mpcgrpc.GRPCClient) *websocket.Server {
+	return websocket.NewServer(grpcClient)
+}
+
 func NewRedisClient(cfg config.Server) (*redis.Client, error) {
 	if cfg.MPC.RedisEndpoint == "" {
 		return nil, fmt.Errorf("MPC RedisEndpoint is not configured")
@@ -132,105 +147,6 @@ func NewKeyShareStorage(cfg config.Server) (storage.KeyShareStorage, error) {
 
 func NewMPCGRPCClient(cfg config.Server, nodeManager *node.Manager) (*mpcgrpc.GRPCClient, error) {
 	return mpcgrpc.NewGRPCClient(cfg, nodeManager)
-}
-
-func NewMPCGRPCServer(
-	cfg config.Server,
-	protocolEngine protocol.Engine,
-	sessionManager *session.Manager,
-	keyShareStorage storage.KeyShareStorage,
-	grpcClient *mpcgrpc.GRPCClient,
-	metadataStore storage.MetadataStore,
-	backupService backup.SSSBackupService,
-) (*mpcgrpc.GRPCServer, error) {
-	nodeID := cfg.MPC.NodeID
-	if nodeID == "" {
-		nodeID = "default-node"
-	}
-
-	// 创建协议注册表，注册所有支持的协议引擎
-	// 这样 participant 节点可以根据请求中的 Protocol 字段动态选择协议引擎
-	registry := protocol.NewProtocolRegistry()
-	curve := "secp256k1"
-	thisNodeID := nodeID
-
-	// 创建消息路由器（与 NewProtocolEngine 中的逻辑相同）
-	messageRouter := func(sessionID string, targetNodeID string, msg tss.Message, isBroadcast bool) error {
-		ctx := context.Background()
-		if len(sessionID) > 0 && sessionID[:4] == "key-" {
-			// DKG消息
-			return grpcClient.SendKeygenMessage(ctx, targetNodeID, msg, sessionID, isBroadcast)
-		} else {
-			// 签名消息
-			return grpcClient.SendSigningMessage(ctx, targetNodeID, msg, sessionID)
-		}
-	}
-
-	// 注册所有支持的协议引擎
-	gg18Engine := protocol.NewGG18Protocol(curve, thisNodeID, messageRouter, keyShareStorage)
-	gg20Engine := protocol.NewGG20Protocol(curve, thisNodeID, messageRouter, keyShareStorage)
-	frostEngine := protocol.NewFROSTProtocol(curve, thisNodeID, messageRouter, keyShareStorage)
-
-	registry.Register("gg18", gg18Engine)
-	registry.Register("gg20", gg20Engine)
-	registry.Register("frost", frostEngine)
-
-	return mpcgrpc.NewGRPCServerWithRegistry(cfg, protocolEngine, registry, sessionManager, keyShareStorage, metadataStore, backupService, nodeID), nil
-}
-
-func NewProtocolEngine(cfg config.Server, grpcClient *mpcgrpc.GRPCClient, keyShareStorage storage.KeyShareStorage) protocol.Engine {
-	curve := "secp256k1"
-	thisNodeID := cfg.MPC.NodeID
-	if thisNodeID == "" {
-		thisNodeID = "default-node"
-	}
-
-	// 使用真正的gRPC客户端作为消息路由器
-	// 参数：sessionID（用于DKG或签名会话），nodeID（目标节点），msg（tss-lib消息）
-	messageRouter := func(sessionID string, nodeID string, msg tss.Message, isBroadcast bool) error {
-		ctx := context.Background()
-		// 根据会话ID判断消息类型（DKG或签名）
-		// 如果sessionID是keyID格式（以"key-"开头），则作为DKG消息处理
-		// 否则作为签名消息处理
-		if len(sessionID) > 0 && sessionID[:4] == "key-" {
-			// DKG消息
-			log.Error().
-				Str("session_id", sessionID).
-				Str("target_node_id", nodeID).
-				Str("this_node_id", thisNodeID).
-				Msg("Routing DKG message to target node")
-			err := grpcClient.SendKeygenMessage(ctx, nodeID, msg, sessionID, isBroadcast)
-			if err != nil {
-				log.Error().
-					Err(err).
-					Str("session_id", sessionID).
-					Str("target_node_id", nodeID).
-					Msg("Failed to send DKG message")
-			}
-			return err
-		} else {
-			// 签名消息
-			return grpcClient.SendSigningMessage(ctx, nodeID, msg, sessionID)
-		}
-	}
-
-	// 根据配置选择协议
-	defaultProtocol := cfg.MPC.DefaultProtocol
-	if defaultProtocol == "" {
-		defaultProtocol = "gg20"
-	}
-
-	switch defaultProtocol {
-	case "gg18":
-		return protocol.NewGG18Protocol(curve, thisNodeID, messageRouter, keyShareStorage)
-	case "gg20":
-		return protocol.NewGG20Protocol(curve, thisNodeID, messageRouter, keyShareStorage)
-	case "frost":
-		return protocol.NewFROSTProtocol(curve, thisNodeID, messageRouter, keyShareStorage)
-	default:
-		// 默认使用GG20
-		return protocol.NewGG20Protocol(curve, thisNodeID, messageRouter, keyShareStorage)
-	}
 }
 
 func NewNodeManager(discoveryService *discovery.Service, cfg config.Server) *node.Manager {
@@ -273,82 +189,30 @@ func NewSessionManager(metadataStore storage.MetadataStore, sessionStore storage
 func NewDKGServiceProvider(
 	metadataStore storage.MetadataStore,
 	keyShareStorage storage.KeyShareStorage,
-	protocolEngine protocol.Engine,
 	nodeManager *node.Manager,
 	nodeDiscovery *node.Discovery,
-	grpcClient *mpcgrpc.GRPCClient, // 用于 coordinator 触发参与者 StartDKG
+	grpcClient *mpcgrpc.GRPCClient, // 用于 Service 触发 Signer StartDKG
 	cfg config.Server,
 ) *key.DKGService {
-	// 为 DKG 选择协议注册表：与 gRPC server 共用，实现 GG18/GG20/FROST 切换
-	registry := protocol.NewProtocolRegistry()
-	curve := "secp256k1"
-	thisNodeID := cfg.MPC.NodeID
-	if thisNodeID == "" {
-		thisNodeID = "default-node"
-	}
-
-	messageRouter := func(sessionID string, targetNodeID string, msg tss.Message, isBroadcast bool) error {
-		ctx := context.Background()
-		if len(sessionID) > 0 && sessionID[:4] == "key-" {
-			return grpcClient.SendKeygenMessage(ctx, targetNodeID, msg, sessionID, isBroadcast)
-		}
-		return grpcClient.SendSigningMessage(ctx, targetNodeID, msg, sessionID)
-	}
-
-	gg18Engine := protocol.NewGG18Protocol(curve, thisNodeID, messageRouter, keyShareStorage)
-	gg20Engine := protocol.NewGG20Protocol(curve, thisNodeID, messageRouter, keyShareStorage)
-	frostEngine := protocol.NewFROSTProtocol(curve, thisNodeID, messageRouter, keyShareStorage)
-
-	registry.Register("gg18", gg18Engine)
-	registry.Register("gg20", gg20Engine)
-	registry.Register("frost", frostEngine)
-
-	// coordinator 节点注入 grpcClient，participant 节点也会构造 DKGService 但不会在本地调用 ExecuteDKG
-	return key.NewDKGService(metadataStore, keyShareStorage, protocolEngine, registry, nodeManager, nodeDiscovery, grpcClient)
-}
-
-func NewBackupService(metadataStore storage.MetadataStore) backup.SSSBackupService {
-	backupStorage, ok := metadataStore.(storage.BackupShareStorage)
-	if !ok {
-		log.Error().Msg("MetadataStore does not implement BackupShareStorage")
-	}
-	return backup.NewService(backupStorage, metadataStore)
-}
-
-func NewRecoveryService(metadataStore storage.MetadataStore, keyShareStorage storage.KeyShareStorage, backupService backup.SSSBackupService) *backup.RecoveryService {
-	backupStorage, ok := metadataStore.(storage.BackupShareStorage)
-	if !ok {
-		log.Error().Msg("MetadataStore does not implement BackupShareStorage")
-	}
-	return backup.NewRecoveryService(backupService, backupStorage, keyShareStorage)
-}
-
-func NewBackupStore(metadataStore storage.MetadataStore) backup.Store {
-	store, ok := metadataStore.(backup.Store)
-	if !ok {
-		// This should not happen if PostgreSQLStore is used correctly
-		log.Fatal().Msg("MetadataStore does not implement backup.Store")
-	}
-	return store
+	// Service 节点不执行协议计算，DKGService 只负责协调
+	return key.NewDKGService(metadataStore, keyShareStorage, nodeManager, nodeDiscovery, grpcClient)
 }
 
 func NewKeyServiceProvider(
 	metadataStore storage.MetadataStore,
 	keyShareStorage storage.KeyShareStorage,
-	protocolEngine protocol.Engine,
 	dkgService *key.DKGService,
-	backupService backup.SSSBackupService,
 ) *key.Service {
-	return key.NewService(metadataStore, keyShareStorage, protocolEngine, dkgService, backupService)
+	return key.NewService(metadataStore, keyShareStorage, dkgService)
 }
 
 
-func NewSigningServiceProvider(keyService *key.Service, protocolEngine protocol.Engine, sessionManager *session.Manager, nodeDiscovery *node.Discovery, cfg config.Server, grpcClient *mpcgrpc.GRPCClient) *signing.Service {
+func NewSigningServiceProvider(keyService *key.Service, sessionManager *session.Manager, nodeDiscovery *node.Discovery, cfg config.Server, grpcClient *mpcgrpc.GRPCClient, metadataStore storage.MetadataStore) *signing.Service {
 	defaultProtocol := cfg.MPC.DefaultProtocol
 	if defaultProtocol == "" {
 		defaultProtocol = "gg20"
 	}
-	return signing.NewService(keyService, protocolEngine, sessionManager, nodeDiscovery, defaultProtocol, grpcClient)
+	return signing.NewService(keyService, sessionManager, nodeDiscovery, defaultProtocol, grpcClient, metadataStore)
 }
 
 func NewMPCServiceProvider(
@@ -356,9 +220,13 @@ func NewMPCServiceProvider(
 	keyService *key.Service,
 	sessionManager *session.Manager,
 	nodeDiscovery *node.Discovery,
-	protocolEngine protocol.Engine,
 	grpcClient *mpcgrpc.GRPCClient,
+	metadataStore storage.MetadataStore,
 ) *service.Service {
+	defaultProtocol := cfg.MPC.DefaultProtocol
+	if defaultProtocol == "" {
+		defaultProtocol = "gg20"
+	}
 	// service.Service 需要 GRPCClient 接口，mpcgrpc.GRPCClient 实现了该接口
 	// 记录配置的 NodeID（用于调试）
 	nodeID := cfg.MPC.NodeID
@@ -368,7 +236,7 @@ func NewMPCServiceProvider(
 		Str("mpc_node_type", cfg.MPC.NodeType).
 		Msg("NewMPCServiceProvider: creating MPC service with NodeID")
 
-	return service.NewService(keyService, sessionManager, nodeDiscovery, protocolEngine, grpcClient, nodeID)
+	return service.NewService(keyService, sessionManager, nodeDiscovery, defaultProtocol, grpcClient, nodeID, metadataStore)
 }
 
 // ✅ 删除旧的 internal/grpc 相关 providers（已废弃，已统一到 internal/mpc/grpc）

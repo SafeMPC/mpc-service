@@ -21,158 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type StartDKGRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	KeyId         string                 `protobuf:"bytes,2,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
-	Algorithm     string                 `protobuf:"bytes,3,opt,name=algorithm,proto3" json:"algorithm,omitempty"`                      // "ECDSA"
-	Curve         string                 `protobuf:"bytes,4,opt,name=curve,proto3" json:"curve,omitempty"`                              // "secp256k1"
-	Threshold     int32                  `protobuf:"varint,5,opt,name=threshold,proto3" json:"threshold,omitempty"`                     // 2
-	TotalNodes    int32                  `protobuf:"varint,6,opt,name=total_nodes,json=totalNodes,proto3" json:"total_nodes,omitempty"` // 2
-	NodeIds       []string               `protobuf:"bytes,7,rep,name=node_ids,json=nodeIds,proto3" json:"node_ids,omitempty"`           // ["mobile-p1", "server-signer-p2"]
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StartDKGRequest) Reset() {
-	*x = StartDKGRequest{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StartDKGRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StartDKGRequest) ProtoMessage() {}
-
-func (x *StartDKGRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StartDKGRequest.ProtoReflect.Descriptor instead.
-func (*StartDKGRequest) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *StartDKGRequest) GetSessionId() string {
-	if x != nil {
-		return x.SessionId
-	}
-	return ""
-}
-
-func (x *StartDKGRequest) GetKeyId() string {
-	if x != nil {
-		return x.KeyId
-	}
-	return ""
-}
-
-func (x *StartDKGRequest) GetAlgorithm() string {
-	if x != nil {
-		return x.Algorithm
-	}
-	return ""
-}
-
-func (x *StartDKGRequest) GetCurve() string {
-	if x != nil {
-		return x.Curve
-	}
-	return ""
-}
-
-func (x *StartDKGRequest) GetThreshold() int32 {
-	if x != nil {
-		return x.Threshold
-	}
-	return 0
-}
-
-func (x *StartDKGRequest) GetTotalNodes() int32 {
-	if x != nil {
-		return x.TotalNodes
-	}
-	return 0
-}
-
-func (x *StartDKGRequest) GetNodeIds() []string {
-	if x != nil {
-		return x.NodeIds
-	}
-	return nil
-}
-
-type StartDKGResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Started       bool                   `protobuf:"varint,1,opt,name=started,proto3" json:"started,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StartDKGResponse) Reset() {
-	*x = StartDKGResponse{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StartDKGResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StartDKGResponse) ProtoMessage() {}
-
-func (x *StartDKGResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StartDKGResponse.ProtoReflect.Descriptor instead.
-func (*StartDKGResponse) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *StartDKGResponse) GetStarted() bool {
-	if x != nil {
-		return x.Started
-	}
-	return false
-}
-
-func (x *StartDKGResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *StartDKGResponse) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
-}
-
 type GetDKGStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -182,7 +30,7 @@ type GetDKGStatusRequest struct {
 
 func (x *GetDKGStatusRequest) Reset() {
 	*x = GetDKGStatusRequest{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[2]
+	mi := &file_mpc_v1_signer_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -194,7 +42,7 @@ func (x *GetDKGStatusRequest) String() string {
 func (*GetDKGStatusRequest) ProtoMessage() {}
 
 func (x *GetDKGStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[2]
+	mi := &file_mpc_v1_signer_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -207,7 +55,7 @@ func (x *GetDKGStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDKGStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetDKGStatusRequest) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{2}
+	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GetDKGStatusRequest) GetSessionId() string {
@@ -231,7 +79,7 @@ type DKGStatusResponse struct {
 
 func (x *DKGStatusResponse) Reset() {
 	*x = DKGStatusResponse{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[3]
+	mi := &file_mpc_v1_signer_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -243,7 +91,7 @@ func (x *DKGStatusResponse) String() string {
 func (*DKGStatusResponse) ProtoMessage() {}
 
 func (x *DKGStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[3]
+	mi := &file_mpc_v1_signer_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -256,7 +104,7 @@ func (x *DKGStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DKGStatusResponse.ProtoReflect.Descriptor instead.
 func (*DKGStatusResponse) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{3}
+	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *DKGStatusResponse) GetSessionId() string {
@@ -301,166 +149,6 @@ func (x *DKGStatusResponse) GetError() string {
 	return ""
 }
 
-type StartSignRequest struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	SessionId       string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	KeyId           string                 `protobuf:"bytes,2,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
-	Message         []byte                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
-	Protocol        string                 `protobuf:"bytes,4,opt,name=protocol,proto3" json:"protocol,omitempty"` // "gg20", "frost"
-	Threshold       int32                  `protobuf:"varint,5,opt,name=threshold,proto3" json:"threshold,omitempty"`
-	NodeIds         []string               `protobuf:"bytes,6,rep,name=node_ids,json=nodeIds,proto3" json:"node_ids,omitempty"`
-	DerivationPath  string                 `protobuf:"bytes,7,opt,name=derivation_path,json=derivationPath,proto3" json:"derivation_path,omitempty"`
-	ParentChainCode []byte                 `protobuf:"bytes,8,opt,name=parent_chain_code,json=parentChainCode,proto3" json:"parent_chain_code,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *StartSignRequest) Reset() {
-	*x = StartSignRequest{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StartSignRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StartSignRequest) ProtoMessage() {}
-
-func (x *StartSignRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StartSignRequest.ProtoReflect.Descriptor instead.
-func (*StartSignRequest) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *StartSignRequest) GetSessionId() string {
-	if x != nil {
-		return x.SessionId
-	}
-	return ""
-}
-
-func (x *StartSignRequest) GetKeyId() string {
-	if x != nil {
-		return x.KeyId
-	}
-	return ""
-}
-
-func (x *StartSignRequest) GetMessage() []byte {
-	if x != nil {
-		return x.Message
-	}
-	return nil
-}
-
-func (x *StartSignRequest) GetProtocol() string {
-	if x != nil {
-		return x.Protocol
-	}
-	return ""
-}
-
-func (x *StartSignRequest) GetThreshold() int32 {
-	if x != nil {
-		return x.Threshold
-	}
-	return 0
-}
-
-func (x *StartSignRequest) GetNodeIds() []string {
-	if x != nil {
-		return x.NodeIds
-	}
-	return nil
-}
-
-func (x *StartSignRequest) GetDerivationPath() string {
-	if x != nil {
-		return x.DerivationPath
-	}
-	return ""
-}
-
-func (x *StartSignRequest) GetParentChainCode() []byte {
-	if x != nil {
-		return x.ParentChainCode
-	}
-	return nil
-}
-
-type StartSignResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Started       bool                   `protobuf:"varint,1,opt,name=started,proto3" json:"started,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StartSignResponse) Reset() {
-	*x = StartSignResponse{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StartSignResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StartSignResponse) ProtoMessage() {}
-
-func (x *StartSignResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StartSignResponse.ProtoReflect.Descriptor instead.
-func (*StartSignResponse) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *StartSignResponse) GetStarted() bool {
-	if x != nil {
-		return x.Started
-	}
-	return false
-}
-
-func (x *StartSignResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *StartSignResponse) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
-}
-
 type GetSignStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -470,7 +158,7 @@ type GetSignStatusRequest struct {
 
 func (x *GetSignStatusRequest) Reset() {
 	*x = GetSignStatusRequest{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[6]
+	mi := &file_mpc_v1_signer_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -482,7 +170,7 @@ func (x *GetSignStatusRequest) String() string {
 func (*GetSignStatusRequest) ProtoMessage() {}
 
 func (x *GetSignStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[6]
+	mi := &file_mpc_v1_signer_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -495,7 +183,7 @@ func (x *GetSignStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSignStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetSignStatusRequest) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{6}
+	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetSignStatusRequest) GetSessionId() string {
@@ -519,7 +207,7 @@ type SignStatusResponse struct {
 
 func (x *SignStatusResponse) Reset() {
 	*x = SignStatusResponse{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[7]
+	mi := &file_mpc_v1_signer_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -531,7 +219,7 @@ func (x *SignStatusResponse) String() string {
 func (*SignStatusResponse) ProtoMessage() {}
 
 func (x *SignStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[7]
+	mi := &file_mpc_v1_signer_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -544,7 +232,7 @@ func (x *SignStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignStatusResponse.ProtoReflect.Descriptor instead.
 func (*SignStatusResponse) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{7}
+	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *SignStatusResponse) GetSessionId() string {
@@ -590,22 +278,22 @@ func (x *SignStatusResponse) GetError() string {
 }
 
 type RelayMessageRequest struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	SessionId        string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	FromNodeId       string                 `protobuf:"bytes,2,opt,name=from_node_id,json=fromNodeId,proto3" json:"from_node_id,omitempty"`  // "mobile-p1"
-	ToNodeId         string                 `protobuf:"bytes,3,opt,name=to_node_id,json=toNodeId,proto3" json:"to_node_id,omitempty"`        // "server-signer-p2"
-	MessageData      []byte                 `protobuf:"bytes,4,opt,name=message_data,json=messageData,proto3" json:"message_data,omitempty"` // tss-lib 序列化的消息
-	Round            int32                  `protobuf:"varint,5,opt,name=round,proto3" json:"round,omitempty"`
-	IsBroadcast      bool                   `protobuf:"varint,6,opt,name=is_broadcast,json=isBroadcast,proto3" json:"is_broadcast,omitempty"`
-	Timestamp        string                 `protobuf:"bytes,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	ServiceSignature []byte                 `protobuf:"bytes,8,opt,name=service_signature,json=serviceSignature,proto3" json:"service_signature,omitempty"` // Service 对消息的 HMAC 签名（防篡改）
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	SessionId       string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	FromNodeId      string                 `protobuf:"bytes,2,opt,name=from_node_id,json=fromNodeId,proto3" json:"from_node_id,omitempty"`  // "mobile-p1"
+	ToNodeId        string                 `protobuf:"bytes,3,opt,name=to_node_id,json=toNodeId,proto3" json:"to_node_id,omitempty"`        // "server-signer-p2"
+	MessageData     []byte                 `protobuf:"bytes,4,opt,name=message_data,json=messageData,proto3" json:"message_data,omitempty"` // tss-lib 序列化的消息
+	Round           int32                  `protobuf:"varint,5,opt,name=round,proto3" json:"round,omitempty"`
+	IsBroadcast     bool                   `protobuf:"varint,6,opt,name=is_broadcast,json=isBroadcast,proto3" json:"is_broadcast,omitempty"`
+	Timestamp       string                 `protobuf:"bytes,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	ClientSignature []byte                 `protobuf:"bytes,8,opt,name=client_signature,json=clientSignature,proto3" json:"client_signature,omitempty"` // Client (P1) 使用 Passkey 私钥签名（E2E 认证）
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *RelayMessageRequest) Reset() {
 	*x = RelayMessageRequest{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[8]
+	mi := &file_mpc_v1_signer_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -617,7 +305,7 @@ func (x *RelayMessageRequest) String() string {
 func (*RelayMessageRequest) ProtoMessage() {}
 
 func (x *RelayMessageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[8]
+	mi := &file_mpc_v1_signer_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -630,7 +318,7 @@ func (x *RelayMessageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RelayMessageRequest.ProtoReflect.Descriptor instead.
 func (*RelayMessageRequest) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{8}
+	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RelayMessageRequest) GetSessionId() string {
@@ -682,9 +370,9 @@ func (x *RelayMessageRequest) GetTimestamp() string {
 	return ""
 }
 
-func (x *RelayMessageRequest) GetServiceSignature() []byte {
+func (x *RelayMessageRequest) GetClientSignature() []byte {
 	if x != nil {
-		return x.ServiceSignature
+		return x.ClientSignature
 	}
 	return nil
 }
@@ -703,7 +391,7 @@ type RelayMessageResponse struct {
 
 func (x *RelayMessageResponse) Reset() {
 	*x = RelayMessageResponse{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[9]
+	mi := &file_mpc_v1_signer_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -715,7 +403,7 @@ func (x *RelayMessageResponse) String() string {
 func (*RelayMessageResponse) ProtoMessage() {}
 
 func (x *RelayMessageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[9]
+	mi := &file_mpc_v1_signer_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -728,7 +416,7 @@ func (x *RelayMessageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RelayMessageResponse.ProtoReflect.Descriptor instead.
 func (*RelayMessageResponse) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{9}
+	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *RelayMessageResponse) GetAccepted() bool {
@@ -776,7 +464,7 @@ type PingRequest struct {
 
 func (x *PingRequest) Reset() {
 	*x = PingRequest{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[10]
+	mi := &file_mpc_v1_signer_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -788,7 +476,7 @@ func (x *PingRequest) String() string {
 func (*PingRequest) ProtoMessage() {}
 
 func (x *PingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[10]
+	mi := &file_mpc_v1_signer_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -801,7 +489,7 @@ func (x *PingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PingRequest.ProtoReflect.Descriptor instead.
 func (*PingRequest) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{10}
+	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *PingRequest) GetFromService() string {
@@ -829,7 +517,7 @@ type PongResponse struct {
 
 func (x *PongResponse) Reset() {
 	*x = PongResponse{}
-	mi := &file_mpc_v1_signer_proto_msgTypes[11]
+	mi := &file_mpc_v1_signer_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -841,7 +529,7 @@ func (x *PongResponse) String() string {
 func (*PongResponse) ProtoMessage() {}
 
 func (x *PongResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mpc_v1_signer_proto_msgTypes[11]
+	mi := &file_mpc_v1_signer_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -854,7 +542,7 @@ func (x *PongResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PongResponse.ProtoReflect.Descriptor instead.
 func (*PongResponse) Descriptor() ([]byte, []int) {
-	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{11}
+	return file_mpc_v1_signer_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PongResponse) GetAlive() bool {
@@ -882,21 +570,7 @@ var File_mpc_v1_signer_proto protoreflect.FileDescriptor
 
 const file_mpc_v1_signer_proto_rawDesc = "" +
 	"\n" +
-	"\x13mpc/v1/signer.proto\x12\x06mpc.v1\"\xd5\x01\n" +
-	"\x0fStartDKGRequest\x12\x1d\n" +
-	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
-	"\x06key_id\x18\x02 \x01(\tR\x05keyId\x12\x1c\n" +
-	"\talgorithm\x18\x03 \x01(\tR\talgorithm\x12\x14\n" +
-	"\x05curve\x18\x04 \x01(\tR\x05curve\x12\x1c\n" +
-	"\tthreshold\x18\x05 \x01(\x05R\tthreshold\x12\x1f\n" +
-	"\vtotal_nodes\x18\x06 \x01(\x05R\n" +
-	"totalNodes\x12\x19\n" +
-	"\bnode_ids\x18\a \x03(\tR\anodeIds\"\\\n" +
-	"\x10StartDKGResponse\x12\x18\n" +
-	"\astarted\x18\x01 \x01(\bR\astarted\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\"4\n" +
+	"\x13mpc/v1/signer.proto\x12\x06mpc.v1\x1a\x10mpc/v1/mpc.proto\"4\n" +
 	"\x13GetDKGStatusRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"\xc7\x01\n" +
@@ -908,21 +582,7 @@ const file_mpc_v1_signer_proto_rawDesc = "" +
 	"\ftotal_rounds\x18\x04 \x01(\x05R\vtotalRounds\x12\x1d\n" +
 	"\n" +
 	"public_key\x18\x05 \x01(\tR\tpublicKey\x12\x14\n" +
-	"\x05error\x18\x06 \x01(\tR\x05error\"\x8c\x02\n" +
-	"\x10StartSignRequest\x12\x1d\n" +
-	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x15\n" +
-	"\x06key_id\x18\x02 \x01(\tR\x05keyId\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\fR\amessage\x12\x1a\n" +
-	"\bprotocol\x18\x04 \x01(\tR\bprotocol\x12\x1c\n" +
-	"\tthreshold\x18\x05 \x01(\x05R\tthreshold\x12\x19\n" +
-	"\bnode_ids\x18\x06 \x03(\tR\anodeIds\x12'\n" +
-	"\x0fderivation_path\x18\a \x01(\tR\x0ederivationPath\x12*\n" +
-	"\x11parent_chain_code\x18\b \x01(\fR\x0fparentChainCode\"]\n" +
-	"\x11StartSignResponse\x12\x18\n" +
-	"\astarted\x18\x01 \x01(\bR\astarted\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\"5\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\"5\n" +
 	"\x14GetSignStatusRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"\xc7\x01\n" +
@@ -933,7 +593,7 @@ const file_mpc_v1_signer_proto_rawDesc = "" +
 	"\rcurrent_round\x18\x03 \x01(\x05R\fcurrentRound\x12!\n" +
 	"\ftotal_rounds\x18\x04 \x01(\x05R\vtotalRounds\x12\x1c\n" +
 	"\tsignature\x18\x05 \x01(\tR\tsignature\x12\x14\n" +
-	"\x05error\x18\x06 \x01(\tR\x05error\"\x9b\x02\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\"\x99\x02\n" +
 	"\x13RelayMessageRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12 \n" +
@@ -944,8 +604,8 @@ const file_mpc_v1_signer_proto_rawDesc = "" +
 	"\fmessage_data\x18\x04 \x01(\fR\vmessageData\x12\x14\n" +
 	"\x05round\x18\x05 \x01(\x05R\x05round\x12!\n" +
 	"\fis_broadcast\x18\x06 \x01(\bR\visBroadcast\x12\x1c\n" +
-	"\ttimestamp\x18\a \x01(\tR\ttimestamp\x12+\n" +
-	"\x11service_signature\x18\b \x01(\fR\x10serviceSignature\"\xb2\x01\n" +
+	"\ttimestamp\x18\a \x01(\tR\ttimestamp\x12)\n" +
+	"\x10client_signature\x18\b \x01(\fR\x0fclientSignature\"\xb2\x01\n" +
 	"\x14RelayMessageResponse\x12\x1a\n" +
 	"\baccepted\x18\x01 \x01(\bR\baccepted\x12\x1d\n" +
 	"\n" +
@@ -981,34 +641,34 @@ func file_mpc_v1_signer_proto_rawDescGZIP() []byte {
 	return file_mpc_v1_signer_proto_rawDescData
 }
 
-var file_mpc_v1_signer_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_mpc_v1_signer_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_mpc_v1_signer_proto_goTypes = []any{
-	(*StartDKGRequest)(nil),      // 0: mpc.v1.StartDKGRequest
-	(*StartDKGResponse)(nil),     // 1: mpc.v1.StartDKGResponse
-	(*GetDKGStatusRequest)(nil),  // 2: mpc.v1.GetDKGStatusRequest
-	(*DKGStatusResponse)(nil),    // 3: mpc.v1.DKGStatusResponse
-	(*StartSignRequest)(nil),     // 4: mpc.v1.StartSignRequest
-	(*StartSignResponse)(nil),    // 5: mpc.v1.StartSignResponse
-	(*GetSignStatusRequest)(nil), // 6: mpc.v1.GetSignStatusRequest
-	(*SignStatusResponse)(nil),   // 7: mpc.v1.SignStatusResponse
-	(*RelayMessageRequest)(nil),  // 8: mpc.v1.RelayMessageRequest
-	(*RelayMessageResponse)(nil), // 9: mpc.v1.RelayMessageResponse
-	(*PingRequest)(nil),          // 10: mpc.v1.PingRequest
-	(*PongResponse)(nil),         // 11: mpc.v1.PongResponse
+	(*GetDKGStatusRequest)(nil),  // 0: mpc.v1.GetDKGStatusRequest
+	(*DKGStatusResponse)(nil),    // 1: mpc.v1.DKGStatusResponse
+	(*GetSignStatusRequest)(nil), // 2: mpc.v1.GetSignStatusRequest
+	(*SignStatusResponse)(nil),   // 3: mpc.v1.SignStatusResponse
+	(*RelayMessageRequest)(nil),  // 4: mpc.v1.RelayMessageRequest
+	(*RelayMessageResponse)(nil), // 5: mpc.v1.RelayMessageResponse
+	(*PingRequest)(nil),          // 6: mpc.v1.PingRequest
+	(*PongResponse)(nil),         // 7: mpc.v1.PongResponse
+	(*StartDKGRequest)(nil),      // 8: mpc.v1.StartDKGRequest
+	(*StartSignRequest)(nil),     // 9: mpc.v1.StartSignRequest
+	(*StartDKGResponse)(nil),     // 10: mpc.v1.StartDKGResponse
+	(*StartSignResponse)(nil),    // 11: mpc.v1.StartSignResponse
 }
 var file_mpc_v1_signer_proto_depIdxs = []int32{
-	0,  // 0: mpc.v1.SignerService.StartDKG:input_type -> mpc.v1.StartDKGRequest
-	2,  // 1: mpc.v1.SignerService.GetDKGStatus:input_type -> mpc.v1.GetDKGStatusRequest
-	4,  // 2: mpc.v1.SignerService.StartSign:input_type -> mpc.v1.StartSignRequest
-	6,  // 3: mpc.v1.SignerService.GetSignStatus:input_type -> mpc.v1.GetSignStatusRequest
-	8,  // 4: mpc.v1.SignerService.RelayProtocolMessage:input_type -> mpc.v1.RelayMessageRequest
-	10, // 5: mpc.v1.SignerService.Ping:input_type -> mpc.v1.PingRequest
-	1,  // 6: mpc.v1.SignerService.StartDKG:output_type -> mpc.v1.StartDKGResponse
-	3,  // 7: mpc.v1.SignerService.GetDKGStatus:output_type -> mpc.v1.DKGStatusResponse
-	5,  // 8: mpc.v1.SignerService.StartSign:output_type -> mpc.v1.StartSignResponse
-	7,  // 9: mpc.v1.SignerService.GetSignStatus:output_type -> mpc.v1.SignStatusResponse
-	9,  // 10: mpc.v1.SignerService.RelayProtocolMessage:output_type -> mpc.v1.RelayMessageResponse
-	11, // 11: mpc.v1.SignerService.Ping:output_type -> mpc.v1.PongResponse
+	8,  // 0: mpc.v1.SignerService.StartDKG:input_type -> mpc.v1.StartDKGRequest
+	0,  // 1: mpc.v1.SignerService.GetDKGStatus:input_type -> mpc.v1.GetDKGStatusRequest
+	9,  // 2: mpc.v1.SignerService.StartSign:input_type -> mpc.v1.StartSignRequest
+	2,  // 3: mpc.v1.SignerService.GetSignStatus:input_type -> mpc.v1.GetSignStatusRequest
+	4,  // 4: mpc.v1.SignerService.RelayProtocolMessage:input_type -> mpc.v1.RelayMessageRequest
+	6,  // 5: mpc.v1.SignerService.Ping:input_type -> mpc.v1.PingRequest
+	10, // 6: mpc.v1.SignerService.StartDKG:output_type -> mpc.v1.StartDKGResponse
+	1,  // 7: mpc.v1.SignerService.GetDKGStatus:output_type -> mpc.v1.DKGStatusResponse
+	11, // 8: mpc.v1.SignerService.StartSign:output_type -> mpc.v1.StartSignResponse
+	3,  // 9: mpc.v1.SignerService.GetSignStatus:output_type -> mpc.v1.SignStatusResponse
+	5,  // 10: mpc.v1.SignerService.RelayProtocolMessage:output_type -> mpc.v1.RelayMessageResponse
+	7,  // 11: mpc.v1.SignerService.Ping:output_type -> mpc.v1.PongResponse
 	6,  // [6:12] is the sub-list for method output_type
 	0,  // [0:6] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
@@ -1021,13 +681,14 @@ func file_mpc_v1_signer_proto_init() {
 	if File_mpc_v1_signer_proto != nil {
 		return
 	}
+	file_mpc_v1_mpc_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mpc_v1_signer_proto_rawDesc), len(file_mpc_v1_signer_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -574,352 +574,6 @@ paths:
             properties:
               error:
                 type: string
-  /v1/infra/keys:
-    get:
-      security:
-      - Bearer: []
-      description: 列出所有MPC密钥
-      tags:
-      - MPC Keys
-      summary: 列出密钥
-      operationId: getMpcKeys
-      parameters:
-      - type: string
-        description: 过滤区块链类型
-        name: chain_type
-        in: query
-      - type: string
-        description: 过滤状态
-        name: status
-        in: query
-      - type: integer
-        default: 20
-        name: limit
-        in: query
-      - type: integer
-        default: 0
-        name: offset
-        in: query
-      responses:
-        "200":
-          description: 密钥列表
-          schema:
-            $ref: '#/definitions/listKeysResponse'
-        "401":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "500":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-    post:
-      security:
-      - Bearer: []
-      description: 通过分布式密钥生成（DKG）创建MPC密钥
-      tags:
-      - MPC Keys
-      summary: 创建MPC密钥
-      operationId: postCreateMpcKey
-      parameters:
-      - name: body
-        in: body
-        required: true
-        schema:
-          $ref: '#/definitions/postCreateKeyPayload'
-      responses:
-        "201":
-          description: 密钥创建成功
-          schema:
-            $ref: '#/definitions/createKeyResponse'
-        "400":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "401":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "500":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-  /v1/infra/keys/derive:
-    post:
-      security:
-      - Bearer: []
-      description: 从根密钥派生子密钥
-      tags:
-      - MPC Keys
-      summary: 派生子密钥
-      operationId: postDeriveMpcKey
-      parameters:
-      - name: body
-        in: body
-        required: true
-        schema:
-          $ref: '#/definitions/postDeriveKeyPayload'
-      responses:
-        "201":
-          description: 派生成功
-          schema:
-            $ref: '#/definitions/deriveKeyResponse'
-        "400":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "404":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "500":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-  /v1/infra/keys/{keyId}:
-    get:
-      security:
-      - Bearer: []
-      description: 获取指定MPC密钥的详细信息
-      tags:
-      - MPC Keys
-      summary: 获取密钥信息
-      operationId: getMpcKey
-      parameters:
-      - type: string
-        name: keyId
-        in: path
-        required: true
-      responses:
-        "200":
-          description: 密钥信息
-          schema:
-            $ref: '#/definitions/getKeyResponse'
-        "401":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "404":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "500":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-    delete:
-      security:
-      - Bearer: []
-      description: 删除指定的MPC密钥
-      tags:
-      - MPC Keys
-      summary: 删除密钥
-      operationId: deleteMpcKey
-      parameters:
-      - type: string
-        name: keyId
-        in: path
-        required: true
-      responses:
-        "200":
-          description: 删除成功
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-              success:
-                type: boolean
-        "401":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "404":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "500":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-  /v1/infra/keys/{keyId}/address:
-    post:
-      security:
-      - Bearer: []
-      description: 为指定MPC密钥生成区块链地址
-      tags:
-      - MPC Keys
-      summary: 生成密钥地址
-      operationId: postGenerateMpcKeyAddress
-      parameters:
-      - type: string
-        name: keyId
-        in: path
-        required: true
-      - name: body
-        in: body
-        required: true
-        schema:
-          type: object
-          properties:
-            chain_type:
-              type: string
-              example: ethereum
-            derivation_path:
-              type: string
-              example: m/44'/60'/0'/0/0
-      responses:
-        "200":
-          description: 地址生成成功
-          schema:
-            $ref: '#/definitions/generateAddressResponse'
-        "400":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "404":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "500":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-  /v1/infra/sessions:
-    post:
-      security:
-      - Bearer: []
-      description: 创建新的MPC签名会话
-      tags:
-      - MPC Sessions
-      summary: 创建MPC会话
-      operationId: postCreateMpcSession
-      parameters:
-      - name: body
-        in: body
-        required: true
-        schema:
-          $ref: '#/definitions/postCreateSessionPayload'
-      responses:
-        "201":
-          description: 会话创建成功
-          schema:
-            $ref: '#/definitions/createSessionResponse'
-        "400":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "401":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "500":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-  /v1/infra/sessions/{sessionId}:
-    get:
-      security:
-      - Bearer: []
-      description: 获取MPC会话的详细信息
-      tags:
-      - MPC Sessions
-      summary: 获取会话信息
-      operationId: getMpcSession
-      parameters:
-      - type: string
-        name: sessionId
-        in: path
-        required: true
-      responses:
-        "200":
-          description: 会话信息
-          schema:
-            $ref: '#/definitions/getSessionResponse'
-        "401":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "404":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "500":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-  /v1/infra/sessions/{sessionId}/cancel:
-    post:
-      security:
-      - Bearer: []
-      description: 取消进行中的MPC会话
-      tags:
-      - MPC Sessions
-      summary: 取消会话
-      operationId: postCancelMpcSession
-      parameters:
-      - type: string
-        name: sessionId
-        in: path
-        required: true
-      responses:
-        "200":
-          description: 取消成功
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-              success:
-                type: boolean
-        "401":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "404":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "500":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-  /v1/infra/sign:
-    post:
-      security:
-      - Bearer: []
-      description: 使用MPC阈值签名对交易进行签名
-      tags:
-      - MPC Signing
-      summary: 签名交易
-      operationId: postMpcSign
-      parameters:
-      - name: body
-        in: body
-        required: true
-        schema:
-          $ref: '#/definitions/postSignPayload'
-      responses:
-        "200":
-          description: 签名成功
-          schema:
-            $ref: '#/definitions/signResponse'
-        "400":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "401":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "403":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
-        "500":
-          description: Standard error response
-          schema:
-            $ref: '#/definitions/publicHttpError'
   /v1/sessions/{sessionId}:
     get:
       security:
@@ -1071,18 +725,7 @@ paths:
         in: body
         required: true
         schema:
-          type: object
-          required:
-          - chain_type
-          properties:
-            chain_type:
-              description: 区块链类型
-              type: string
-              example: ethereum
-            derivation_path:
-              description: BIP44 派生路径
-              type: string
-              example: m/44'/60'/0'/0/0
+          $ref: '#/definitions/PostGenerateWalletAddressPayload'
       responses:
         "200":
           description: 地址生成成功
@@ -1193,15 +836,18 @@ paths:
         required: true
       - type: string
         example: ethereum
+        description: 区块链类型
         name: chain_type
         in: query
         required: true
       - type: integer
         default: 20
+        description: 每页数量
         name: limit
         in: query
       - type: integer
         default: 0
+        description: 偏移量
         name: offset
         in: query
       responses:
@@ -1222,229 +868,6 @@ paths:
           schema:
             $ref: '#/definitions/publicHttpError'
 definitions:
-  addPasskeyResponse:
-    type: object
-    properties:
-      message:
-        type: string
-      success:
-        type: boolean
-  addWalletMemberPayload:
-    type: object
-    required:
-    - credential_id
-    - role
-    - admin_auths
-    properties:
-      admin_auths:
-        type: array
-        items:
-          $ref: '#/definitions/adminAuthToken'
-      credential_id:
-        type: string
-        example: cred-new-member
-      role:
-        type: string
-        enum:
-        - admin
-        - member
-        example: member
-  adminAuthToken:
-    type: object
-    required:
-    - credential_id
-    - passkey_signature
-    - authenticator_data
-    - client_data_json
-    properties:
-      authenticator_data:
-        type: string
-        format: byte
-        example: SGVsbG8gV29ybGQ=
-      client_data_json:
-        type: string
-        format: byte
-        example: SGVsbG8gV29ybGQ=
-      credential_id:
-        type: string
-        example: cred-xyz
-      passkey_signature:
-        type: string
-        format: byte
-        example: SGVsbG8gV29ybGQ=
-      req_id:
-        type: string
-        example: req-123
-  authToken:
-    type: object
-    required:
-    - public_key
-    - signature
-    properties:
-      authenticator_data:
-        type: string
-        format: byte
-        example: SGVsbG8gV29ybGQ=
-      client_data_json:
-        type: string
-        format: byte
-        example: SGVsbG8gV29ybGQ=
-      credential_id:
-        type: string
-        example: cred-xyz
-      member_id:
-        type: string
-        example: user-123
-      passkey_signature:
-        type: string
-        format: byte
-        example: SGVsbG8gV29ybGQ=
-      public_key:
-        type: string
-        example: pub-0x1234567890abcdef...
-      signature:
-        type: string
-        format: byte
-        example: SGVsbG8gV29ybGQ=
-  backupShare:
-    type: object
-    properties:
-      created_at:
-        type: string
-      key_id:
-        type: string
-      node_id:
-        type: string
-      share_index:
-        type: integer
-  backupShares:
-    type: object
-    properties:
-      node_id:
-        type: string
-      shares:
-        type: array
-        items:
-          $ref: '#/definitions/backupShare'
-  backupStatus:
-    type: object
-    properties:
-      node_id:
-        type: string
-      recoverable:
-        type: boolean
-      required_shares:
-        type: integer
-      total_shares:
-        type: integer
-  batchSignResponse:
-    type: object
-    required:
-    - signatures
-    - total
-    - success
-    - failed
-    properties:
-      failed:
-        type: integer
-        example: 1
-      signatures:
-        type: array
-        items:
-          $ref: '#/definitions/signResponse'
-      success:
-        type: integer
-        example: 9
-      total:
-        type: integer
-        example: 10
-  createKeyResponse:
-    type: object
-    required:
-    - key_id
-    - public_key
-    - algorithm
-    - curve
-    - threshold
-    - total_nodes
-    - chain_type
-    - status
-    properties:
-      address:
-        type: string
-        example: addr-0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
-      algorithm:
-        type: string
-        example: ECDSA
-      chain_type:
-        type: string
-        example: ethereum
-      created_at:
-        type: string
-        format: date-time
-      curve:
-        type: string
-        example: secp256k1
-      description:
-        type: string
-      key_id:
-        type: string
-        example: key-1234567890abcdef
-      public_key:
-        type: string
-        example: pub-0x1234567890abcdef...
-      status:
-        type: string
-        enum:
-        - Active
-        - Inactive
-        - PendingDeletion
-        - Deleted
-        example: Active
-      tags:
-        type: object
-        additionalProperties:
-          type: string
-      threshold:
-        type: integer
-        example: 2
-      total_nodes:
-        type: integer
-        example: 3
-  createSessionResponse:
-    type: object
-    required:
-    - session_id
-    - key_id
-    - protocol
-    - status
-    - threshold
-    - total_nodes
-    properties:
-      created_at:
-        type: string
-        format: date-time
-      expires_at:
-        type: string
-        format: date-time
-      key_id:
-        type: string
-      participating_nodes:
-        type: array
-        items:
-          type: string
-      protocol:
-        type: string
-      session_id:
-        type: string
-      status:
-        type: string
-      threshold:
-        type: integer
-      timeout:
-        type: integer
-      total_nodes:
-        type: integer
   createWalletResponse:
     type: object
     required:
@@ -1485,53 +908,6 @@ definitions:
         maxLength: 500
         minLength: 1
         example: correct horse battery staple
-  deriveKeyResponse:
-    type: object
-    required:
-    - wallet_id
-    - root_key_id
-    - public_key
-    - chain_code
-    - chain_type
-    - index
-    - status
-    properties:
-      address:
-        type: string
-        example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-      chain_code:
-        type: string
-        example: 0x...
-      chain_type:
-        type: string
-        example: ethereum
-      created_at:
-        type: string
-        format: date-time
-      description:
-        type: string
-      index:
-        type: integer
-        example: 0
-      public_key:
-        type: string
-        example: pub-0x1234567890abcdef...
-      root_key_id:
-        type: string
-        example: key-1234567890abcdef
-      status:
-        type: string
-        enum:
-        - Active
-        - Inactive
-        example: Active
-      tags:
-        type: object
-        additionalProperties:
-          type: string
-      wallet_id:
-        type: string
-        example: wallet-1234567890abcdef
   generateAddressResponse:
     type: object
     required:
@@ -1547,95 +923,11 @@ definitions:
       public_key:
         type: string
         example: 0x04...
-  getBackupStatusResponse:
-    type: object
-    properties:
-      key_id:
-        type: string
-      statuses:
-        type: array
-        items:
-          $ref: '#/definitions/backupStatus'
-  getKeyResponse:
-    type: object
-    required:
-    - key_id
-    - public_key
-    - algorithm
-    - curve
-    - threshold
-    - total_nodes
-    - chain_type
-    - status
-    properties:
-      address:
-        type: string
-      algorithm:
-        type: string
-      chain_type:
-        type: string
-      created_at:
-        type: string
-        format: date-time
-      curve:
-        type: string
-      description:
-        type: string
-      key_id:
-        type: string
-      public_key:
-        type: string
-      status:
-        type: string
-      tags:
-        type: object
-        additionalProperties:
-          type: string
-      threshold:
-        type: integer
-      total_nodes:
-        type: integer
-      updated_at:
-        type: string
-        format: date-time
-  getNodeResponse:
-    type: object
-    required:
-    - node_id
-    - node_type
-    - status
-    - endpoint
-    properties:
-      capabilities:
-        type: array
-        items:
-          type: string
-      endpoint:
-        type: string
-      last_heartbeat:
-        type: string
-        format: date-time
-      metadata:
-        type: object
-        additionalProperties:
-          type: string
-      node_id:
-        type: string
-      node_type:
-        type: string
-      public_key:
-        type: string
-      registered_at:
-        type: string
-        format: date-time
-      status:
-        type: string
   getSessionResponse:
     type: object
     required:
     - session_id
-    - key_id
-    - protocol
+    - wallet_id
     - status
     properties:
       completed_at:
@@ -1644,30 +936,49 @@ definitions:
       created_at:
         type: string
         format: date-time
-      current_round:
-        type: integer
       duration_ms:
+        description: 执行时长（毫秒）
         type: integer
-      key_id:
+      error_message:
+        description: 错误信息（失败时）
         type: string
-      participating_nodes:
-        type: array
-        items:
-          type: string
-      protocol:
+      progress:
+        type: object
+        properties:
+          current_round:
+            type: integer
+            example: 1
+          total_rounds:
+            type: integer
+            example: 6
+      public_key:
+        description: 公钥（DKG 完成后才有）
         type: string
+        example: 0x...
       session_id:
         type: string
-      signature:
+        format: uuid
+      session_type:
         type: string
+        enum:
+        - dkg
+        - signing
+        example: signing
+      signature:
+        description: 签名结果（完成后才有）
+        type: string
+        example: 0x...
       status:
         type: string
-      threshold:
-        type: integer
-      total_nodes:
-        type: integer
-      total_rounds:
-        type: integer
+        enum:
+        - pending
+        - running
+        - completed
+        - failed
+        example: running
+      wallet_id:
+        type: string
+        format: uuid
   getUserInfoResponse:
     type: object
     required:
@@ -1698,21 +1009,6 @@ definitions:
         description: Unix timestamp the user's info was last updated at
         type: integer
         example: 1591960808
-  heartbeatRequest:
-    type: object
-    required:
-    - node_id
-    - status
-    properties:
-      node_id:
-        type: string
-      status:
-        type: string
-  heartbeatResponse:
-    type: object
-    properties:
-      success:
-        type: boolean
   httpValidationErrorDetail:
     type: object
     required:
@@ -1729,45 +1025,6 @@ definitions:
       key:
         description: Key of field failing validation
         type: string
-  listBackupSharesResponse:
-    type: object
-    properties:
-      key_id:
-        type: string
-      shares_by_node:
-        type: object
-        additionalProperties:
-          $ref: '#/definitions/backupShares'
-  listKeysResponse:
-    type: object
-    required:
-    - keys
-    properties:
-      keys:
-        type: array
-        items:
-          $ref: '#/definitions/getKeyResponse'
-      limit:
-        type: integer
-      offset:
-        type: integer
-      total:
-        type: integer
-  listNodesResponse:
-    type: object
-    required:
-    - nodes
-    properties:
-      limit:
-        type: integer
-      nodes:
-        type: array
-        items:
-          $ref: '#/definitions/getNodeResponse'
-      offset:
-        type: integer
-      total:
-        type: integer
   listWalletsResponse:
     type: object
     required:
@@ -1789,82 +1046,11 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/walletSummary'
-  nodeRegistration:
-    type: object
-    required:
-    - device_id
-    - public_key
-    properties:
-      device_id:
-        type: string
-      metadata:
-        type: object
-        additionalProperties:
-          type: string
-      public_key:
-        type: string
-      version:
-        type: string
-  nodeRegistrationResponse:
-    type: object
-    properties:
-      node_id:
-        type: string
-      registered_at:
-        type: string
-        format: date-time
-      status:
-        type: string
   orderDir:
     type: string
     enum:
     - asc
     - desc
-  postAddPasskeyPayload:
-    type: object
-    required:
-    - credential_id
-    - public_key
-    properties:
-      credential_id:
-        type: string
-        example: cred-xyz
-      device_name:
-        type: string
-        example: MacBook Pro
-      public_key:
-        type: string
-        example: pub-key-hex
-  postBatchSignPayload:
-    type: object
-    required:
-    - key_id
-    - messages
-    properties:
-      chain_type:
-        type: string
-        example: ethereum
-      key_id:
-        type: string
-        example: key-1234567890abcdef
-      messages:
-        type: array
-        items:
-          type: object
-          required:
-          - message
-          properties:
-            message:
-              type: string
-              format: byte
-              example: SGVsbG8gV29ybGQ=
-            message_type:
-              type: string
-              enum:
-              - transaction
-              - message
-              - raw
-              example: transaction
   postChangePasswordPayload:
     type: object
     required:
@@ -1883,83 +1069,12 @@ definitions:
         maxLength: 500
         minLength: 1
         example: correct horse battery staple
-  postCreateKeyPayload:
-    type: object
-    required:
-    - algorithm
-    - curve
-    - threshold
-    - total_nodes
-    - chain_type
-    properties:
-      algorithm:
-        type: string
-        enum:
-        - ECDSA
-        - EdDSA
-        example: ECDSA
-      chain_type:
-        type: string
-        enum:
-        - bitcoin
-        - ethereum
-        - bsc
-        - avalanche
-        - solana
-        example: ethereum
-      curve:
-        type: string
-        enum:
-        - secp256k1
-        - secp256r1
-        - Ed25519
-        example: secp256k1
-      description:
-        type: string
-        example: 企业多签钱包密钥
-      tags:
-        type: object
-        additionalProperties:
-          type: string
-        example:
-          environment: production
-          wallet_type: multisig
-      threshold:
-        type: integer
-        minimum: 2
-        example: 2
-      total_nodes:
-        type: integer
-        minimum: 2
-        example: 3
-  postCreateSessionPayload:
-    type: object
-    required:
-    - key_id
-    - message
-    properties:
-      key_id:
-        type: string
-      message:
-        type: string
-        format: byte
-      protocol:
-        type: string
-        enum:
-        - gg18
-        - gg20
-        - frost
-        example: gg20
-      timeout:
-        type: integer
-        example: 300
   postCreateWalletPayload:
     type: object
     required:
     - algorithm
     - curve
     - chain_type
-    - webauthn_assertion
     properties:
       algorithm:
         description: 签名算法
@@ -1986,37 +1101,6 @@ definitions:
         example: secp256k1
       webauthn_assertion:
         $ref: '#/definitions/webAuthnAssertion'
-  postDeriveKeyPayload:
-    type: object
-    required:
-    - root_key_id
-    - chain_type
-    - index
-    properties:
-      chain_type:
-        type: string
-        enum:
-        - bitcoin
-        - ethereum
-        - bsc
-        - avalanche
-        - solana
-        example: ethereum
-      description:
-        type: string
-        example: 派生子钱包
-      index:
-        type: integer
-        example: 0
-      root_key_id:
-        type: string
-        example: key-1234567890abcdef
-      tags:
-        type: object
-        additionalProperties:
-          type: string
-        example:
-          environment: production
   postForgotPasswordCompletePayload:
     type: object
     required:
@@ -2046,6 +1130,42 @@ definitions:
         maxLength: 255
         minLength: 1
         example: user@example.com
+  postGenerateWalletAddressBody:
+    type: object
+    required:
+    - chain_type
+    properties:
+      chain_type:
+        description: 区块链类型
+        type: string
+        enum:
+        - ethereum
+        - bitcoin
+        - solana
+        - polkadot
+        example: ethereum
+      derivation_path:
+        description: BIP44 派生路径（可选）
+        type: string
+        example: m/44'/60'/0'/0/0
+  postGenerateWalletAddressPayload:
+    type: object
+    required:
+    - chain_type
+    properties:
+      chain_type:
+        description: 区块链类型
+        type: string
+        enum:
+        - ethereum
+        - bitcoin
+        - solana
+        - polkadot
+        example: ethereum
+      derivation_path:
+        description: BIP44 派生路径（可选）
+        type: string
+        example: m/44'/60'/0'/0/0
   postLoginPayload:
     type: object
     required:
@@ -2110,38 +1230,6 @@ definitions:
         type: string
         format: uuid4
         example: 7503cd8a-c921-4368-a32d-6c1d01d86da9
-  postRegisterNodePayload:
-    type: object
-    required:
-    - node_type
-    - endpoint
-    - public_key
-    properties:
-      capabilities:
-        type: array
-        items:
-          type: string
-        example:
-        - gg18
-        - gg20
-      endpoint:
-        type: string
-        example: https://node-1.example.com:8080
-      metadata:
-        type: object
-        additionalProperties:
-          type: string
-      node_id:
-        type: string
-      node_type:
-        type: string
-        enum:
-        - coordinator
-        - participant
-        example: participant
-      public_key:
-        type: string
-        example: pub-0x1234567890abcdef...
   postRegisterPayload:
     type: object
     required:
@@ -2161,39 +1249,11 @@ definitions:
         maxLength: 255
         minLength: 1
         example: user@example.com
-  postSignPayload:
-    type: object
-    required:
-    - key_id
-    - message
-    properties:
-      auth_tokens:
-        type: array
-        items:
-          $ref: '#/definitions/authToken'
-      chain_type:
-        type: string
-        example: ethereum
-      key_id:
-        type: string
-        example: key-1234567890abcdef
-      message:
-        type: string
-        format: byte
-        example: SGVsbG8gV29ybGQ=
-      message_type:
-        type: string
-        enum:
-        - transaction
-        - message
-        - raw
-        example: transaction
   postSignTransactionPayload:
     type: object
     required:
     - message_hex
     - chain_type
-    - webauthn_assertion
     properties:
       chain_type:
         type: string
@@ -2212,32 +1272,6 @@ definitions:
         example: 0xf86c...
       webauthn_assertion:
         $ref: '#/definitions/webAuthnAssertion'
-  postVerifyPayload:
-    type: object
-    required:
-    - signature
-    - public_key
-    - message
-    properties:
-      algorithm:
-        type: string
-        enum:
-        - ECDSA
-        - EdDSA
-        example: ECDSA
-      chain_type:
-        type: string
-        example: ethereum
-      message:
-        type: string
-        format: byte
-        example: SGVsbG8gV29ybGQ=
-      public_key:
-        type: string
-        example: pub-0x1234567890abcdef...
-      signature:
-        type: string
-        example: 0x1234567890abcdef...
   postWebAuthnLoginBeginPayload:
     type: object
     required:
@@ -2342,6 +1376,7 @@ definitions:
     - MALFORMED_TOKEN
     - LAST_AUTHENTICATED_AT_EXCEEDED
     - MISSING_SCOPES
+    - validation
   publicHttpValidationError:
     type: object
     required:
@@ -2377,56 +1412,6 @@ definitions:
         type: string
         maxLength: 500
         example: fcm
-  recoverMPCShareRequest:
-    type: object
-    properties:
-      key_id:
-        type: string
-      node_id:
-        type: string
-      share_data:
-        description: Base64 encoded share data provided by the user
-        type: string
-        format: byte
-  recoverMPCShareResponse:
-    type: object
-    properties:
-      key_id:
-        type: string
-      message:
-        type: string
-      node_id:
-        type: string
-      success:
-        type: boolean
-  registerNodeResponse:
-    type: object
-    required:
-    - node_id
-    - node_type
-    - status
-    - endpoint
-    properties:
-      capabilities:
-        type: array
-        items:
-          type: string
-      endpoint:
-        type: string
-      last_heartbeat:
-        type: string
-        format: date-time
-      node_id:
-        type: string
-      node_type:
-        type: string
-      public_key:
-        type: string
-      registered_at:
-        type: string
-        format: date-time
-      status:
-        type: string
   registerResponse:
     type: object
     required:
@@ -2436,126 +1421,8 @@ definitions:
         description: Indicates whether the registration process requires email confirmation
         type: boolean
         example: true
-  removeWalletMemberPayload:
-    type: object
-    required:
-    - credential_id
-    - admin_auths
-    properties:
-      admin_auths:
-        type: array
-        items:
-          $ref: '#/definitions/adminAuthToken'
-      credential_id:
-        type: string
-        example: cred-to-remove
   sessionResponse:
-    type: object
-    required:
-    - session_id
-    - wallet_id
-    - status
-    properties:
-      completed_at:
-        type: string
-        format: date-time
-      created_at:
-        type: string
-        format: date-time
-      duration_ms:
-        description: 执行时长（毫秒）
-        type: integer
-      error_message:
-        description: 错误信息（失败时）
-        type: string
-      progress:
-        type: object
-        properties:
-          current_round:
-            type: integer
-            example: 1
-          total_rounds:
-            type: integer
-            example: 6
-      public_key:
-        description: 公钥（DKG 完成后才有）
-        type: string
-        example: 0x...
-      session_id:
-        type: string
-        format: uuid
-      session_type:
-        type: string
-        enum:
-        - dkg
-        - signing
-        example: signing
-      signature:
-        description: 签名结果（完成后才有）
-        type: string
-        example: 0x...
-      status:
-        type: string
-        enum:
-        - pending
-        - running
-        - completed
-        - failed
-        example: running
-      wallet_id:
-        type: string
-        format: uuid
-  setSigningPolicyPayload:
-    type: object
-    required:
-    - policy_type
-    - min_signatures
-    - admin_auths
-    properties:
-      admin_auths:
-        type: array
-        items:
-          $ref: '#/definitions/adminAuthToken'
-      min_signatures:
-        type: integer
-        minimum: 1
-        example: 2
-      policy_type:
-        type: string
-        enum:
-        - single
-        - team
-        example: team
-  signResponse:
-    type: object
-    required:
-    - signature
-    - key_id
-    - public_key
-    - message
-    - chain_type
-    - session_id
-    properties:
-      chain_type:
-        type: string
-      key_id:
-        type: string
-      message:
-        type: string
-      participating_nodes:
-        type: array
-        items:
-          type: string
-      public_key:
-        type: string
-      session_id:
-        type: string
-      signature:
-        type: string
-        example: sig-0x1234567890abcdef...
-      signed_at:
-        type: string
-        format: date-time
+    $ref: '#/definitions/getSessionResponse'
   signTransactionResponse:
     type: object
     required:
@@ -2583,19 +1450,6 @@ definitions:
         description: WebSocket 连接 URL（用于协议消息交换）
         type: string
         example: ws://localhost:8080/v1/ws?token=xxx
-  signingPolicyResponse:
-    type: object
-    properties:
-      key_id:
-        type: string
-      message:
-        type: string
-      min_signatures:
-        type: integer
-      policy_type:
-        type: string
-      success:
-        type: boolean
   transaction:
     type: object
     properties:
@@ -2639,24 +1493,6 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/transaction'
-  verifyResponse:
-    type: object
-    required:
-    - valid
-    - public_key
-    - verified_at
-    properties:
-      address:
-        type: string
-        example: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-      public_key:
-        type: string
-      valid:
-        type: boolean
-        example: true
-      verified_at:
-        type: string
-        format: date-time
   walletBalanceResponse:
     type: object
     required:
@@ -2677,13 +1513,6 @@ definitions:
       symbol:
         type: string
         example: ETH
-  walletMemberResponse:
-    type: object
-    properties:
-      message:
-        type: string
-      success:
-        type: boolean
   walletResponse:
     type: object
     required:

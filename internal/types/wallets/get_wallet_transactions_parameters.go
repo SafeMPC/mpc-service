@@ -43,17 +43,17 @@ type GetWalletTransactionsParams struct {
 	// HTTP Request Object
 	HTTPRequest *http.Request `json:"-"`
 
-	/*
+	/*区块链类型
 	  Required: true
 	  In: query
 	*/
 	ChainType string `query:"chain_type"`
-	/*
+	/*每页数量
 	  In: query
 	  Default: 20
 	*/
 	Limit *int64 `query:"limit"`
-	/*
+	/*偏移量
 	  In: query
 	  Default: 0
 	*/

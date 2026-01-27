@@ -49,16 +49,19 @@ paths:
         - name: chain_type
           in: query
           type: string
+          required: false
           description: 过滤区块链类型
           example: "ethereum"
         - name: limit
           in: query
           type: integer
+          required: false
           default: 20
           description: 每页数量
         - name: offset
           in: query
           type: integer
+          required: false
           default: 0
           description: 偏移量
       responses:
@@ -128,17 +131,7 @@ paths:
           in: body
           required: true
           schema:
-            type: object
-            required: [chain_type]
-            properties:
-              chain_type:
-                type: string
-                example: "ethereum"
-                description: 区块链类型
-              derivation_path:
-                type: string
-                example: "m/44'/60'/0'/0/0"
-                description: BIP44 派生路径
+            $ref: "#/definitions/PostGenerateWalletAddressPayload"
       responses:
         "200":
           description: 地址生成成功
@@ -215,15 +208,20 @@ paths:
           in: query
           type: string
           required: true
+          description: 区块链类型
           example: "ethereum"
         - name: limit
           in: query
           type: integer
+          required: false
           default: 20
+          description: 每页数量
         - name: offset
           in: query
           type: integer
+          required: false
           default: 0
+          description: 偏移量
       responses:
         "200":
           description: 交易历史

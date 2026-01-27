@@ -30,7 +30,8 @@ func NewManager(metadataStore storage.MetadataStore, sessionStore storage.Sessio
 
 // CreateSession 创建签名会话
 func (m *Manager) CreateSession(ctx context.Context, keyID string, protocol string, threshold int, totalNodes int) (*Session, error) {
-	sessionID := "session-" + uuid.New().String()
+	// 使用纯 UUID 格式，符合 API 定义要求
+	sessionID := uuid.New().String()
 	now := time.Now()
 	expiresAt := now.Add(m.timeout)
 
@@ -313,6 +314,24 @@ func (m *Manager) CompleteSession(ctx context.Context, sessionID string, signatu
 	return nil
 }
 
+func (m *Manager) FailSession(ctx context.Context, sessionID string) error {
+	session, err := m.GetSession(ctx, sessionID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get session")
+	}
+
+	now := time.Now()
+	session.Status = string(SessionStatusFailed)
+	session.CompletedAt = &now
+	session.DurationMs = int(now.Sub(session.CreatedAt).Milliseconds())
+
+	if err := m.UpdateSession(ctx, session); err != nil {
+		return errors.Wrap(err, "failed to update session")
+	}
+
+	return nil
+}
+
 // CompleteKeygenSession 完成 DKG 会话并写入公钥，更新密钥为 Active
 func (m *Manager) CompleteKeygenSession(ctx context.Context, keyID string, publicKey string) error {
 	log.Info().
@@ -387,6 +406,24 @@ func (m *Manager) CompleteKeygenSession(ctx context.Context, keyID string, publi
 		Str("new_status", "Active").
 		Str("public_key", publicKey).
 		Msg("Key metadata updated successfully - DKG completed")
+
+	return nil
+}
+
+func (m *Manager) FailKeygenSession(ctx context.Context, keyID string) error {
+	session, err := m.GetSession(ctx, keyID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get keygen session")
+	}
+
+	now := time.Now()
+	session.Status = string(SessionStatusFailed)
+	session.CompletedAt = &now
+	session.DurationMs = int(now.Sub(session.CreatedAt).Milliseconds())
+
+	if err := m.UpdateSession(ctx, session); err != nil {
+		return errors.Wrap(err, "failed to update keygen session")
+	}
 
 	return nil
 }

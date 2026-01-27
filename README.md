@@ -83,15 +83,40 @@ graph TD
 - Go 1.21+
 
 ### 1. Launch Infrastructure
-Spin up PostgreSQL, Redis, Consul, and all MPC service nodes in one command:
+### ⚠️ 重要提示：所有 make 命令必须在容器内执行
+
+**所有开发命令（`make build`, `make test`, `make swagger`, 等）都必须在 Docker 容器内执行**，以确保环境一致性。
+
+#### 进入容器
 ```bash
-make up
+# 启动服务
+docker compose up -d
+
+# 进入 mpc-service 容器
+docker compose exec mpc-service bash
+```
+
+#### 在容器内执行命令
+```bash
+# 在容器内执行 make 命令
+make build
+make test
+make swagger
+# ... 其他 make 命令
+```
+
+### 1. 启动基础设施
+一键拉起 PostgreSQL, Redis, Consul 及所有 MPC 服务节点：
+```bash
+docker compose up -d
 ```
 
 ### 2. Run End-to-End System Test
 The system includes a comprehensive integration test that simulates the full flow from node registration to transaction signing:
 ```bash
 # Validates core workflow: node discovery → DKG → Passkey auth → TSS signing
+# 进入容器后执行
+docker compose exec mpc-service bash
 go run cmd/system-test/main.go
 ```
 

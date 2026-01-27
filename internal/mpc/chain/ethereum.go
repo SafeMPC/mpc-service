@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -9,19 +10,63 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/pkg/errors"
+
+	"github.com/SafeMPC/mpc-service/internal/mpc/chain/ethereum"
 )
 
 // EthereumAdapter 实现 EVM 链基础能力
 type EthereumAdapter struct {
-	chainID *big.Int
+	chainID  *big.Int
+	rpcClient *ethereum.RPCClient
 }
 
 // NewEthereumAdapter 创建以太坊适配器
-func NewEthereumAdapter(chainID *big.Int) *EthereumAdapter {
+func NewEthereumAdapter(chainID *big.Int, rpcEndpoint string) *EthereumAdapter {
 	if chainID == nil {
 		chainID = big.NewInt(1) // mainnet
 	}
-	return &EthereumAdapter{chainID: chainID}
+
+	var rpcClient *ethereum.RPCClient
+	if rpcEndpoint != "" {
+		rpcClient = ethereum.NewRPCClient(rpcEndpoint)
+	}
+
+	return &EthereumAdapter{
+		chainID:   chainID,
+		rpcClient: rpcClient,
+	}
+}
+
+// GetBalance 查询余额
+func (a *EthereumAdapter) GetBalance(ctx context.Context, address string) (*big.Int, error) {
+	if a.rpcClient == nil {
+		return nil, errors.New("RPC client not configured")
+	}
+	return a.rpcClient.GetBalance(ctx, address)
+}
+
+// GetTransactionCount 获取交易计数（用于 nonce）
+func (a *EthereumAdapter) GetTransactionCount(ctx context.Context, address string) (uint64, error) {
+	if a.rpcClient == nil {
+		return 0, errors.New("RPC client not configured")
+	}
+	return a.rpcClient.GetTransactionCount(ctx, address)
+}
+
+// BroadcastTransaction 广播交易
+func (a *EthereumAdapter) BroadcastTransaction(ctx context.Context, rawTx string) (string, error) {
+	if a.rpcClient == nil {
+		return "", errors.New("RPC client not configured")
+	}
+	return a.rpcClient.SendRawTransaction(ctx, rawTx)
+}
+
+// GetGasPrice 获取当前 gas price
+func (a *EthereumAdapter) GetGasPrice(ctx context.Context) (*big.Int, error) {
+	if a.rpcClient == nil {
+		return nil, errors.New("RPC client not configured")
+	}
+	return a.rpcClient.GetGasPrice(ctx)
 }
 
 // GenerateAddress 通过 Keccak256(pubKey[1:]) 生成地址

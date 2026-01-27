@@ -24,6 +24,7 @@ definitions:
       - MALFORMED_TOKEN
       - LAST_AUTHENTICATED_AT_EXCEEDED
       - MISSING_SCOPES
+      - validation
   PublicHTTPError:
     type: object
     required:

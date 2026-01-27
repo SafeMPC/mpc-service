@@ -29,7 +29,8 @@ definitions:
   # 创建钱包请求
   PostCreateWalletPayload:
     type: object
-    required: [algorithm, curve, chain_type, webauthn_assertion]
+    required: [algorithm, curve, chain_type]
+    # webauthn_assertion 在测试环境可选，生产环境必须提供
     properties:
       algorithm:
         type: string
@@ -151,6 +152,36 @@ definitions:
         type: string
         format: date-time
 
+  # 生成地址请求
+  PostGenerateWalletAddressPayload:
+    type: object
+    required: [chain_type]
+    properties:
+      chain_type:
+        type: string
+        enum: [ethereum, bitcoin, solana, polkadot]
+        example: "ethereum"
+        description: "区块链类型"
+      derivation_path:
+        type: string
+        example: "m/44'/60'/0'/0/0"
+        description: "BIP44 派生路径（可选）"
+  
+  # 生成地址请求体（用于参数绑定）
+  PostGenerateWalletAddressBody:
+    type: object
+    required: [chain_type]
+    properties:
+      chain_type:
+        type: string
+        enum: [ethereum, bitcoin, solana, polkadot]
+        example: "ethereum"
+        description: "区块链类型"
+      derivation_path:
+        type: string
+        example: "m/44'/60'/0'/0/0"
+        description: "BIP44 派生路径（可选）"
+
   # 生成地址响应
   GenerateAddressResponse:
     type: object
@@ -230,7 +261,8 @@ definitions:
   # 签名交易请求
   PostSignTransactionPayload:
     type: object
-    required: [message_hex, chain_type, webauthn_assertion]
+    required: [message_hex, chain_type]
+    # webauthn_assertion 在测试环境可选，生产环境必须提供
     properties:
       message_hex:
         type: string

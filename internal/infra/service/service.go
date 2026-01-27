@@ -2,14 +2,15 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/SafeMPC/mpc-service/internal/infra/key"
 	"github.com/SafeMPC/mpc-service/internal/infra/session"
+	"github.com/SafeMPC/mpc-service/internal/infra/storage"
 	"github.com/SafeMPC/mpc-service/internal/mpc/node"
-	"github.com/SafeMPC/mpc-service/internal/mpc/protocol"
 	pb "github.com/SafeMPC/mpc-service/pb/mpc/v1"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
@@ -17,12 +18,13 @@ import (
 
 // Service MPC服务，负责API和会话管理，不参与MPC协议计算
 type Service struct {
-	keyService     *key.Service
-	sessionManager *session.Manager
-	nodeDiscovery  *node.Discovery
-	protocolEngine protocol.Engine
-	grpcClient     GRPCClient // gRPC客户端，用于通知签名节点
-	thisNodeID     string     // 当前节点ID（service节点）
+	keyService      *key.Service
+	sessionManager  *session.Manager
+	nodeDiscovery   *node.Discovery
+	defaultProtocol string            // 默认协议（从配置中获取，如 "gg20"）
+	grpcClient      GRPCClient        // gRPC客户端，用于通知签名节点
+	thisNodeID      string            // 当前节点ID（service节点）
+	metadataStore   storage.MetadataStore // 用于查询 Passkey 公钥
 }
 
 // GRPCClient gRPC客户端接口（用于通知参与者）
@@ -31,8 +33,7 @@ type GRPCClient interface {
 	SendStartDKG(ctx context.Context, nodeID string, req *pb.StartDKGRequest) (*pb.StartDKGResponse, error)
 	// StartSign RPC
 	SendStartSign(ctx context.Context, nodeID string, req *pb.StartSignRequest) (*pb.StartSignResponse, error)
-	// StartResharing RPC
-	SendStartResharing(ctx context.Context, nodeID string, req *pb.StartResharingRequest) (*pb.StartResharingResponse, error)
+	// 注意：StartResharing 在 V2 架构中暂未实现
 }
 
 // NewService 创建MPC服务
@@ -40,9 +41,10 @@ func NewService(
 	keyService *key.Service,
 	sessionManager *session.Manager,
 	nodeDiscovery *node.Discovery,
-	protocolEngine protocol.Engine,
+	defaultProtocol string, // 默认协议（如 "gg20"）
 	grpcClient GRPCClient,
 	thisNodeID string, // 当前节点ID（service节点）
+	metadataStore storage.MetadataStore, // 用于查询 Passkey 公钥
 ) *Service {
 	// 记录 thisNodeID 的值（用于调试）
 	log.Error().
@@ -51,12 +53,13 @@ func NewService(
 		Msg("MPCService initialized with thisNodeID")
 
 	return &Service{
-		keyService:     keyService,
-		sessionManager: sessionManager,
-		nodeDiscovery:  nodeDiscovery,
-		protocolEngine: protocolEngine,
-		grpcClient:     grpcClient,
-		thisNodeID:     thisNodeID,
+		keyService:      keyService,
+		sessionManager:  sessionManager,
+		nodeDiscovery:   nodeDiscovery,
+		defaultProtocol: defaultProtocol,
+		grpcClient:      grpcClient,
+		thisNodeID:      thisNodeID,
+		metadataStore:   metadataStore,
 	}
 }
 
@@ -92,7 +95,7 @@ func (s *Service) CreateSigningSession(ctx context.Context, req *CreateSessionRe
 	// 选择协议
 	protocol := req.Protocol
 	if protocol == "" {
-		protocol = s.protocolEngine.DefaultProtocol()
+		protocol = s.defaultProtocol
 	}
 
 	// 创建会话
@@ -194,12 +197,12 @@ func (s *Service) CreateDKGSession(ctx context.Context, req *CreateDKGSessionReq
 		Str("algorithm", req.Algorithm).
 		Str("curve", req.Curve).
 		Str("request_protocol", req.Protocol).
-		Str("default_protocol", s.protocolEngine.DefaultProtocol()).
+		Str("default_protocol", s.defaultProtocol).
 		Msg("CreateDKGSession: protocol selection input")
 
 	selectedProtocol := req.Protocol
 	if selectedProtocol == "" {
-		selectedProtocol = inferProtocolForDKG(req.Algorithm, req.Curve, s.protocolEngine.DefaultProtocol())
+		selectedProtocol = inferProtocolForDKG(req.Algorithm, req.Curve, s.defaultProtocol)
 	}
 
 	// 3. 创建DKG会话
@@ -269,14 +272,35 @@ func (s *Service) NotifyParticipantsForDKG(ctx context.Context, req *CreateDKGSe
 		// 通过 gRPC 发送 StartDKG RPC 给 leader
 		// 使用独立的 context 和超时，避免受 HTTP 请求超时影响
 		// 缩短超时时间，加快失败检测
+	
+	// 查询 Client (P1) 的 Passkey 公钥（2-of-2 模式）
+	var clientPublicKey string
+	if req.MobileNodeID != "" {
+		// MobileNodeID 就是 credentialID
+		passkey, err := s.metadataStore.GetPasskey(ctx, req.MobileNodeID)
+		if err != nil {
+			log.Warn().
+				Err(err).
+				Str("mobile_node_id", req.MobileNodeID).
+				Msg("Failed to get client passkey, continuing without client public key")
+		} else {
+			clientPublicKey = passkey.PublicKey
+			log.Debug().
+				Str("mobile_node_id", req.MobileNodeID).
+				Str("public_key_len", fmt.Sprintf("%d", len(clientPublicKey))).
+				Msg("Retrieved client passkey public key")
+		}
+	}
+	
 	startReq := &pb.StartDKGRequest{
-		SessionId:  req.KeyID,
-		KeyId:      req.KeyID,
-		Algorithm:  req.Algorithm,
-		Curve:      req.Curve,
-		Threshold:  int32(req.Threshold),
-		TotalNodes: int32(req.TotalNodes),
-		NodeIds:    nodeIDs,
+		SessionId:      req.KeyID,
+		KeyId:          req.KeyID,
+		Algorithm:      req.Algorithm,
+		Curve:          req.Curve,
+		Threshold:      int32(req.Threshold),
+		TotalNodes:     int32(req.TotalNodes),
+		NodeIds:        nodeIDs,
+		ClientPublicKey: clientPublicKey,
 	}
 
 	// 异步调用 StartDKG，避免阻塞 HTTP 请求

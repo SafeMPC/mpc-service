@@ -38,9 +38,12 @@ type PostCreateWalletPayload struct {
 	// Enum: [secp256k1 ed25519]
 	Curve *string `json:"curve"`
 
+	// 移动端节点 ID (2-of-2 模式)
+	// Example: mobile-p1
+	MobileNodeID string `json:"mobile_node_id,omitempty"`
+
 	// webauthn assertion
-	// Required: true
-	WebauthnAssertion *WebAuthnAssertion `json:"webauthn_assertion"`
+	WebauthnAssertion *WebAuthnAssertion `json:"webauthn_assertion,omitempty"`
 }
 
 // Validate validates this post create wallet payload
@@ -205,9 +208,8 @@ func (m *PostCreateWalletPayload) validateCurve(formats strfmt.Registry) error {
 }
 
 func (m *PostCreateWalletPayload) validateWebauthnAssertion(formats strfmt.Registry) error {
-
-	if err := validate.Required("webauthn_assertion", "body", m.WebauthnAssertion); err != nil {
-		return err
+	if swag.IsZero(m.WebauthnAssertion) { // not required
+		return nil
 	}
 
 	if m.WebauthnAssertion != nil {

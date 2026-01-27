@@ -58,29 +58,28 @@ func InitNewServer(server config.Server) (*Server, error) {
 		return nil, err
 	}
 	manager := NewNodeManager(discoveryService, server)
+	discovery := NewNodeDiscovery(manager, discoveryService)
 	grpcClient, err := NewMPCGRPCClient(server, manager)
 	if err != nil {
 		return nil, err
 	}
-	engine := NewProtocolEngine(server, grpcClient, keyShareStorage)
-	discovery := NewNodeDiscovery(manager, discoveryService)
-	dkgService := NewDKGServiceProvider(metadataStore, keyShareStorage, engine, manager, discovery, grpcClient, server)
-	sssBackupService := NewBackupService(metadataStore)
-	keyService := NewKeyServiceProvider(metadataStore, keyShareStorage, engine, dkgService, sssBackupService)
+	dkgService := NewDKGServiceProvider(metadataStore, keyShareStorage, manager, discovery, grpcClient, server)
+	keyService := NewKeyServiceProvider(metadataStore, keyShareStorage, dkgService)
 	client, err := NewRedisClient(server)
 	if err != nil {
 		return nil, err
 	}
 	sessionStore := NewSessionStore(client)
 	sessionManager := NewSessionManager(metadataStore, sessionStore, server)
-	signingService := NewSigningServiceProvider(keyService, engine, sessionManager, discovery, server, grpcClient)
-	serviceService := NewMPCServiceProvider(server, keyService, sessionManager, discovery, engine, grpcClient)
+	signingService := NewSigningServiceProvider(keyService, sessionManager, discovery, server, grpcClient, metadataStore)
+	serviceService := NewMPCServiceProvider(server, keyService, sessionManager, discovery, grpcClient, metadataStore)
 	registry := NewNodeRegistry(manager)
-	grpcServer, err := NewMPCGRPCServer(server, engine, sessionManager, keyShareStorage, grpcClient, metadataStore, sssBackupService)
+	webauthnService, err := NewWebAuthnServiceProvider(server, metadataStore)
 	if err != nil {
 		return nil, err
 	}
-	apiServer := newServerWithComponents(server, db, mailer, service, i18nService, clock, authService, localService, metricsService, keyService, signingService, serviceService, manager, registry, discovery, sessionManager, grpcServer, grpcClient, discoveryService)
+	websocketServer := NewWebSocketServerProvider(grpcClient)
+	apiServer := newServerWithComponents(server, db, mailer, service, i18nService, clock, authService, localService, metricsService, keyService, signingService, serviceService, manager, registry, discovery, sessionManager, grpcClient, discoveryService, webauthnService, websocketServer)
 	return apiServer, nil
 }
 
@@ -116,29 +115,28 @@ func InitNewServerWithDB(server config.Server, db *sql.DB, t ...*testing.T) (*Se
 		return nil, err
 	}
 	manager := NewNodeManager(discoveryService, server)
+	discovery := NewNodeDiscovery(manager, discoveryService)
 	grpcClient, err := NewMPCGRPCClient(server, manager)
 	if err != nil {
 		return nil, err
 	}
-	engine := NewProtocolEngine(server, grpcClient, keyShareStorage)
-	discovery := NewNodeDiscovery(manager, discoveryService)
-	dkgService := NewDKGServiceProvider(metadataStore, keyShareStorage, engine, manager, discovery, grpcClient, server)
-	sssBackupService := NewBackupService(metadataStore)
-	keyService := NewKeyServiceProvider(metadataStore, keyShareStorage, engine, dkgService, sssBackupService)
+	dkgService := NewDKGServiceProvider(metadataStore, keyShareStorage, manager, discovery, grpcClient, server)
+	keyService := NewKeyServiceProvider(metadataStore, keyShareStorage, dkgService)
 	client, err := NewRedisClient(server)
 	if err != nil {
 		return nil, err
 	}
 	sessionStore := NewSessionStore(client)
 	sessionManager := NewSessionManager(metadataStore, sessionStore, server)
-	signingService := NewSigningServiceProvider(keyService, engine, sessionManager, discovery, server, grpcClient)
-	serviceService := NewMPCServiceProvider(server, keyService, sessionManager, discovery, engine, grpcClient)
+	signingService := NewSigningServiceProvider(keyService, sessionManager, discovery, server, grpcClient, metadataStore)
+	serviceService := NewMPCServiceProvider(server, keyService, sessionManager, discovery, grpcClient, metadataStore)
 	registry := NewNodeRegistry(manager)
-	grpcServer, err := NewMPCGRPCServer(server, engine, sessionManager, keyShareStorage, grpcClient, metadataStore, sssBackupService)
+	webauthnService, err := NewWebAuthnServiceProvider(server, metadataStore)
 	if err != nil {
 		return nil, err
 	}
-	apiServer := newServerWithComponents(server, db, mailer, service, i18nService, clock, authService, localService, metricsService, keyService, signingService, serviceService, manager, registry, discovery, sessionManager, grpcServer, grpcClient, discoveryService)
+	websocketServer := NewWebSocketServerProvider(grpcClient)
+	apiServer := newServerWithComponents(server, db, mailer, service, i18nService, clock, authService, localService, metricsService, keyService, signingService, serviceService, manager, registry, discovery, sessionManager, grpcClient, discoveryService, webauthnService, websocketServer)
 	return apiServer, nil
 }
 
@@ -168,9 +166,11 @@ var mpcServiceSet = wire.NewSet(
 	NewNodeDiscovery,
 	NewSessionManager,
 
+	NewWebAuthnServiceProvider,
+
 	NewMPCGRPCClient,
-	NewMPCGRPCServer,
-	NewProtocolEngine,
+
+	NewWebSocketServerProvider,
 
 	NewDKGServiceProvider,
 	NewKeyServiceProvider,
@@ -178,8 +178,4 @@ var mpcServiceSet = wire.NewSet(
 	NewMPCServiceProvider,
 
 	NewMPCDiscoveryService,
-
-	NewBackupService,
-	NewRecoveryService,
-	NewBackupStore,
 )

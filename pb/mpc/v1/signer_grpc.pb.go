@@ -32,11 +32,12 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // SignerService 由 mpc-signer 实现，供 mpc-service 调用
+// 使用 mpc.proto 中定义的消息类型
 type SignerServiceClient interface {
-	// DKG 相关
+	// DKG 相关（使用 mpc.proto 中的 StartDKGRequest/Response）
 	StartDKG(ctx context.Context, in *StartDKGRequest, opts ...grpc.CallOption) (*StartDKGResponse, error)
 	GetDKGStatus(ctx context.Context, in *GetDKGStatusRequest, opts ...grpc.CallOption) (*DKGStatusResponse, error)
-	// 签名相关
+	// 签名相关（使用 mpc.proto 中的 StartSignRequest/Response）
 	StartSign(ctx context.Context, in *StartSignRequest, opts ...grpc.CallOption) (*StartSignResponse, error)
 	GetSignStatus(ctx context.Context, in *GetSignStatusRequest, opts ...grpc.CallOption) (*SignStatusResponse, error)
 	// 协议消息中继（从 Client 通过 Service 中继到 Signer）
@@ -118,11 +119,12 @@ func (c *signerServiceClient) Ping(ctx context.Context, in *PingRequest, opts ..
 // for forward compatibility.
 //
 // SignerService 由 mpc-signer 实现，供 mpc-service 调用
+// 使用 mpc.proto 中定义的消息类型
 type SignerServiceServer interface {
-	// DKG 相关
+	// DKG 相关（使用 mpc.proto 中的 StartDKGRequest/Response）
 	StartDKG(context.Context, *StartDKGRequest) (*StartDKGResponse, error)
 	GetDKGStatus(context.Context, *GetDKGStatusRequest) (*DKGStatusResponse, error)
-	// 签名相关
+	// 签名相关（使用 mpc.proto 中的 StartSignRequest/Response）
 	StartSign(context.Context, *StartSignRequest) (*StartSignResponse, error)
 	GetSignStatus(context.Context, *GetSignStatusRequest) (*SignStatusResponse, error)
 	// 协议消息中继（从 Client 通过 Service 中继到 Signer）
