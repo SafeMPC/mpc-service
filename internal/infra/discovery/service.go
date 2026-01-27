@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 )
@@ -32,7 +33,11 @@ func (s *Service) RegisterNode(ctx context.Context, nodeID, nodeType, address st
 			fmt.Sprintf("node-id:%s", nodeID),
 			"protocol:v1",
 		},
-		Meta:     make(map[string]string),
+		Meta: map[string]string{
+			"status":        "active",
+			"purpose":       "signing",
+			"registered_at": time.Now().Format(time.RFC3339),
+		},
 		NodeType: nodeType,
 	}
 
