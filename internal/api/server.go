@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
-	"github.com/dropbox/godropbox/time2"
 	"github.com/SafeMPC/mpc-service/internal/config"
 	"github.com/SafeMPC/mpc-service/internal/data/dto"
 	"github.com/SafeMPC/mpc-service/internal/data/local"
@@ -17,17 +17,17 @@ import (
 	"github.com/SafeMPC/mpc-service/internal/metrics"
 	"github.com/SafeMPC/mpc-service/internal/push"
 	"github.com/SafeMPC/mpc-service/internal/util"
+	"github.com/dropbox/godropbox/time2"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 
 	// MPC imports
-	"github.com/SafeMPC/mpc-service/internal/infra/service"
 	"github.com/SafeMPC/mpc-service/internal/infra/discovery"
 	"github.com/SafeMPC/mpc-service/internal/infra/key"
+	"github.com/SafeMPC/mpc-service/internal/infra/service"
 	"github.com/SafeMPC/mpc-service/internal/infra/session"
 	"github.com/SafeMPC/mpc-service/internal/infra/signing"
 	"github.com/SafeMPC/mpc-service/internal/infra/webauthn"
-	"github.com/SafeMPC/mpc-service/internal/infra/websocket"
 	mpcgrpc "github.com/SafeMPC/mpc-service/internal/mpc/grpc"
 	"github.com/SafeMPC/mpc-service/internal/mpc/node"
 
@@ -71,22 +71,21 @@ type Server struct {
 	Metrics *metrics.Service
 
 	// MPC services
-	KeyService     *key.Service
-	SigningService *signing.Service
-	MPCService     *service.Service
-	NodeManager        *node.Manager
-	NodeRegistry       *node.Registry
-	NodeDiscovery      *node.Discovery
-	SessionManager     *session.Manager
-	DiscoveryService   *discovery.Service // ✅ 新的统一服务发现
-	WebAuthnService    *webauthn.Service  // WebAuthn 服务
+	KeyService       *key.Service
+	SigningService   *signing.Service
+	MPCService       *service.Service
+	NodeManager      *node.Manager
+	NodeRegistry     *node.Registry
+	NodeDiscovery    *node.Discovery
+	SessionManager   *session.Manager
+	DiscoveryService *discovery.Service // ✅ 新的统一服务发现
+	WebAuthnService  *webauthn.Service  // WebAuthn 服务
 
 	// gRPC services (unified MPC gRPC)
 	// 注意：Service 节点不应该有 gRPC Server，只有 Signer 节点才有
-	MPCGRPCClient   *mpcgrpc.GRPCClient              // MPC gRPC 客户端（用于节点间通信）
+	MPCGRPCClient *mpcgrpc.GRPCClient // MPC gRPC 客户端（用于节点间通信）
 
-	// WebSocket 服务
-	WebSocketServer *websocket.Server                // WebSocket 服务器（消息中继）
+	ManagementServer *mpcgrpc.ManagementServer // V3: 管理服务器
 }
 
 // newServerWithComponents is used by wire to initialize the server components.
@@ -112,7 +111,7 @@ func newServerWithComponents(
 	mpcGRPCClient *mpcgrpc.GRPCClient, // ✅ 统一的 MPC gRPC 客户端
 	discoveryService *discovery.Service, // ✅ 新的统一服务发现
 	webAuthnService *webauthn.Service, // WebAuthn 服务
-	webSocketServer *websocket.Server, // WebSocket 服务器
+	managementServer *mpcgrpc.ManagementServer, // V3: 管理服务器
 ) *Server {
 	s := &Server{
 		Config:  cfg,
@@ -125,17 +124,17 @@ func newServerWithComponents(
 		Local:   local,
 		Metrics: metrics,
 
-		KeyService:     keyService,
-		SigningService: signingService,
-		MPCService:     mpcService,
-		NodeManager:        nodeManager,
-		NodeRegistry:       nodeRegistry,
-		NodeDiscovery:      nodeDiscovery,
-		SessionManager:     sessionManager,
-		DiscoveryService:   discoveryService, // ✅ 新的统一服务发现
-		WebAuthnService:    webAuthnService,
-		MPCGRPCClient:      mpcGRPCClient,    // ✅ 统一的 MPC gRPC 客户端
-		WebSocketServer:    webSocketServer,  // WebSocket 服务器
+		KeyService:       keyService,
+		SigningService:   signingService,
+		MPCService:       mpcService,
+		NodeManager:      nodeManager,
+		NodeRegistry:     nodeRegistry,
+		NodeDiscovery:    nodeDiscovery,
+		SessionManager:   sessionManager,
+		DiscoveryService: discoveryService, // ✅ 新的统一服务发现
+		WebAuthnService:  webAuthnService,
+		MPCGRPCClient:    mpcGRPCClient, // ✅ 统一的 MPC gRPC 客户端
+		ManagementServer: managementServer,
 	}
 
 	// 设置 NodeDiscovery 到 MPCGRPCClient，使其能够从 Consul 获取节点信息
@@ -195,6 +194,11 @@ func (s *Server) Start() error {
 			}
 		}
 
+		// 允许通过环境变量覆盖注册地址（用于 Docker 网络互通）
+		if envHost := os.Getenv("MPC_REGISTER_ADDRESS"); envHost != "" {
+			serviceHost = envHost
+		}
+
 		log.Info().
 			Str("node_id", s.Config.MPC.NodeID).
 			Str("node_type", s.Config.MPC.NodeType).
@@ -218,9 +222,29 @@ func (s *Server) Start() error {
 		}
 	}
 
-	// 注意：Service 节点不应该有 gRPC Server
-	// 只有 Signer 节点才需要 gRPC Server
+	// 启动 Management gRPC Server (V3)
+	// Service 节点提供 ManagementService 供 Signer 调用
+	if s.Config.MPC.NodeType == "service" && s.ManagementServer != nil {
+		// 创建并启动 gRPC Server
+		grpcServer := mpcgrpc.NewGRPCServer(
+			s.Config,
+			s.SessionManager,
+			nil,                                  // Service 不存储密钥分片
+			s.WebAuthnService.GetMetadataStore(), // 需要从 WebAuthnService 获取 metadataStore
+			s.Config.MPC.NodeID,
+			s.ManagementServer, // V3: 注入管理服务
+		)
 
+		// 启动 gRPC Server
+		go func() {
+			if err := grpcServer.Start(ctx); err != nil {
+				log.Error().Err(err).Msg("Failed to start Management gRPC server")
+			}
+		}()
+		log.Info().
+			Int("port", s.Config.MPC.GRPCPort).
+			Msg("Started Management gRPC server for Signer nodes")
+	}
 
 	// 4. 启动 HTTP 服务器
 	if err := s.Echo.Start(s.Config.Echo.ListenAddress); err != nil {

@@ -42,6 +42,10 @@ definitions:
         enum: [secp256k1, ed25519]
         example: "secp256k1"
         description: "椭圆曲线"
+      mobile_node_id:
+        type: string
+        example: "mobile-p1"
+        description: "移动端节点 ID (2-of-2 模式)"
       chain_type:
         type: string
         enum: [ethereum, bitcoin, solana, polkadot]
@@ -53,7 +57,7 @@ definitions:
   # 创建钱包响应
   CreateWalletResponse:
     type: object
-    required: [wallet_id, dkg_session_id, status, websocket_url]
+    required: [wallet_id, dkg_session_id, status]
     properties:
       wallet_id:
         type: string
@@ -68,10 +72,16 @@ definitions:
         enum: [pending, running, completed, failed]
         example: "pending"
         description: "会话状态"
-      websocket_url:
+      signer_endpoints:
+        type: array
+        items:
+          type: string
+        example: ["192.168.1.100:9091"]
+        description: "Signer 节点 gRPC 地址列表"
+      session_token:
         type: string
-        example: "ws://localhost:8080/v1/ws?token=xxx"
-        description: "WebSocket 连接 URL（用于接收 DKG 协议消息）"
+        description: "用于连接 Signer 的鉴权 Token"
+      # websocket_url 已废弃 (V3)
 
   # 钱包列表响应
   ListWalletsResponse:
@@ -282,7 +292,7 @@ definitions:
   # 签名交易响应
   SignTransactionResponse:
     type: object
-    required: [session_id, status, websocket_url]
+    required: [session_id, status]
     properties:
       session_id:
         type: string
@@ -292,10 +302,16 @@ definitions:
         type: string
         enum: [pending, signing, completed, failed]
         example: "pending"
-      websocket_url:
+      signer_endpoints:
+        type: array
+        items:
+          type: string
+        example: ["192.168.1.100:9091"]
+        description: "Signer 节点 gRPC 地址列表"
+      session_token:
         type: string
-        example: "ws://localhost:8080/v1/ws?token=xxx"
-        description: "WebSocket 连接 URL（用于协议消息交换）"
+        description: "用于连接 Signer 的鉴权 Token"
+      # websocket_url 已废弃 (V3)
       estimated_time:
         type: string
         example: "2s"

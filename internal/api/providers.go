@@ -7,24 +7,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dropbox/godropbox/time2"
 	"github.com/SafeMPC/mpc-service/internal/auth"
 	"github.com/SafeMPC/mpc-service/internal/config"
 	"github.com/SafeMPC/mpc-service/internal/i18n"
-	"github.com/SafeMPC/mpc-service/internal/infra/service"
 	"github.com/SafeMPC/mpc-service/internal/infra/discovery"
 	"github.com/SafeMPC/mpc-service/internal/infra/key"
+	"github.com/SafeMPC/mpc-service/internal/infra/service"
 	"github.com/SafeMPC/mpc-service/internal/infra/session"
 	"github.com/SafeMPC/mpc-service/internal/infra/signing"
 	"github.com/SafeMPC/mpc-service/internal/infra/storage"
 	"github.com/SafeMPC/mpc-service/internal/infra/webauthn"
-	"github.com/SafeMPC/mpc-service/internal/infra/websocket"
 	"github.com/SafeMPC/mpc-service/internal/mailer"
 	mpcgrpc "github.com/SafeMPC/mpc-service/internal/mpc/grpc"
 	"github.com/SafeMPC/mpc-service/internal/mpc/node"
 	"github.com/SafeMPC/mpc-service/internal/persistence"
 	"github.com/SafeMPC/mpc-service/internal/push"
 	"github.com/SafeMPC/mpc-service/internal/push/provider"
+	"github.com/dropbox/godropbox/time2"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 )
@@ -103,13 +102,8 @@ func NewWebAuthnServiceProvider(cfg config.Server, metadataStore storage.Metadat
 	rpID := "localhost" // TODO: 从配置读取
 	rpName := "SafeMPC"
 	rpOrigin := "http://localhost:8080"
-	
-	return webauthn.NewService(rpID, rpName, rpOrigin, metadataStore)
-}
 
-// NewWebSocketServerProvider 创建 WebSocket 服务器
-func NewWebSocketServerProvider(grpcClient *mpcgrpc.GRPCClient) *websocket.Server {
-	return websocket.NewServer(grpcClient)
+	return webauthn.NewService(rpID, rpName, rpOrigin, metadataStore)
 }
 
 func NewRedisClient(cfg config.Server) (*redis.Client, error) {
@@ -206,7 +200,6 @@ func NewKeyServiceProvider(
 	return key.NewService(metadataStore, keyShareStorage, dkgService)
 }
 
-
 func NewSigningServiceProvider(keyService *key.Service, sessionManager *session.Manager, nodeDiscovery *node.Discovery, cfg config.Server, grpcClient *mpcgrpc.GRPCClient, metadataStore storage.MetadataStore) *signing.Service {
 	defaultProtocol := cfg.MPC.DefaultProtocol
 	if defaultProtocol == "" {
@@ -237,6 +230,11 @@ func NewMPCServiceProvider(
 		Msg("NewMPCServiceProvider: creating MPC service with NodeID")
 
 	return service.NewService(keyService, sessionManager, nodeDiscovery, defaultProtocol, grpcClient, nodeID, metadataStore)
+}
+
+// NewManagementServer 创建管理服务器
+func NewManagementServer(discovery *discovery.Service, sessions *session.Manager) *mpcgrpc.ManagementServer {
+	return mpcgrpc.NewManagementServer(discovery, sessions)
 }
 
 // ✅ 删除旧的 internal/grpc 相关 providers（已废弃，已统一到 internal/mpc/grpc）

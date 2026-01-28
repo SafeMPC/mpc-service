@@ -29,16 +29,18 @@ type SignTransactionResponse struct {
 	// Format: uuid
 	SessionID *strfmt.UUID `json:"session_id"`
 
+	// 用于连接 Signer 的鉴权 Token
+	SessionToken string `json:"session_token,omitempty"`
+
+	// Signer 节点 gRPC 地址列表
+	// Example: ["192.168.1.100:9091"]
+	SignerEndpoints []string `json:"signer_endpoints"`
+
 	// status
 	// Example: pending
 	// Required: true
 	// Enum: [pending signing completed failed]
 	Status *string `json:"status"`
-
-	// WebSocket 连接 URL（用于协议消息交换）
-	// Example: ws://localhost:8080/v1/ws?token=xxx
-	// Required: true
-	WebsocketURL *string `json:"websocket_url"`
 }
 
 // Validate validates this sign transaction response
@@ -50,10 +52,6 @@ func (m *SignTransactionResponse) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateStatus(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateWebsocketURL(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -119,15 +117,6 @@ func (m *SignTransactionResponse) validateStatus(formats strfmt.Registry) error 
 
 	// value enum
 	if err := m.validateStatusEnum("status", "body", *m.Status); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *SignTransactionResponse) validateWebsocketURL(formats strfmt.Registry) error {
-
-	if err := validate.Required("websocket_url", "body", m.WebsocketURL); err != nil {
 		return err
 	}
 

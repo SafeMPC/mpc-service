@@ -7,261 +7,45 @@ package types
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
-	"github.com/go-openapi/validate"
 )
 
 // SessionResponse session response
 //
 // swagger:model sessionResponse
 type SessionResponse struct {
+	GetSessionResponse
+}
 
-	// completed at
-	// Format: date-time
-	CompletedAt strfmt.DateTime `json:"completed_at,omitempty"`
+// UnmarshalJSON unmarshals this object from a JSON structure
+func (m *SessionResponse) UnmarshalJSON(raw []byte) error {
+	// AO0
+	var aO0 GetSessionResponse
+	if err := swag.ReadJSON(raw, &aO0); err != nil {
+		return err
+	}
+	m.GetSessionResponse = aO0
 
-	// created at
-	// Format: date-time
-	CreatedAt strfmt.DateTime `json:"created_at,omitempty"`
+	return nil
+}
 
-	// 执行时长（毫秒）
-	DurationMs int64 `json:"duration_ms,omitempty"`
+// MarshalJSON marshals this object to a JSON structure
+func (m SessionResponse) MarshalJSON() ([]byte, error) {
+	_parts := make([][]byte, 0, 1)
 
-	// 错误信息（失败时）
-	ErrorMessage string `json:"error_message,omitempty"`
-
-	// progress
-	Progress *SessionResponseProgress `json:"progress,omitempty"`
-
-	// 公钥（DKG 完成后才有）
-	// Example: 0x...
-	PublicKey string `json:"public_key,omitempty"`
-
-	// session id
-	// Required: true
-	// Format: uuid
-	SessionID *strfmt.UUID `json:"session_id"`
-
-	// session type
-	// Example: signing
-	// Enum: [dkg signing]
-	SessionType string `json:"session_type,omitempty"`
-
-	// 签名结果（完成后才有）
-	// Example: 0x...
-	Signature string `json:"signature,omitempty"`
-
-	// status
-	// Example: running
-	// Required: true
-	// Enum: [pending running completed failed]
-	Status *string `json:"status"`
-
-	// wallet id
-	// Required: true
-	// Format: uuid
-	WalletID *strfmt.UUID `json:"wallet_id"`
+	aO0, err := swag.WriteJSON(m.GetSessionResponse)
+	if err != nil {
+		return nil, err
+	}
+	_parts = append(_parts, aO0)
+	return swag.ConcatJSON(_parts...), nil
 }
 
 // Validate validates this session response
 func (m *SessionResponse) Validate(formats strfmt.Registry) error {
-	var res []error
-
-	if err := m.validateCompletedAt(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateCreatedAt(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateProgress(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateSessionID(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateSessionType(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateStatus(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateWalletID(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
-	return nil
-}
-
-func (m *SessionResponse) validateCompletedAt(formats strfmt.Registry) error {
-	if swag.IsZero(m.CompletedAt) { // not required
-		return nil
-	}
-
-	if err := validate.FormatOf("completed_at", "body", "date-time", m.CompletedAt.String(), formats); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *SessionResponse) validateCreatedAt(formats strfmt.Registry) error {
-	if swag.IsZero(m.CreatedAt) { // not required
-		return nil
-	}
-
-	if err := validate.FormatOf("created_at", "body", "date-time", m.CreatedAt.String(), formats); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *SessionResponse) validateProgress(formats strfmt.Registry) error {
-	if swag.IsZero(m.Progress) { // not required
-		return nil
-	}
-
-	if m.Progress != nil {
-		if err := m.Progress.Validate(formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("progress")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
-				return ce.ValidateName("progress")
-			}
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (m *SessionResponse) validateSessionID(formats strfmt.Registry) error {
-
-	if err := validate.Required("session_id", "body", m.SessionID); err != nil {
-		return err
-	}
-
-	if err := validate.FormatOf("session_id", "body", "uuid", m.SessionID.String(), formats); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-var sessionResponseTypeSessionTypePropEnum []interface{}
-
-func init() {
-	var res []string
-	if err := json.Unmarshal([]byte(`["dkg","signing"]`), &res); err != nil {
-		panic(err)
-	}
-	for _, v := range res {
-		sessionResponseTypeSessionTypePropEnum = append(sessionResponseTypeSessionTypePropEnum, v)
-	}
-}
-
-const (
-
-	// SessionResponseSessionTypeDkg captures enum value "dkg"
-	SessionResponseSessionTypeDkg string = "dkg"
-
-	// SessionResponseSessionTypeSigning captures enum value "signing"
-	SessionResponseSessionTypeSigning string = "signing"
-)
-
-// prop value enum
-func (m *SessionResponse) validateSessionTypeEnum(path, location string, value string) error {
-	if err := validate.EnumCase(path, location, value, sessionResponseTypeSessionTypePropEnum, true); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *SessionResponse) validateSessionType(formats strfmt.Registry) error {
-	if swag.IsZero(m.SessionType) { // not required
-		return nil
-	}
-
-	// value enum
-	if err := m.validateSessionTypeEnum("session_type", "body", m.SessionType); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-var sessionResponseTypeStatusPropEnum []interface{}
-
-func init() {
-	var res []string
-	if err := json.Unmarshal([]byte(`["pending","running","completed","failed"]`), &res); err != nil {
-		panic(err)
-	}
-	for _, v := range res {
-		sessionResponseTypeStatusPropEnum = append(sessionResponseTypeStatusPropEnum, v)
-	}
-}
-
-const (
-
-	// SessionResponseStatusPending captures enum value "pending"
-	SessionResponseStatusPending string = "pending"
-
-	// SessionResponseStatusRunning captures enum value "running"
-	SessionResponseStatusRunning string = "running"
-
-	// SessionResponseStatusCompleted captures enum value "completed"
-	SessionResponseStatusCompleted string = "completed"
-
-	// SessionResponseStatusFailed captures enum value "failed"
-	SessionResponseStatusFailed string = "failed"
-)
-
-// prop value enum
-func (m *SessionResponse) validateStatusEnum(path, location string, value string) error {
-	if err := validate.EnumCase(path, location, value, sessionResponseTypeStatusPropEnum, true); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *SessionResponse) validateStatus(formats strfmt.Registry) error {
-
-	if err := validate.Required("status", "body", m.Status); err != nil {
-		return err
-	}
-
-	// value enum
-	if err := m.validateStatusEnum("status", "body", *m.Status); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *SessionResponse) validateWalletID(formats strfmt.Registry) error {
-
-	if err := validate.Required("wallet_id", "body", m.WalletID); err != nil {
-		return err
-	}
-
-	if err := validate.FormatOf("wallet_id", "body", "uuid", m.WalletID.String(), formats); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -269,88 +53,13 @@ func (m *SessionResponse) validateWalletID(formats strfmt.Registry) error {
 func (m *SessionResponse) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.contextValidateProgress(ctx, formats); err != nil {
+	// validation for a type composition with GetSessionResponse
+	if err := m.GetSessionResponse.ContextValidate(ctx, formats); err != nil {
 		res = append(res, err)
 	}
 
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
-	return nil
-}
-
-func (m *SessionResponse) contextValidateProgress(ctx context.Context, formats strfmt.Registry) error {
-
-	if m.Progress != nil {
-		if err := m.Progress.ContextValidate(ctx, formats); err != nil {
-			if ve, ok := err.(*errors.Validation); ok {
-				return ve.ValidateName("progress")
-			} else if ce, ok := err.(*errors.CompositeError); ok {
-				return ce.ValidateName("progress")
-			}
-			return err
-		}
-	}
-
-	return nil
-}
-
-// MarshalBinary interface implementation
-func (m *SessionResponse) MarshalBinary() ([]byte, error) {
-	if m == nil {
-		return nil, nil
-	}
-	return swag.WriteJSON(m)
-}
-
-// UnmarshalBinary interface implementation
-func (m *SessionResponse) UnmarshalBinary(b []byte) error {
-	var res SessionResponse
-	if err := swag.ReadJSON(b, &res); err != nil {
-		return err
-	}
-	*m = res
-	return nil
-}
-
-// SessionResponseProgress session response progress
-//
-// swagger:model SessionResponseProgress
-type SessionResponseProgress struct {
-
-	// current round
-	// Example: 1
-	CurrentRound int64 `json:"current_round,omitempty"`
-
-	// total rounds
-	// Example: 6
-	TotalRounds int64 `json:"total_rounds,omitempty"`
-}
-
-// Validate validates this session response progress
-func (m *SessionResponseProgress) Validate(formats strfmt.Registry) error {
-	return nil
-}
-
-// ContextValidate validates this session response progress based on context it is used
-func (m *SessionResponseProgress) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
-	return nil
-}
-
-// MarshalBinary interface implementation
-func (m *SessionResponseProgress) MarshalBinary() ([]byte, error) {
-	if m == nil {
-		return nil, nil
-	}
-	return swag.WriteJSON(m)
-}
-
-// UnmarshalBinary interface implementation
-func (m *SessionResponseProgress) UnmarshalBinary(b []byte) error {
-	var res SessionResponseProgress
-	if err := swag.ReadJSON(b, &res); err != nil {
-		return err
-	}
-	*m = res
 	return nil
 }

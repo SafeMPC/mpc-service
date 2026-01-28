@@ -128,29 +128,51 @@ func postSignTransactionHandler(s *api.Server) echo.HandlerFunc {
 			sessionToken = strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 		}
 
+		secretKey := s.Config.MPC.JWTSecret
+		if secretKey == "" {
+			secretKey = "default-secret-key-change-in-production"
+		}
+
 		var mobileNodeID string
 		if sessionToken != "" {
 			log.Info().Int("session_token_len", len(sessionToken)).Msg("Parsed session token from Authorization header")
-			secretKey := s.Config.MPC.JWTSecret
-			if secretKey == "" {
-				secretKey = "default-secret-key-change-in-production"
-			}
 			jwtManager := auth.NewJWTManager(secretKey, "", 0)
 			claims, err := jwtManager.Validate(sessionToken)
-			if err == nil && claims != nil {
+			if err != nil {
+				log.Warn().Err(err).Msg("Failed to validate session token as JWT; will try parsing without claims validation")
+				claims, err = jwtManager.ParseWithoutClaimsValidation(sessionToken)
+				if err != nil {
+					log.Warn().Err(err).Msg("Failed to parse session token as JWT; cannot derive mobile node id")
+					claims = nil
+				}
+			}
+			if claims != nil {
 				if claims.Subject != "" {
 					mobileNodeID = claims.Subject
 				} else if claims.AppID != "" {
 					mobileNodeID = claims.AppID
 				}
-			} else if err != nil {
-				log.Warn().Err(err).Msg("Failed to validate session token as JWT; cannot derive mobile node id")
 			}
 		}
 
 		if mobileNodeID == "" {
 			log.Warn().Msg("Unable to resolve mobile node id from token; StartSign will be skipped and direct-connect signing may stall")
 		} else {
+			issuer := "safempc"
+			if s.Config.MPC.JWTIssuer != "" {
+				issuer = s.Config.MPC.JWTIssuer
+			}
+			tokenDuration := s.Config.MPC.JWTDuration
+			if tokenDuration <= 0 {
+				tokenDuration = 24 * time.Hour
+			}
+			jwtManager := auth.NewJWTManager(secretKey, issuer, tokenDuration)
+			if refreshedToken, err := jwtManager.Generate(mobileNodeID, "default-tenant", nil); err == nil {
+				sessionToken = refreshedToken
+			} else {
+				log.Warn().Err(err).Msg("Failed to refresh session token for signer gRPC")
+			}
+
 			nodeIDs := make([]string, 0, signingSession.TotalNodes)
 			nodeIDs = append(nodeIDs, mobileNodeID)
 			for _, n := range nodes {

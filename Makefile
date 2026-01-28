@@ -533,9 +533,9 @@ LDFLAGS = $(eval LDFLAGS := "\
 .ONESHELL:
 
 # # normal POSIX bash shell mode
-# SHELL = /bin/bash
-# .SHELLFLAGS = -cEeuo pipefail
+SHELL = /bin/bash
+.SHELLFLAGS = -cEeuo pipefail
 
 # wrapped make time tracing shell, use it via MAKE_TRACE_TIME=true make <target>
-SHELL = /app/rksh
-.SHELLFLAGS = $@
+# SHELL = /app/rksh
+# .SHELLFLAGS = $@

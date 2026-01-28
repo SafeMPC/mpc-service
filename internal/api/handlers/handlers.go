@@ -9,7 +9,6 @@ import (
 	"github.com/SafeMPC/mpc-service/internal/api/handlers/push"
 	walletshandlers "github.com/SafeMPC/mpc-service/internal/api/handlers/wallets"
 	webauthnhandlers "github.com/SafeMPC/mpc-service/internal/api/handlers/webauthn"
-	websockethandlers "github.com/SafeMPC/mpc-service/internal/api/handlers/websocket"
 	"github.com/SafeMPC/mpc-service/internal/api/handlers/wellknown"
 	"github.com/labstack/echo/v4"
 )
@@ -42,7 +41,6 @@ func AttachAllRoutes(s *api.Server) {
 		walletshandlers.GetWalletRoute(s),
 		walletshandlers.GetWalletBalanceRoute(s),
 		walletshandlers.PostSignTransactionRoute(s),
-		websockethandlers.WebSocketRoute(s),
 		push.PutUpdatePushTokenRoute(s),
 		wellknown.GetAndroidDigitalAssetLinksRoute(s),
 		wellknown.GetAppleAppSiteAssociationRoute(s),

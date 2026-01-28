@@ -23,6 +23,11 @@ type Service struct {
 	rpOrigin      string
 }
 
+// GetMetadataStore 获取元数据存储（用于 gRPC Server）
+func (s *Service) GetMetadataStore() storage.MetadataStore {
+	return s.metadataStore
+}
+
 // NewService 创建 WebAuthn 服务
 func NewService(
 	rpID string,

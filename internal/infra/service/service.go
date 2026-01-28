@@ -258,21 +258,6 @@ func (s *Service) NotifyParticipantsForDKG(ctx context.Context, req *CreateDKGSe
 		return errors.New("no participants to notify")
 	}
 
-	// 选择第一个 signer 作为 leader（按 nodeID 排序，确保一致性）
-	leaderNodeID := nodeIDs[0]
-
-	log.Info().
-		Str("key_id", req.KeyID).
-		Str("leader_node_id", leaderNodeID).
-		Strs("all_signers", nodeIDs).
-		Int("threshold", req.Threshold).
-		Int("total_nodes", req.TotalNodes).
-		Msg("Notifying leader signer to start DKG protocol")
-
-		// 通过 gRPC 发送 StartDKG RPC 给 leader
-		// 使用独立的 context 和超时，避免受 HTTP 请求超时影响
-		// 缩短超时时间，加快失败检测
-	
 	// 查询 Client (P1) 的 Passkey 公钥（2-of-2 模式）
 	var clientPublicKey string
 	if req.MobileNodeID != "" {
@@ -303,6 +288,15 @@ func (s *Service) NotifyParticipantsForDKG(ctx context.Context, req *CreateDKGSe
 		ClientPublicKey: clientPublicKey,
 	}
 
+	// 在 2-of-2 模式下，通知所有可访问的 signer 节点启动 DKG
+	// 对于移动端节点（未注册到 Consul），它们会通过 WebSocket 消息路由自动启动
+	log.Info().
+		Str("key_id", req.KeyID).
+		Strs("all_signers", nodeIDs).
+		Int("threshold", req.Threshold).
+		Int("total_nodes", req.TotalNodes).
+		Msg("Notifying all signer nodes to start DKG protocol")
+
 	// 异步调用 StartDKG，避免阻塞 HTTP 请求
 	// 在 goroutine 内部创建 context，确保不会被外部 defer cancel 影响
 	go func() {
@@ -310,29 +304,42 @@ func (s *Service) NotifyParticipantsForDKG(ctx context.Context, req *CreateDKGSe
 		startDKGCtx, cancel := context.WithTimeout(context.Background(), startDKGTimeout)
 		defer cancel()
 
-		log.Info().
-			Str("key_id", req.KeyID).
-			Str("leader_node_id", leaderNodeID).
-			Str("timeout", startDKGTimeout.String()).
-			Msg("Starting async StartDKG RPC call")
+		// 通知所有 signer 节点（尝试通过 gRPC 连接）
+		// 对于无法通过 gRPC 连接的节点（如移动端），它们会通过 WebSocket 消息路由自动启动
+		for _, nodeID := range nodeIDs {
+			// 跳过移动端节点（通过前缀判断）
+			if strings.HasPrefix(nodeID, "mobile-") || strings.HasPrefix(nodeID, "client-") {
+				log.Info().
+					Str("key_id", req.KeyID).
+					Str("node_id", nodeID).
+					Msg("Skipping StartDKG RPC for mobile/client node (will start via WebSocket message)")
+				continue
+			}
 
-		resp, err := s.grpcClient.SendStartDKG(startDKGCtx, leaderNodeID, startReq)
-		if err != nil {
-			log.Error().
-				Err(err).
-				Str("key_id", req.KeyID).
-				Str("leader_node_id", leaderNodeID).
-				Str("timeout", startDKGTimeout.String()).
-				Msg("Failed to call StartDKG on leader signer - signer will auto-start DKG via message routing")
-			// 不返回错误，让 signer 通过其他方式（如消息路由）自动启动 DKG
-			// 即使 StartDKG RPC 失败，signer 在收到协议消息时会自动启动 DKG
-		} else {
 			log.Info().
 				Str("key_id", req.KeyID).
-				Str("leader_node_id", leaderNodeID).
-				Bool("started", resp.Started).
-				Str("message", resp.Message).
-				Msg("StartDKG RPC call succeeded")
+				Str("node_id", nodeID).
+				Str("timeout", startDKGTimeout.String()).
+				Msg("Starting async StartDKG RPC call to signer")
+
+			resp, err := s.grpcClient.SendStartDKG(startDKGCtx, nodeID, startReq)
+			if err != nil {
+				log.Warn().
+					Err(err).
+					Str("key_id", req.KeyID).
+					Str("node_id", nodeID).
+					Str("timeout", startDKGTimeout.String()).
+					Msg("Failed to call StartDKG on signer - signer will auto-start DKG via message routing")
+				// 不返回错误，让 signer 通过其他方式（如消息路由）自动启动 DKG
+				// 即使 StartDKG RPC 失败，signer 在收到协议消息时会自动启动 DKG
+			} else {
+				log.Info().
+					Str("key_id", req.KeyID).
+					Str("node_id", nodeID).
+					Bool("started", resp.Started).
+					Str("message", resp.Message).
+					Msg("StartDKG RPC call succeeded")
+			}
 		}
 	}()
 

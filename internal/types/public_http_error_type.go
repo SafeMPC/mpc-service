@@ -68,6 +68,9 @@ const (
 
 	// PublicHTTPErrorTypeMISSINGSCOPES captures enum value "MISSING_SCOPES"
 	PublicHTTPErrorTypeMISSINGSCOPES PublicHTTPErrorType = "MISSING_SCOPES"
+
+	// PublicHTTPErrorTypeValidation captures enum value "validation"
+	PublicHTTPErrorTypeValidation PublicHTTPErrorType = "validation"
 )
 
 // for schema
@@ -75,7 +78,7 @@ var publicHttpErrorTypeEnum []interface{}
 
 func init() {
 	var res []PublicHTTPErrorType
-	if err := json.Unmarshal([]byte(`["generic","PUSH_TOKEN_ALREADY_EXISTS","OLD_PUSH_TOKEN_NOT_FOUND","ZERO_FILE_SIZE","USER_DEACTIVATED","INVALID_PASSWORD","NOT_LOCAL_USER","TOKEN_NOT_FOUND","TOKEN_EXPIRED","USER_ALREADY_EXISTS","MALFORMED_TOKEN","LAST_AUTHENTICATED_AT_EXCEEDED","MISSING_SCOPES"]`), &res); err != nil {
+	if err := json.Unmarshal([]byte(`["generic","PUSH_TOKEN_ALREADY_EXISTS","OLD_PUSH_TOKEN_NOT_FOUND","ZERO_FILE_SIZE","USER_DEACTIVATED","INVALID_PASSWORD","NOT_LOCAL_USER","TOKEN_NOT_FOUND","TOKEN_EXPIRED","USER_ALREADY_EXISTS","MALFORMED_TOKEN","LAST_AUTHENTICATED_AT_EXCEEDED","MISSING_SCOPES","validation"]`), &res); err != nil {
 		panic(err)
 	}
 	for _, v := range res {

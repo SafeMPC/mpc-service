@@ -8,15 +8,14 @@ package api
 
 import (
 	"database/sql"
+	"testing"
+
 	"github.com/SafeMPC/mpc-service/internal/auth"
 	"github.com/SafeMPC/mpc-service/internal/config"
 	"github.com/SafeMPC/mpc-service/internal/data/local"
 	"github.com/SafeMPC/mpc-service/internal/metrics"
 	"github.com/google/wire"
-	"testing"
-)
 
-import (
 	_ "github.com/lib/pq"
 )
 
@@ -78,8 +77,8 @@ func InitNewServer(server config.Server) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	websocketServer := NewWebSocketServerProvider(grpcClient)
-	apiServer := newServerWithComponents(server, db, mailer, service, i18nService, clock, authService, localService, metricsService, keyService, signingService, serviceService, manager, registry, discovery, sessionManager, grpcClient, discoveryService, webauthnService, websocketServer)
+	managementServer := NewManagementServer(discoveryService, sessionManager)
+	apiServer := newServerWithComponents(server, db, mailer, service, i18nService, clock, authService, localService, metricsService, keyService, signingService, serviceService, manager, registry, discovery, sessionManager, grpcClient, discoveryService, webauthnService, managementServer)
 	return apiServer, nil
 }
 
@@ -135,8 +134,8 @@ func InitNewServerWithDB(server config.Server, db *sql.DB, t ...*testing.T) (*Se
 	if err != nil {
 		return nil, err
 	}
-	websocketServer := NewWebSocketServerProvider(grpcClient)
-	apiServer := newServerWithComponents(server, db, mailer, service, i18nService, clock, authService, localService, metricsService, keyService, signingService, serviceService, manager, registry, discovery, sessionManager, grpcClient, discoveryService, webauthnService, websocketServer)
+	managementServer := NewManagementServer(discoveryService, sessionManager)
+	apiServer := newServerWithComponents(server, db, mailer, service, i18nService, clock, authService, localService, metricsService, keyService, signingService, serviceService, manager, registry, discovery, sessionManager, grpcClient, discoveryService, webauthnService, managementServer)
 	return apiServer, nil
 }
 
@@ -169,8 +168,6 @@ var mpcServiceSet = wire.NewSet(
 	NewWebAuthnServiceProvider,
 
 	NewMPCGRPCClient,
-
-	NewWebSocketServerProvider,
 
 	NewDKGServiceProvider,
 	NewKeyServiceProvider,

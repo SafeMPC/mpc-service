@@ -70,3 +70,27 @@ func (m *JWTManager) Validate(tokenString string) (*AppClaims, error) {
 
 	return claims, nil
 }
+
+func (m *JWTManager) ParseWithoutClaimsValidation(tokenString string) (*AppClaims, error) {
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&AppClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return m.secretKey, nil
+		},
+		jwt.WithoutClaimsValidation(),
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid token")
+	}
+
+	claims, ok := token.Claims.(*AppClaims)
+	if !ok || !token.Valid {
+		return nil, errors.New("invalid token claims")
+	}
+
+	return claims, nil
+}

@@ -13,6 +13,8 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/strfmt"
+
+	"github.com/SafeMPC/mpc-service/internal/types"
 )
 
 // NewPostGenerateWalletAddressParams creates a new PostGenerateWalletAddressParams object
@@ -35,7 +37,7 @@ type PostGenerateWalletAddressParams struct {
 	  Required: true
 	  In: body
 	*/
-	Body PostGenerateWalletAddressBody
+	Body *types.PostGenerateWalletAddressPayload
 	/*
 	  Required: true
 	  In: path
@@ -54,7 +56,7 @@ func (o *PostGenerateWalletAddressParams) BindRequest(r *http.Request, route *mi
 
 	if runtime.HasBody(r) {
 		defer r.Body.Close()
-		var body PostGenerateWalletAddressBody
+		var body types.PostGenerateWalletAddressPayload
 		if err := route.Consumer.Consume(r.Body, &body); err != nil {
 			if err == io.EOF {
 				res = append(res, errors.Required("body", "body", ""))
@@ -68,7 +70,7 @@ func (o *PostGenerateWalletAddressParams) BindRequest(r *http.Request, route *mi
 			}
 
 			if len(res) == 0 {
-				o.Body = body
+				o.Body = &body
 			}
 		}
 	} else {

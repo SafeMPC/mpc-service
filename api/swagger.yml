@@ -617,7 +617,6 @@ paths:
       operationId: getWallets
       parameters:
       - type: string
-        example: ethereum
         description: 过滤区块链类型
         name: chain_type
         in: query
@@ -725,7 +724,7 @@ paths:
         in: body
         required: true
         schema:
-          $ref: '#/definitions/PostGenerateWalletAddressPayload'
+          $ref: '#/definitions/postGenerateWalletAddressPayload'
       responses:
         "200":
           description: 地址生成成功
@@ -758,7 +757,6 @@ paths:
         in: path
         required: true
       - type: string
-        example: ethereum
         description: 区块链类型
         name: chain_type
         in: query
@@ -835,7 +833,6 @@ paths:
         in: path
         required: true
       - type: string
-        example: ethereum
         description: 区块链类型
         name: chain_type
         in: query
@@ -874,12 +871,21 @@ definitions:
     - wallet_id
     - dkg_session_id
     - status
-    - websocket_url
     properties:
       dkg_session_id:
         description: DKG 会话 ID
         type: string
         format: uuid
+      session_token:
+        description: 用于连接 Signer 的鉴权 Token
+        type: string
+      signer_endpoints:
+        description: Signer 节点 gRPC 地址列表
+        type: array
+        items:
+          type: string
+        example:
+        - 192.168.1.100:9091
       status:
         description: 会话状态
         type: string
@@ -893,10 +899,6 @@ definitions:
         description: 钱包 ID
         type: string
         format: uuid
-      websocket_url:
-        description: WebSocket 连接 URL（用于接收 DKG 协议消息）
-        type: string
-        example: ws://localhost:8080/v1/ws?token=xxx
   deleteUserAccountPayload:
     type: object
     required:
@@ -1099,6 +1101,10 @@ definitions:
         - secp256k1
         - ed25519
         example: secp256k1
+      mobile_node_id:
+        description: 移动端节点 ID (2-of-2 模式)
+        type: string
+        example: mobile-p1
       webauthn_assertion:
         $ref: '#/definitions/webAuthnAssertion'
   postForgotPasswordCompletePayload:
@@ -1428,7 +1434,6 @@ definitions:
     required:
     - session_id
     - status
-    - websocket_url
     properties:
       estimated_time:
         description: 预计完成时间
@@ -1438,6 +1443,16 @@ definitions:
         description: 签名会话 ID
         type: string
         format: uuid
+      session_token:
+        description: 用于连接 Signer 的鉴权 Token
+        type: string
+      signer_endpoints:
+        description: Signer 节点 gRPC 地址列表
+        type: array
+        items:
+          type: string
+        example:
+        - 192.168.1.100:9091
       status:
         type: string
         enum:
@@ -1446,10 +1461,6 @@ definitions:
         - completed
         - failed
         example: pending
-      websocket_url:
-        description: WebSocket 连接 URL（用于协议消息交换）
-        type: string
-        example: ws://localhost:8080/v1/ws?token=xxx
   transaction:
     type: object
     properties:

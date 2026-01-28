@@ -51,7 +51,6 @@ paths:
           type: string
           required: false
           description: 过滤区块链类型
-          example: "ethereum"
         - name: limit
           in: query
           type: integer
@@ -131,7 +130,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: "#/definitions/PostGenerateWalletAddressPayload"
+            $ref: "#/definitions/postGenerateWalletAddressPayload"
       responses:
         "200":
           description: 地址生成成功
@@ -170,7 +169,6 @@ paths:
           type: string
           required: true
           description: 区块链类型
-          example: "ethereum"
       responses:
         "200":
           description: 余额信息
@@ -209,7 +207,6 @@ paths:
           type: string
           required: true
           description: 区块链类型
-          example: "ethereum"
         - name: limit
           in: query
           type: integer

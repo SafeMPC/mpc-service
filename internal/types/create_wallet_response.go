@@ -25,6 +25,13 @@ type CreateWalletResponse struct {
 	// Format: uuid
 	DkgSessionID *strfmt.UUID `json:"dkg_session_id"`
 
+	// 用于连接 Signer 的鉴权 Token
+	SessionToken string `json:"session_token,omitempty"`
+
+	// Signer 节点 gRPC 地址列表
+	// Example: ["192.168.1.100:9091"]
+	SignerEndpoints []string `json:"signer_endpoints"`
+
 	// 会话状态
 	// Example: pending
 	// Required: true
@@ -35,11 +42,6 @@ type CreateWalletResponse struct {
 	// Required: true
 	// Format: uuid
 	WalletID *strfmt.UUID `json:"wallet_id"`
-
-	// WebSocket 连接 URL（用于接收 DKG 协议消息）
-	// Example: ws://localhost:8080/v1/ws?token=xxx
-	// Required: true
-	WebsocketURL *string `json:"websocket_url"`
 }
 
 // Validate validates this create wallet response
@@ -55,10 +57,6 @@ func (m *CreateWalletResponse) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := m.validateWalletID(formats); err != nil {
-		res = append(res, err)
-	}
-
-	if err := m.validateWebsocketURL(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -137,15 +135,6 @@ func (m *CreateWalletResponse) validateWalletID(formats strfmt.Registry) error {
 	}
 
 	if err := validate.FormatOf("wallet_id", "body", "uuid", m.WalletID.String(), formats); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *CreateWalletResponse) validateWebsocketURL(formats strfmt.Registry) error {
-
-	if err := validate.Required("websocket_url", "body", m.WebsocketURL); err != nil {
 		return err
 	}
 

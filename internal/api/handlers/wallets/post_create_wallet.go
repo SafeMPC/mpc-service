@@ -116,7 +116,11 @@ func postCreateWalletHandler(s *api.Server) echo.HandlerFunc {
 			issuer = s.Config.MPC.JWTIssuer
 		}
 		// 使用 mobileNodeID 作为 userID/AppID
-		jwtManager := auth.NewJWTManager(secretKey, issuer, time.Hour)
+		tokenDuration := s.Config.MPC.JWTDuration
+		if tokenDuration <= 0 {
+			tokenDuration = 24 * time.Hour
+		}
+		jwtManager := auth.NewJWTManager(secretKey, issuer, tokenDuration)
 		token, err := jwtManager.Generate(mobileNodeID, "default-tenant", nil)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to generate temp JWT token")

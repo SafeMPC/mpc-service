@@ -36,8 +36,7 @@ type PostSignTransactionPayload struct {
 	MessageHex *string `json:"message_hex"`
 
 	// webauthn assertion
-	// Required: true
-	WebauthnAssertion *WebAuthnAssertion `json:"webauthn_assertion"`
+	WebauthnAssertion *WebAuthnAssertion `json:"webauthn_assertion,omitempty"`
 }
 
 // Validate validates this post sign transaction payload
@@ -118,12 +117,9 @@ func (m *PostSignTransactionPayload) validateMessageHex(formats strfmt.Registry)
 }
 
 func (m *PostSignTransactionPayload) validateWebauthnAssertion(formats strfmt.Registry) error {
-
-	// 测试环境：暂时允许 webauthn_assertion 为可选
-	// TODO: 生产环境必须要求 webauthn_assertion
-	// if err := validate.Required("webauthn_assertion", "body", m.WebauthnAssertion); err != nil {
-	// 	return err
-	// }
+	if swag.IsZero(m.WebauthnAssertion) { // not required
+		return nil
+	}
 
 	if m.WebauthnAssertion != nil {
 		if err := m.WebauthnAssertion.Validate(formats); err != nil {

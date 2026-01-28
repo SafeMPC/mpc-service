@@ -47,7 +47,7 @@ func getSessionHandler(s *api.Server) echo.HandlerFunc {
 		}
 
 		// 构建 Progress 对象
-		progress := &types.SessionResponseProgress{
+		progress := &types.GetSessionResponseProgress{
 			CurrentRound: int64(session.CurrentRound),
 			TotalRounds:  int64(session.TotalRounds),
 		}
@@ -57,7 +57,7 @@ func getSessionHandler(s *api.Server) echo.HandlerFunc {
 		walletIDUUID := strfmt.UUID(session.KeyID) // 使用 KeyID 作为 WalletID
 
 		status := session.Status
-		response := &types.SessionResponse{
+		innerResponse := types.GetSessionResponse{
 			SessionID:   &sessionIDUUID,
 			WalletID:    &walletIDUUID,
 			SessionType: sessionType,
@@ -70,7 +70,11 @@ func getSessionHandler(s *api.Server) echo.HandlerFunc {
 		}
 
 		if session.CompletedAt != nil {
-			response.CompletedAt = strfmt.DateTime(*session.CompletedAt)
+			innerResponse.CompletedAt = strfmt.DateTime(*session.CompletedAt)
+		}
+
+		response := &types.SessionResponse{
+			GetSessionResponse: innerResponse,
 		}
 
 		return util.ValidateAndReturn(c, http.StatusOK, response)
